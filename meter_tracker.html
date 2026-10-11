@@ -142,7 +142,7 @@ function vReg(){const A=DB.reg,L=regFilter(),sets=ksets(A),szs=[...new Set(A.map
  ${S.src==='gs'?gsCard():`<div class="card"><h3>📋 ทะเบียนมิเตอร์ที่ผ่านการทดสอบ <small class="mu">(คลิกแถวเพื่อดู/แก้ไข K1–K20 และรายละเอียด)</small></h3><div class="sc"><table><tr><th></th><th>วันที่ทดสอบ</th><th>ID / Lot</th><th>รุ่น / ขนาด / ชนิด</th><th>เฟิร์มแวร์</th><th>แบตเตอรี่</th><th>ผลทดสอบ 4 น้ำ (Flow · %Error)</th><th>ชุด K</th><th>ผู้ทดสอบ</th><th>สถานะ</th><th></th></tr><tbody id="rtb">${regRows()}</tbody></table></div></div>`}`}
 /* ---------- Google Sheet ---------- */
 const GS_CODE=`var SHEET = 'Meters';
-var VER = 4;           // เลขเวอร์ชันสคริปต์ (แอปใช้ตรวจว่า Deploy โค้ดใหม่แล้ว)
+var VER = 5;           // เลขเวอร์ชันสคริปต์ (แอปใช้ตรวจว่า Deploy โค้ดใหม่แล้ว)
 var TOKEN = '1234';   // ต้องตรงกับ Token ในแอป (แนะนำให้เปลี่ยนเป็นรหัสที่เดายาก)
 // คอลัมน์เดิม (ลำดับที่ใช้ตอนแรก) — ใช้ซ่อมหัวตารางถ้าแถวแรกเป็นข้อมูล
 var LEGACY = ['rid','date','id','lot','model','size','type','hw','fw','batBrand','batV','flow','vTest','vRead','err','result','tester','dept','note','src','ts','K1','K2','K3','K4','K5','K6','K7','K8','K9','K10','K11','K12','K13','K14','K15','K16','K17','K18','K19','K20'];
@@ -235,7 +235,17 @@ function doPost(e) {
     else { s.appendRow(row); }
     n++;
   });
-  return out_({saved: n, ver: VER});
+  var v2 = s.getDataRange().getValues(), h2 = v2[0], echo = {}, f0 = b.rows[0];   // อ่านกลับ: บอกแอปว่าค่าที่เก็บจริงใน Sheet คืออะไร
+  if (f0) {
+    var r2 = h2.indexOf('rid');
+    for (var q = 1; q < v2.length; q++) {
+      if (String(v2[q][r2]) === String(f0.rid)) {
+        ['rclass', 'flow1', 'err1', 'ship'].forEach(function (k) { var c = h2.indexOf(k); echo[k] = c < 0 ? '#ไม่มีคอลัมน์' : String(v2[q][c]); });
+        break;
+      }
+    }
+  }
+  return out_({saved: n, ver: VER, cols: h.length, echo: echo});
 }`;
 const flat=r=>{const o={};HEAD.forEach(c=>{if(c!=='vTest'&&c!=='vRead')o[c]=''});   // vTest/vRead ไม่ส่ง = คงค่าเดิมใน Sheet
  COLS.forEach(c=>o[c]=r[c]??'');
@@ -250,7 +260,10 @@ async function gsCall(c,params,body){let txt;
  catch(e){const x=new Error('เบราว์เซอร์เข้าลิงก์ Web App ไม่ได้ ('+(e.message||e)+')');x.hint='ตรวจ ① Deploy → “ผู้มีสิทธิ์เข้าถึง” ต้องเป็น “ทุกคน” (ไม่ใช่ “ทุกคนที่มีบัญชี Google”) ② ลิงก์ต้องลงท้าย /exec ③ ถ้าเปิดไฟล์จากเครื่อง (file://) ให้ลองเปิดผ่านเว็บ เช่น GitHub Pages ④ ต่ออินเทอร์เน็ต / ปิดตัวบล็อกโฆษณา';throw x}
  let j;try{j=JSON.parse(txt)}catch(e){const x=new Error('Google ตอบกลับเป็นหน้าเว็บ ไม่ใช่ข้อมูล JSON');x.hint='มักเกิดจาก ① Deploy ไม่ได้ตั้งเป็น “ทุกคน” หรือยังไม่กดอนุญาตสิทธิ์ ② เปิด Apps Script ไม่ได้มาจากในไฟล์ Google Sheet (ต้องมี Sheet ผูกอยู่) ③ โค้ดสคริปต์มีข้อผิดพลาด ④ แก้โค้ดแล้วยังไม่ Deploy เวอร์ชันใหม่ · ข้อความที่ Google ตอบ: '+String(txt).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,170);throw x}
  if(j&&j.error){const x=new Error(String(j.error));x.hint=/token/i.test(j.error)?'Token ในแอปต้องตรงกับค่า TOKEN ในสคริปต์ (แอปส่งค่า: '+(c.token||'ว่าง')+')':'ข้อความนี้ส่งมาจากสคริปต์ใน Google';throw x}
- if(body&&body.action==='upsert'&&!(j&&j.ver>=4)){const x=new Error('Google Sheet ยังใช้ Apps Script เวอร์ชันเก่า'+(j&&j.ver?' (v'+j.ver+')':'')+' — ข้อมูล %Error / Flow / R จะไม่ถูกบันทึกครบ');x.hint='วางโค้ดใหม่ (ปุ่มคัดลอกโค้ดในแท็บ ③) แล้ว Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ล่าสุดเท่านั้น)';throw x}
+ if(body&&body.action==='upsert'){const bad=(m,h)=>{const e=new Error(m);e.hint=h;throw e};
+  if(!(j&&j.ver>=5))bad('Apps Script ที่ Deploy อยู่ยังเป็นเวอร์ชันเก่า'+(j&&j.ver?' (v'+j.ver+')':' (ไม่มีเลขเวอร์ชัน)')+' — Sheet ไม่ได้รับ %Error / Flow / R','ลบโค้ดเดิมใน Apps Script ทั้งหมด → วางโค้ดใหม่จากปุ่มคัดลอกในแท็บ ③ → บันทึก → Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ล่าสุดเท่านั้น) · ถ้าเปลี่ยนเป็นลิงก์ /exec ใหม่ ต้องวางลิงก์ใหม่ในแท็บ ③ ด้วย');
+  const s0=(body.rows||[])[0]||{},E=j.echo||{},miss=['rclass','flow1','err1','ship'].filter(k=>{const x=s0[k],y=E[k];if(x===''||x==null)return false;const nx=+x,ny=+y;return isFinite(nx)&&isFinite(ny)&&String(y)!==''?Math.abs(nx-ny)>1e-9:String(x)!==String(y)});
+  if(miss.length)bad('Sheet รับคำสั่งแล้ว แต่คอลัมน์ '+miss.join(', ')+' ไม่ตรงกับที่ส่ง (ใน Sheet: '+miss.map(k=>String(E[k]===''?'ว่าง':E[k])).join(', ')+')','ตรวจหัวตารางแถว 1 ของแผ่นงาน “Meters” ว่าชื่อคอลัมน์สะกดตรงเป๊ะ ไม่มีช่องว่างต่อท้าย ไม่ซ้ำ')}
  if(j&&Array.isArray(j.rows)&&j.rows.length&&!j.rows.some(o=>o&&o.rid)){const x=new Error(j.ver?'สคริปต์เป็นเวอร์ชัน '+j.ver+' แล้ว แต่ยังไม่พบคอลัมน์ rid ในแผ่นงาน':'อ่าน Sheet ได้ แต่ไม่พบคอลัมน์ rid (แถวแรกของ Sheet ไม่ใช่หัวตาราง) — สคริปต์ที่ใช้อยู่ยังเป็นเวอร์ชันเก่า');x.fix=1;x.hint=j.ver?'ตรวจว่าชื่อแผ่นงานในสคริปต์ (SHEET = \'Meters\') ตรงกับแผ่นที่มีข้อมูล หรือแทรกหัวตารางตามวิธีเร็วด้านล่าง':'🔧 วิธีเร็ว (10 วินาที ไม่ต้อง Deploy ใหม่): ใน Google Sheet คลิกขวาที่เลขแถว 1 → “แทรก 1 แถวด้านบน” → คลิกช่อง A1 → วาง (Ctrl+V) หัวตารางที่คัดลอกจากปุ่มด้านล่าง → กลับมากดใหม่ · 🔧 วิธีเต็ม: วางโค้ดใหม่ใน Apps Script แล้ว Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ไว้ล่าสุดเท่านั้น)';throw x}
  return j}
 async function gs(params,body){const c=DB.cfg;if(!c.url)throw new Error('ใส่ลิงก์ Web App ก่อน (แท็บ ③)');const j=await gsCall(c,params,body);SY.err=null;return j}
