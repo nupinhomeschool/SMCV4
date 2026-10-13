@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ทะเบียนมิเตอร์ที่ผ่านการทดสอบ · SMCV4 · VER 5</title>
+<title>ทะเบียนมิเตอร์ที่ผ่านการทดสอบ · SMCV4 · VER 6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#070d19;--p:#0f172a;--l:#1e293b;--tx:#e2e8f0;--m:#94a3b8;--c:#22d3ee;--g:#34d399;--a:#fbbf24;--r:#fb7185;--v:#a78bfa}
@@ -38,7 +38,7 @@ input,select,textarea{background:#0b1324;color:var(--tx);border:1px solid #33415
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b1324;border:1px solid var(--c);color:#fff;padding:10px 18px;border-radius:12px;display:none;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:90vw}
 @media(max-width:800px){.two{grid-template-columns:1fr}.w2{grid-column:span 1}.fr{grid-template-columns:1fr}}
 </style></head><body>
-<div class="app"><div class="top"><div><span class="pill g">SMCV4</span><span class="pill a">VER 5</span><span class="pill">ทะเบียนมิเตอร์ที่ผ่านการทดสอบ R160</span><h1>📇 ติดตามมิเตอร์ที่ผ่านการทดสอบ</h1><p>โหลดไฟล์ Excel ผลทดสอบแต่ละน้ำ → คัดเลือกเฉพาะมิเตอร์ที่ผ่านครบ → บันทึกคุณสมบัติ (K1–K20, แบตเตอรี่, รุ่น, ผู้ทดสอบ, Lot) → ค้นหาและเชื่อม Google Sheet</p></div><div class="bar"><span id="sync"></span><a class="btn" href="index.html">⬅ กลับ Web App หลัก</a></div></div>
+<div class="app"><div class="top"><div><span class="pill g">SMCV4</span><span class="pill a">VER 6</span><span class="pill">ทะเบียนมิเตอร์ที่ผ่านการทดสอบ R160</span><h1>📇 ติดตามมิเตอร์ที่ผ่านการทดสอบ</h1><p>โหลดไฟล์ Excel ผลทดสอบแต่ละน้ำ → คัดเลือกเฉพาะมิเตอร์ที่ผ่านครบ → บันทึกคุณสมบัติ (K1–K20, แบตเตอรี่, รุ่น, ผู้ทดสอบ, Lot) → ค้นหาและเชื่อม Google Sheet</p></div><div class="bar"><span id="sync"></span><a class="btn" href="index.html">⬅ กลับ Web App หลัก</a></div></div>
 <nav id="nav"></nav><main id="view"></main></div><div id="pv" hidden></div><div id="toast"></div><input id="fi" type="file" accept=".xlsx,.xls" multiple hidden><input id="fj" type="file" accept=".json" hidden>
 <script>
 const GS_DEFAULT={url:'https://script.google.com/macros/s/AKfycbxo0sEfBznbnavl_FyT_4zXVG_E6H3UTmERlf9NddMFa1wRtdKYYQl951bk46b0Dr_k/exec',token:'1234'};   // ลิงก์ Web App + Token เริ่มต้น (แก้ได้ที่นี่ หรือในแท็บ ☁️)
@@ -46,13 +46,13 @@ const LEG_HEAD=['rid', 'date', 'id', 'lot', 'model', 'size', 'type', 'hw', 'fw',
 const KEY='smacv4_trk_db_v1',$=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),f=(v,d=2)=>v!==''&&v!=null&&isFinite(v)?(+v).toFixed(d):'—',sg=v=>v!==''&&isFinite(v)?(v>0?'+':'')+(+v).toFixed(2):'—',fm=v=>(+v).toLocaleString('en-US');
 const SLOTS=[['น้ำที่ 1','ไหลต่ำ','#22d3ee',15,16],['น้ำที่ 2','ไหลต่ำ–กลาง','#a78bfa',22.5,25],['น้ำที่ 3','ไหลกลาง–สูง','#fbbf24',1200,1300],['น้ำที่ 4','ไหลสูงสุด','#34d399',2400,2500]];
 const RCL=['R100','R160','R200','R400'],KQ3={15:2500,20:4000,25:6300,40:16000,50:25000,60:40000,80:63000,100:100000,120:160000,150:250000},q1Of=(sz,rc)=>KQ3[+sz]&&rc?KQ3[+sz]/+String(rc).slice(1):0;
-const PEND='รอระบุ',SHIP=['ผ่านทดสอบ','พร้อมส่งมอบ','ส่งมอบแล้ว','ส่งซ่อม/ทดสอบซ้ำ'],KC=['#22d3ee','#fbbf24','#a78bfa','#f472b6','#34d399','#fb923c'];
+const PEND='รอระบุ',SHIP=['ผ่านทดสอบ','พร้อมส่งมอบ','ส่งมอบแล้ว','ติดตั้งแล้ว','ส่งซ่อม/ทดสอบซ้ำ'],KC=['#22d3ee','#fbbf24','#a78bfa','#f472b6','#34d399','#fb923c'];
 /* หัวตาราง = เหมือน Apps Script ทุกตัวอักษร: LEGACY.concat(EXTRA) — ถ้าแก้ฝั่ง Apps Script ให้แก้ตรงนี้ให้ตรงกันด้วย */
 const LEGACY=['rid','date','id','lot','model','size','type','hw','fw','batBrand','batV','flow','vTest','vRead','err','result','tester','dept','note','src','ts',...Array.from({length:20},(_,i)=>'K'+(i+1))];
-const EXTRA=['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix'];
+const EXTRA=['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix','install','installDate','deleted'];
 const HEAD=LEGACY.concat(EXTRA);
 const MIRROR=['flow','vTest','vRead','err','result'];   // คอลัมน์เดิมของ Sheet: แอปเติมให้ (flow/err/result) แต่ไม่อ่านกลับ
-const COLS=HEAD.filter(c=>!/^K\d+$/.test(c)&&!MIRROR.includes(c)&&c!=='src');   // ฟิลด์ของรายการในแอป (ไม่รวม K, F, src)
+const COLS=HEAD.filter(c=>!/^K\d+$/.test(c)&&!MIRROR.includes(c)&&c!=='src'&&c!=='deleted');   // ฟิลด์ของรายการในแอป (ไม่รวม K, F, src)
 let SY={st:'idle',err:null},flushing=false;
 const defDB=()=>({v:2,slots:[[],[],[],[]],rg:SLOTS.map(s=>[s[3],s[4]]),reg:[],cfg:{url:'',token:'',last:'',auto:1,q:[],dq:[]},use:[1,1,1,1],def:{rclass:'R160',model:'Multijet',type:'อิเล็กทรอนิกส์ (Hall)',hw:'SMCV.4',fw:PEND,batBrand:PEND,batModel:PEND,dept:'ฝ่ายผลิต',tester:'',lot:'',date:'',note:'',size:''},rule:{n:4,multi:'last',needK:1}});
 let DB,S={src:'local',gsr:null,gsraw:[],gsTotal:0,pv:{on:0,mode:'table',orient:'landscape',k:1,onlySel:0},rc:'',incReg:0,tab:'gate',pend:null,sel:new Set(),flt:'all',q:'',sz:'',md:'',sh:'',ks:'',d1:'',d2:'',pendOnly:0,open:null,regSel:new Set(),gs:[],gsq:'',gsid:'',gslot:''};
@@ -122,13 +122,13 @@ function vGate(){const E=evalAll(),R=DB.rule,need=Math.min(R.n,DB.use.filter(Boo
 /* ---------- หน้า: ทะเบียน ---------- */
 function regFilter(){const q=S.q.toLowerCase().split(/\s+/).filter(Boolean),sets=ksets(DB.reg),ksOf=r=>{const s=sets.find(z=>r.K&&z.k.join()===r.K.join());return s?s.name:'—'};
  return DB.reg.filter(r=>{if(S.sz&&String(r.size)!==S.sz)return false;if(S.rc&&(r.rclass||'R160')!==S.rc)return false;if(S.md&&r.model!==S.md)return false;if(S.sh&&r.ship!==S.sh)return false;if(S.ks&&ksOf(r)!==S.ks)return false;if(S.d1&&r.date<S.d1)return false;if(S.d2&&r.date>S.d2)return false;if(S.pendOnly&&!pendN(r))return false;
-  const h=[r.id,r.lot,r.model,r.rclass,r.size+' mm',r.type,r.hw,r.fw,r.batBrand,r.batModel,r.batV,r.tester,r.dept,r.note,r.date,th(r.date),r.ship,r.customer,r.status,ksOf(r)].join(' ').toLowerCase();return q.every(t=>h.includes(t))}).sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.id.localeCompare(b.id))}
+  const h=[r.id,r.lot,r.model,r.rclass,r.size+' mm',r.type,r.hw,r.fw,r.batBrand,r.batModel,r.batV,r.tester,r.dept,r.note,r.date,th(r.date),r.ship,r.customer,r.install,r.installDate,r.status,ksOf(r)].join(' ').toLowerCase();return q.every(t=>h.includes(t))}).sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.id.localeCompare(b.id))}
 const pendN=r=>['fw','batBrand','batModel'].filter(k=>!r[k]||r[k]===PEND).length;
 function regRows(){const L=regFilter(),sets=ksets(DB.reg),ksOf=r=>sets.find(z=>r.K&&z.k.join()===r.K.join());if(!L.length)return `<tr><td colspan="11"><div class="empty"><b>ไม่พบรายการ</b><span>ล้างตัวกรอง หรือไปที่แท็บ ① คัดเลือก เพื่อเพิ่มมิเตอร์</span></div></td></tr>`;
- return L.map(r=>{const o=S.open===r.rid,p=pendN(r),ks=ksOf(r);let h=`<tr class="rw ${o?'act':''}" data-a="open" data-id="${esc(r.rid)}"><td><input type="checkbox" data-a="rsel" data-id="${esc(r.rid)}" ${S.regSel.has(r.rid)?'checked':''}></td><td>${th(r.date)}</td><td><b class="mo">${esc(r.id)}</b><br><small>${esc(r.lot)||'—'}</small></td><td>${esc(r.model)} ${esc(r.size)} mm <span class="tag t-v">${esc(r.rclass||'R160')}</span><br><small>${esc(r.type)}${r.hw?' · HW '+esc(r.hw):''}</small></td><td>${esc(r.fw)}</td><td>${esc(r.batBrand)} <small>${esc(r.batModel)}</small><br><small>${r.batV!==''?r.batV+' V':'—'}</small></td><td>${fcells(r.F,r.F0)}</td><td>${ks?`<span class="tag t-v" style="background:${ks.c}22;color:${ks.c}">${ks.name}</span>`:'<span class="tag t-bad">ไม่มี K</span>'}${r.kmix?' <span class="tag blink">⚠</span>':''}</td><td>${esc(r.tester)||'—'}<br><small>${esc(r.dept)}</small></td><td><span class="tag ${r.ship==='ส่งมอบแล้ว'?'t-ok':r.ship==='ส่งซ่อม/ทดสอบซ้ำ'?'t-bad':'t-v'}">${esc(r.ship)}</span>${r.customer||r.shipDate?`<br><small>🏢 ${esc(r.customer)||'—'}${r.shipDate?' · 📅 '+th(r.shipDate):''}</small>`:''}${p?`<br><span class="tag blink" title="เฟิร์มแวร์/แบต ยังไม่ระบุ">⚠ รอระบุ ${p}</span>`:''}</td><td><button class="btn d s" data-a="rdel" data-id="${esc(r.rid)}">✕</button></td></tr>`;
+ return L.map(r=>{const o=S.open===r.rid,p=pendN(r),ks=ksOf(r);let h=`<tr class="rw ${o?'act':''}" data-a="open" data-id="${esc(r.rid)}"><td><input type="checkbox" data-a="rsel" data-id="${esc(r.rid)}" ${S.regSel.has(r.rid)?'checked':''}></td><td>${th(r.date)}</td><td><b class="mo">${esc(r.id)}</b><br><small>${esc(r.lot)||'—'}</small></td><td>${esc(r.model)} ${esc(r.size)} mm <span class="tag t-v">${esc(r.rclass||'R160')}</span><br><small>${esc(r.type)}${r.hw?' · HW '+esc(r.hw):''}</small></td><td>${esc(r.fw)}</td><td>${esc(r.batBrand)} <small>${esc(r.batModel)}</small><br><small>${r.batV!==''?r.batV+' V':'—'}</small></td><td>${fcells(r.F,r.F0)}</td><td>${ks?`<span class="tag t-v" style="background:${ks.c}22;color:${ks.c}">${ks.name}</span>`:'<span class="tag t-bad">ไม่มี K</span>'}${r.kmix?' <span class="tag blink">⚠</span>':''}</td><td>${esc(r.tester)||'—'}<br><small>${esc(r.dept)}</small></td><td><span class="tag ${r.ship==='ส่งมอบแล้ว'||r.ship==='ติดตั้งแล้ว'?'t-ok':r.ship==='ส่งซ่อม/ทดสอบซ้ำ'?'t-bad':'t-v'}">${esc(r.ship)}</span>${r.customer||r.shipDate?`<br><small>🏢 ${esc(r.customer)||'—'}${r.shipDate?' · 📅 '+th(r.shipDate):''}</small>`:''}${r.install?`<br><small>📍 ${esc(r.install)}${r.installDate?' · '+th(r.installDate):''}</small>`:''}${p?`<br><span class="tag blink" title="เฟิร์มแวร์/แบต ยังไม่ระบุ">⚠ รอระบุ ${p}</span>`:''}</td><td><button class="btn d s" data-a="rdel" data-id="${esc(r.rid)}">✕</button></td></tr>`;
   if(o)h+=`<tr><td colspan="11" style="background:rgba(34,211,238,.05)">${detail(r,ks)}</td></tr>`;return h}).join('')}
 function detail(r,ks){const e=(k,l,t,x)=>`<label>${l}<input data-ef="${k}" type="${t||'text'}" ${x||''} value="${esc(r[k])}"></label>`,o=(k,l,a)=>`<label>${l}<select data-ef="${k}">${a.map(v=>`<option ${r[k]===v?'selected':''}>${v}</option>`).join('')}</select></label>`;
- return `<div class="grid" style="margin:8px 0">${e('id','ID มิเตอร์','text','readonly')}${e('date','วันที่ทดสอบ','date')}${e('tester','ผู้ทดสอบ')}${o('dept','ฝ่าย',['ฝ่ายผลิต','QA/QC','R&D','อื่นๆ'])}${e('lot','Lot ที่ผลิต')}${o('model','รุ่น',['Multijet','Single Jet'])}${e('size','ขนาด (mm)','number')}${o('rclass','ชั้น R',RCL)}${e('type','ชนิด')}${e('hw','Hardware Model')}${e('fw','เวอร์ชันเฟิร์มแวร์')}${e('batBrand','ยี่ห้อแบต')}${e('batModel','รุ่นแบต')}${e('batV','แรงดันแบต (V)','number','step="0.01"')}${o('ship','สถานะ',SHIP)}${e('customer','ลูกค้า / ปลายทาง')}${e('shipDate','วันที่ส่งมอบ','date')}<label class="w4">หมายเหตุ<input data-ef="note" value="${esc(r.note)}"></label></div>
+ return `<div class="grid" style="margin:8px 0">${e('id','ID มิเตอร์','text','readonly')}${e('date','วันที่ทดสอบ','date')}${e('tester','ผู้ทดสอบ')}${o('dept','ฝ่าย',['ฝ่ายผลิต','QA/QC','R&D','อื่นๆ'])}${e('lot','Lot ที่ผลิต')}${o('model','รุ่น',['Multijet','Single Jet'])}${e('size','ขนาด (mm)','number')}${o('rclass','ชั้น R',RCL)}${e('type','ชนิด')}${e('hw','Hardware Model')}${e('fw','เวอร์ชันเฟิร์มแวร์')}${e('batBrand','ยี่ห้อแบต')}${e('batModel','รุ่นแบต')}${e('batV','แรงดันแบต (V)','number','step="0.01"')}${o('ship','สถานะ',SHIP)}${e('customer','ลูกค้า / ปลายทาง')}${e('shipDate','วันที่ส่งมอบ','date')}${e('install','📍 ติดตั้งที่ไหน')}${e('installDate','วันที่ติดตั้ง','date')}<label class="w4">หมายเหตุ<input data-ef="note" value="${esc(r.note)}"></label></div>
  <div style="margin-top:6px"><b>ผลทดสอบ 4 น้ำ</b> <small class="mu">— ติ๊กน้ำที่ต้องการ <u>เก็บ</u> (ถ้าเอาติ๊กออก จะไม่ถูกบันทึกลง Google Sheet)</small><div class="bar" style="margin-top:6px">${(r.F0||r.F||[]).map((q,i)=>`<label class="chip ${r.F&&r.F[i]?'on':''}" style="--c:${SLOTS[i][2]}"><input type="checkbox" data-ew="${i}" ${r.F&&r.F[i]?'checked':''} ${q?'':'disabled'}> ${SLOTS[i][0]} ${ce(q)} <small>${q?fm(q.flow)+' L/h':'ไม่ได้ทดสอบ'}</small></label>`).join('')}</div></div>
  <div style="margin-top:8px"><b>K1–K20</b> ${ks?`<span class="tag t-v">${ks.name}</span>`:''} ${r.K?'':'<span class="mu">— ไม่มีค่า K —</span>'}<div class="kg">${(r.K||[]).map((k,i)=>`<div><b>K${i+1}</b><small>${fm(k)}</small></div>`).join('')}</div></div>
  <div class="bar" style="margin-top:10px"><button class="btn p" data-a="esave" data-id="${esc(r.rid)}">💾 บันทึกการแก้ไข</button><button class="btn" data-a="open" data-id="${esc(r.rid)}">ปิด</button><span class="mu" style="font-size:.78rem">ที่มา: ${esc((r.src||[]).join(', '))||'คีย์เอง'}</span></div>`}
@@ -138,114 +138,268 @@ function vReg(){const A=DB.reg,L=regFilter(),sets=ksets(A),szs=[...new Set(A.map
  ${sets.length?`<div class="card cy"><h3>🧮 ค่าคงที่ K1–K20 ของมิเตอร์ที่ผ่าน</h3><p class="mu" style="margin:2px 0 8px">แต่ละเส้น = หนึ่งชุด K ที่พบ (จัดกลุ่มตามค่าที่เหมือนกัน)</p><div class="bar" style="margin-bottom:6px">${sets.map(s=>`<span class="chip on" style="--c:${s.c}">${s.name} · ${s.ids.length} ตัว</span>`).join('')}</div>${kChart(sets)}</div>`:''}
  <div class="card"><h3>🔎 ค้นหา</h3><div class="bar" style="margin:6px 0 2px"><span class="chip ${S.src==='local'?'on':''}" data-a="src" data-v="local">💾 ค้นในเครื่อง</span><span class="chip ${S.src==='gs'?'on':''}" style="--c:#34d399" data-a="src" data-v="gs">☁️ ค้นใน Google Sheet</span><span class="mu" style="font-size:.8rem">${S.src==='gs'?'ค้นที่ฝั่ง Sheet โดยตรง (คำค้น + ช่วงวันที่) แล้วกรองขนาด/ชั้น R/รุ่น/สถานะต่อ':'ค้นในทะเบียนที่อยู่ในเครื่องนี้'}</span></div><div class="grid" style="margin-top:8px"><label class="w2">คำค้น (ID / Lot / รุ่น / ผู้ทดสอบ / เฟิร์มแวร์ / แบต / ลูกค้า / ชุด K …)<input data-rf="q" value="${esc(S.q)}" placeholder="พิมพ์หลายคำได้ เช่น 691000 multijet 15 รอระบุ"></label><label>ขนาด<select data-rf="sz"><option value="">ทั้งหมด</option>${szs.map(s=>`<option value="${s}" ${S.sz===s?'selected':''}>${s} mm</option>`).join('')}</select></label><label>ชั้น R<select data-rf="rc"><option value="">ทั้งหมด</option>${RCL.map(s=>`<option ${S.rc===s?'selected':''}>${s}</option>`).join('')}</select></label><label>รุ่น<select data-rf="md"><option value="">ทั้งหมด</option>${mds.map(s=>`<option ${S.md===s?'selected':''}>${s}</option>`).join('')}</select></label><label>สถานะ<select data-rf="sh"><option value="">ทั้งหมด</option>${SHIP.map(s=>`<option ${S.sh===s?'selected':''}>${s}</option>`).join('')}</select></label><label>ชุด K<select data-rf="ks"><option value="">ทั้งหมด</option>${sets.map(s=>`<option ${S.ks===s.name?'selected':''}>${s.name}</option>`).join('')}</select></label><label>ตั้งแต่วันที่<input type="date" data-rf="d1" value="${S.d1}"></label><label>ถึงวันที่<input type="date" data-rf="d2" value="${S.d2}"></label><label>เฉพาะรอระบุ<select data-rf="pendOnly"><option value="0">ทั้งหมด</option><option value="1" ${S.pendOnly?'selected':''}>มีข้อมูลรอระบุ</option></select></label></div>
  <div class="bar" style="margin-top:10px">${S.src==='gs'?'<button class="btn p" data-a="gsearch2">🔎 ค้นหาใน Google Sheet</button>':''}<button class="btn" data-a="rclr">ล้างตัวกรอง</button><button class="btn p" data-a="pv">🖨 พรีวิว / พิมพ์ / PDF</button><button class="btn" data-a="rcsv">⬇ CSV</button><button class="btn" data-a="rxl">⬇ Excel</button><button class="btn" data-a="rjson">⬇ สำรอง JSON</button><button class="btn" data-a="rimp">⬆ นำเข้า JSON</button><span class="mu">พบ <b id="rcnt" style="color:#22d3ee">${L.length} / ${A.length}</b> รายการ</span></div></div>
- <div class="card em"><h3>✏️ แก้หลายตัวพร้อมกัน <small class="mu">(ติ๊กเลือกแถวในตารางก่อน)</small></h3><p class="mu" style="margin:2px 0 6px;font-size:.82rem">💡 <b>ลูกค้า/ปลายทาง · วันที่ส่งมอบ</b> กรอกเมื่อรู้ปลายทางจริง (ไม่ต้องรอ): พร้อมส่ง → ตั้งสถานะ “พร้อมส่งมอบ” + ลูกค้า · ส่งแล้ว → กด “📦 ส่งมอบแล้ว (วันนี้)” หรือเลือกวันที่เอง · ส่งชุดเดียวกันไปลูกค้าเดียว เลือกหลายตัวทำทีเดียวได้</p><div class="grid" style="margin-top:8px"><label>เฟิร์มแวร์<input data-bk="fw"></label><label>ยี่ห้อแบต<input data-bk="batBrand"></label><label>รุ่นแบต<input data-bk="batModel"></label><label>ผู้ทดสอบ<input data-bk="tester"></label><label>Lot<input data-bk="lot"></label><label>สถานะ<select data-bk="ship"><option value="">— ไม่เปลี่ยน —</option>${SHIP.map(s=>`<option>${s}</option>`).join('')}</select></label><label>ลูกค้า / ปลายทาง<input data-bk="customer" placeholder="เช่น การประปา… / บริษัท…"></label><label>วันที่ส่งมอบ<input data-bk="shipDate" type="date"></label></div><div class="bar" style="margin-top:10px"><button class="btn p" data-a="bulkship" title="ตั้งสถานะ = ส่งมอบแล้ว และวันที่ส่งมอบ = วันนี้ (ถ้าไม่ได้ระบุ) พร้อมลูกค้าที่กรอก">📦 ส่งมอบแล้ว (วันนี้)</button><button class="btn p" data-a="bulk">ใช้กับที่เลือก (<span id="rsc">${S.regSel.size}</span> ตัว)</button><button class="btn s" data-a="rall">☑ เลือกทั้งหมดที่แสดง</button><button class="btn s" data-a="rnone">☐ ไม่เลือก</button><span class="mu">เว้นช่องว่าง = ไม่เปลี่ยนค่านั้น</span></div></div>
+ <div class="card em"><h3>✏️ แก้หลายตัวพร้อมกัน <small class="mu">(ติ๊กเลือกแถวในตารางก่อน)</small></h3><p class="mu" style="margin:2px 0 6px;font-size:.82rem">💡 <b>ลูกค้า/ปลายทาง · วันที่ส่งมอบ</b> กรอกเมื่อรู้ปลายทางจริง (ไม่ต้องรอ): พร้อมส่ง → ตั้งสถานะ “พร้อมส่งมอบ” + ลูกค้า · ส่งแล้ว → กด “📦 ส่งมอบแล้ว (วันนี้)” หรือเลือกวันที่เอง · ส่งชุดเดียวกันไปลูกค้าเดียว เลือกหลายตัวทำทีเดียวได้</p><div class="grid" style="margin-top:8px"><label>เฟิร์มแวร์<input data-bk="fw"></label><label>ยี่ห้อแบต<input data-bk="batBrand"></label><label>รุ่นแบต<input data-bk="batModel"></label><label>ผู้ทดสอบ<input data-bk="tester"></label><label>Lot<input data-bk="lot"></label><label>สถานะ<select data-bk="ship"><option value="">— ไม่เปลี่ยน —</option>${SHIP.map(s=>`<option>${s}</option>`).join('')}</select></label><label>ลูกค้า / ปลายทาง<input data-bk="customer" placeholder="เช่น การประปา… / บริษัท…"></label><label>วันที่ส่งมอบ<input data-bk="shipDate" type="date"></label><label>📍 ติดตั้งที่ไหน<input data-bk="install" placeholder="สถานที่ / จุดติดตั้ง"></label><label>วันที่ติดตั้ง<input data-bk="installDate" type="date"></label></div><div class="bar" style="margin-top:10px"><button class="btn p" data-a="bulkship" title="ตั้งสถานะ = ส่งมอบแล้ว และวันที่ส่งมอบ = วันนี้ (ถ้าไม่ได้ระบุ) พร้อมลูกค้าที่กรอก">📦 ส่งมอบแล้ว (วันนี้)</button><button class="btn p" data-a="bulk">ใช้กับที่เลือก (<span id="rsc">${S.regSel.size}</span> ตัว)</button><button class="btn s" data-a="rall">☑ เลือกทั้งหมดที่แสดง</button><button class="btn s" data-a="rnone">☐ ไม่เลือก</button><span class="mu">เว้นช่องว่าง = ไม่เปลี่ยนค่านั้น</span></div></div>
  ${S.src==='gs'?gsCard():`<div class="card"><h3>📋 ทะเบียนมิเตอร์ที่ผ่านการทดสอบ <small class="mu">(คลิกแถวเพื่อดู/แก้ไข K1–K20 และรายละเอียด)</small></h3><div class="sc"><table><tr><th></th><th>วันที่ทดสอบ</th><th>ID / Lot</th><th>รุ่น / ขนาด / ชนิด</th><th>เฟิร์มแวร์</th><th>แบตเตอรี่</th><th>ผลทดสอบ 4 น้ำ (Flow · %Error)</th><th>ชุด K</th><th>ผู้ทดสอบ</th><th>สถานะ</th><th></th></tr><tbody id="rtb">${regRows()}</tbody></table></div></div>`}`}
 /* ---------- Google Sheet ---------- */
-const GS_CODE=`var SHEET = 'Meters';
-var VER = 5;           // เลขเวอร์ชันสคริปต์ (แอปใช้ตรวจว่า Deploy โค้ดใหม่แล้ว)
-var TOKEN = '1234';   // ต้องตรงกับ Token ในแอป (แนะนำให้เปลี่ยนเป็นรหัสที่เดายาก)
+const GS_CODE=`var VER = 6;            // เลขเวอร์ชันสคริปต์ (แอปใช้ตรวจว่า Deploy โค้ดใหม่แล้ว)
+var TOKEN = '1234';     // ต้องตรงกับ Token ในแอป (แนะนำให้เปลี่ยนเป็นรหัสที่เดายาก)
+var BASE = 'Meters';    // ชีตชุดแรกชื่อ Meters เต็มแล้วสร้าง Meters2, Meters3, ... ให้เอง
+var CAP = 20000;        // จำนวนแถวข้อมูลสูงสุดต่อ 1 ชีต (ชีตละ ~1.3 ล้านเซลล์ เปิด/อ่านยังเร็ว)
+var LOGBASE = 'Log';    // ประวัติการเปลี่ยนแปลง (ติดตั้ง/ส่งมอบ/ยกเลิก) เก็บถาวร ไม่ลบ
+var LOGCAP = 100000;
+var SAFE_CELLS = 9000000;    // เพดานต่อ 1 ไฟล์ Spreadsheet (Google จำกัด 10,000,000 เซลล์) ใกล้เต็มแล้วสร้างไฟล์ใหม่ให้เอง
+var LIMIT_CELLS = 10000000;
 // คอลัมน์เดิม (ลำดับที่ใช้ตอนแรก) — ใช้ซ่อมหัวตารางถ้าแถวแรกเป็นข้อมูล
 var LEGACY = ['rid','date','id','lot','model','size','type','hw','fw','batBrand','batV','flow','vTest','vRead','err','result','tester','dept','note','src','ts','K1','K2','K3','K4','K5','K6','K7','K8','K9','K10','K11','K12','K13','K14','K15','K16','K17','K18','K19','K20'];
-// คอลัมน์ที่เพิ่มต่อท้ายอัตโนมัติ ถ้ายังไม่มี
-var EXTRA = ['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix'];
+// คอลัมน์ที่เพิ่มต่อท้ายอัตโนมัติ ถ้ายังไม่มี (install = ติดตั้งที่ไหน, deleted = ยกเลิก/ซ่อน แต่ไม่ลบแถวจริง)
+var EXTRA = ['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix','install','installDate','deleted'];
+var LOGHEAD = ['ts','action','rid','id','field','old','new'];
+var TRACK = ['ship','customer','shipDate','install','installDate'];
 
-function sheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var s = ss.getSheetByName(SHEET);
-  var HEAD = LEGACY.concat(EXTRA);
-  if (!s) { s = ss.insertSheet(SHEET); }
-  if (s.getLastRow() === 0) { s.getRange(1, 1, 1, HEAD.length).setValues([HEAD]); s.getRange(1, 1, s.getMaxRows(), HEAD.length).setNumberFormat('@'); return s; }
+function head_() { return LEGACY.concat(EXTRA); }
+var KIND = {
+  m: {base: BASE, key: 'SS_METERS', title: 'SMCV4 Meters #', cap: function () { return CAP; }, head: head_},
+  l: {base: LOGBASE, key: 'SS_LOG', title: 'SMCV4 Log #', cap: function () { return LOGCAP; }, head: function () { return LOGHEAD; }}
+};
+var MEMO = {};
+function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+function sv_(v) { return v instanceof Date ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(v === undefined || v === null ? '' : v); }
+function toObj_(h, r) { var o = {}; h.forEach(function (k, i) { if (k !== '') o[k] = (r[i] instanceof Date) ? sv_(r[i]) : r[i]; }); return o; }
+function ssIds_(key) { var raw = PropertiesService.getScriptProperties().getProperty(key); return raw ? JSON.parse(raw) : ['']; }
+function ssSave_(key, ids) { PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(ids)); }
+function openSs_(id) { return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet(); }
+function cellsOf_(ss) { var t = 0; ss.getSheets().forEach(function (s) { t += s.getMaxRows() * s.getMaxColumns(); }); return t; }
+
+// ตรวจ/ซ่อมหัวตาราง + เพิ่มคอลัมน์ที่ขาด + บังคับเป็น “ข้อความ” กัน Sheets แปลงวันที่/Lot (เช่น 1-10-2569) เป็นวันที่เอง
+function ensureHead_(s, kind) {
+  var HEAD = KIND[kind].head();
+  if (s.getLastRow() === 0) {
+    if (s.getMaxColumns() < HEAD.length) s.insertColumnsAfter(s.getMaxColumns(), HEAD.length - s.getMaxColumns());
+    s.getRange(1, 1, 1, HEAD.length).setValues([HEAD]);
+    s.getRange(1, 1, s.getMaxRows(), HEAD.length).setNumberFormat('@');
+    return HEAD.slice();
+  }
   var h = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
-  if (String(h[0]) !== 'rid') {            // แถวแรกเป็นข้อมูล (ไม่มีหัวตาราง) -> แทรกหัวตารางไว้บนสุด
+  if (kind === 'm' && String(h[0]) !== 'rid') {      // แถวแรกเป็นข้อมูล (ไม่มีหัวตาราง) -> แทรกหัวตารางไว้บนสุด
     s.insertRowBefore(1);
+    if (s.getMaxColumns() < LEGACY.length) s.insertColumnsAfter(s.getMaxColumns(), LEGACY.length - s.getMaxColumns());
     s.getRange(1, 1, 1, LEGACY.length).setValues([LEGACY]);
     h = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
   }
-  var col = h.length;
-  HEAD.forEach(function (k) {              // เพิ่มคอลัมน์ที่ขาด
-    if (h.indexOf(k) < 0) { col++; s.getRange(1, col).setValue(k); h.push(k); }
+  var added = false;
+  HEAD.forEach(function (k) {
+    if (h.indexOf(k) < 0) {
+      var c = h.length + 1;
+      if (s.getMaxColumns() < c) s.insertColumnsAfter(s.getMaxColumns(), 1);
+      s.getRange(1, c).setValue(k); h.push(k); added = true;
+    }
   });
-  // บังคับทุกคอลัมน์เป็น “ข้อความ” กัน Google Sheets แปลงวันที่/Lot (เช่น 1-10-2569) เป็นวันที่เอง
-  var fm = s.getRange(2, 1, 1, h.length).getNumberFormats()[0];
-  if (fm.some(function (f) { return f !== '@'; })) s.getRange(1, 1, s.getMaxRows(), h.length).setNumberFormat('@');
-  return s;
+  var fm = s.getRange(Math.min(2, s.getMaxRows()), 1, 1, h.length).getNumberFormats()[0];
+  if (added || fm.some(function (f) { return f !== '@'; })) s.getRange(1, 1, s.getMaxRows(), h.length).setNumberFormat('@');
+  return h;
 }
-function out_(o) {
-  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+// รายการชีตทั้งหมดของชนิดนั้น (Meters, Meters2, ... อาจอยู่คนละไฟล์) เรียงตามเลข
+function shards_(kind) {
+  if (MEMO[kind]) return MEMO[kind];
+  var K = KIND[kind], re = new RegExp('^' + K.base + '(\\\\d*)$'), out = [];
+  ssIds_(K.key).forEach(function (id) {
+    var ss = openSs_(id);
+    ss.getSheets().forEach(function (s) { var m = re.exec(s.getName()); if (m) out.push({n: m[1] ? +m[1] : 1, sh: s, ss: ss}); });
+  });
+  out.sort(function (a, b) { return a.n - b.n; });
+  out.forEach(function (x) { x.h = ensureHead_(x.sh, kind); });
+  MEMO[kind] = out;
+  return out;
 }
-function rows_() {
-  var v = sheet_().getDataRange().getValues(), h = v.shift(), tz = Session.getScriptTimeZone();
-  return v.filter(function (r) { return String(r[0]) !== ''; }).map(function (r) {
-    var o = {};
-    h.forEach(function (k, i) {
-      if (k === '') return;
-      var x = r[i];
-      if (x instanceof Date) x = Utilities.formatDate(x, tz, 'yyyy-MM-dd');
-      o[k] = x;
-    });
-    return o;
+// สร้างชีตถัดไป — ถ้าไฟล์ปัจจุบันใกล้เต็ม (เซลล์) จะสร้างไฟล์ Spreadsheet ใหม่ให้อัตโนมัติ
+function newShard_(kind) {
+  var K = KIND[kind], list = shards_(kind), n = 1, ids = ssIds_(K.key), ss = null, created = null, need = K.cap() * K.head().length + 50000, i;
+  list.forEach(function (x) { if (x.n >= n) n = x.n + 1; });
+  for (i = 0; i < ids.length; i++) { var c = openSs_(ids[i]); if (cellsOf_(c) + need <= SAFE_CELLS) { ss = c; break; } }
+  if (!ss) { ss = SpreadsheetApp.create(K.title + (ids.length + 1)); ids.push(ss.getId()); ssSave_(K.key, ids); created = ss.getUrl(); }
+  var s = ss.insertSheet(K.base + (n > 1 ? n : ''));
+  var def = ss.getSheetByName('Sheet1');
+  if (created && def && ss.getSheets().length > 1) ss.deleteSheet(def);
+  var x = {n: n, sh: s, ss: ss, created: created};
+  x.h = ensureHead_(s, kind);
+  list.push(x);
+  return x;
+}
+function appendBlock_(x, block) {
+  var last = Math.max(x.sh.getLastRow(), 1), need = last + block.length;
+  if (need > x.sh.getMaxRows()) x.sh.insertRowsAfter(x.sh.getMaxRows(), need - x.sh.getMaxRows() + 200);
+  var r = x.sh.getRange(last + 1, 1, block.length, x.h.length);
+  r.setNumberFormat('@'); r.setValues(block);
+}
+function rowsOf_(x) { return Math.max(0, x.sh.getLastRow() - 1); }
+function index_() {                         // rid -> ตำแหน่ง (ชีตที่ i, แถวที่)
+  var idx = {};
+  shards_('m').forEach(function (x, si) {
+    var n = rowsOf_(x); if (n < 1) return;
+    var v = x.sh.getRange(2, x.h.indexOf('rid') + 1, n, 1).getValues();
+    for (var i = 0; i < n; i++) { var k = String(v[i][0]); if (k) idx[k] = {si: si, row: i + 2}; }
+  });
+  return idx;
+}
+function compose_(h, o, cur) {              // ช่องที่แอปไม่ได้ส่ง คงค่าเดิมไว้ · deleted: อัปเสิร์ตแปลว่ากลับมาใช้งาน
+  return h.map(function (k, c) {
+    if (k === 'deleted') return o.deleted === undefined ? '' : o.deleted;
+    return o[k] === undefined ? (cur[c] === undefined ? '' : cur[c]) : o[k];
   });
 }
-function dedupe_(s) {                      // รวมแถวที่ rid ซ้ำ เก็บแถวล่าสุด
-  var v = s.getDataRange().getValues(), seen = {}, n = 0;
-  for (var i = v.length - 1; i >= 1; i--) {
-    var k = String(v[i][0]);
-    if (seen[k]) { s.deleteRow(i + 1); n++; } else { seen[k] = 1; }
+function logAppend_(ent) {
+  if (!ent.length) return;
+  var list = shards_('l'), x = list.length ? list[list.length - 1] : newShard_('l'), rows = rowsOf_(x), i = 0;
+  while (i < ent.length) {
+    if (rows >= LOGCAP) { x = newShard_('l'); rows = 0; }
+    var take = Math.min(ent.length - i, LOGCAP - rows);
+    appendBlock_(x, ent.slice(i, i + take)); rows += take; i += take;
   }
-  return n;
 }
-function doGet(e) {
-  var p = e.parameter;
-  if (p.token !== TOKEN) return out_({error: 'token ไม่ถูกต้อง'});
-  var rows = rows_();
-  if (p.action === 'search') {
-    var q = (p.q || '').toLowerCase().split(/\\s+/).filter(String);
-    rows = rows.filter(function (o) {
-      if (p.id && String(o.id).indexOf(p.id) < 0) return false;
-      if (p.lot && String(o.lot).toLowerCase().indexOf(p.lot.toLowerCase()) < 0) return false;
-      if (p.from && String(o.date) < p.from) return false;
-      if (p.to && String(o.date) > p.to) return false;
-      var h = JSON.stringify(o).toLowerCase();
-      return q.every(function (t) { return h.indexOf(t) >= 0; });
+function upsert_(b) {
+  var now = String(Date.now()), seen = {}, rows = [], i;
+  (b.rows || []).forEach(function (o) { var k = String(o.rid); if (!k || k === 'undefined') return; seen[k] = o; });
+  Object.keys(seen).forEach(function (k) { rows.push(seen[k]); });
+  var list = shards_('m');
+  if (!list.length) newShard_('m');
+  var idx = index_(), pos = {}, log = [], fresh = [], newFile = null, n = 0;
+  list = shards_('m');
+  rows.forEach(function (o) {
+    var k = String(o.rid), at = idx[k];
+    if (!at) { fresh.push(o); return; }
+    var x = list[at.si], h = x.h, cur = x.sh.getRange(at.row, 1, 1, h.length).getValues()[0], row = compose_(h, o, cur);
+    TRACK.forEach(function (f) {
+      var c = h.indexOf(f); if (c < 0 || o[f] === undefined) return;
+      var a = sv_(cur[c]), z = sv_(row[c]); if (a !== z) log.push([now, 'update', k, sv_(row[h.indexOf('id')]), f, a, z]);
     });
+    var dc = h.indexOf('deleted'); if (sv_(cur[dc]) !== '') log.push([now, 'restore', k, sv_(row[h.indexOf('id')]), 'deleted', sv_(cur[dc]), '']);
+    x.sh.getRange(at.row, 1, 1, h.length).setValues([row]);
+    pos[k] = at; n++;
+  });
+  var x = list[list.length - 1], inShard = rowsOf_(x), done = 0;
+  while (done < fresh.length) {
+    if (inShard >= CAP) { x = newShard_('m'); inShard = 0; if (x.created && !newFile) newFile = x.created; list = shards_('m'); }
+    var take = Math.min(fresh.length - done, CAP - inShard), blk = [], start = Math.max(x.sh.getLastRow(), 1) + 1;
+    for (i = 0; i < take; i++) {
+      var o = fresh[done + i], row = compose_(x.h, o, []);
+      blk.push(row); pos[String(o.rid)] = {si: list.indexOf(x), row: start + i};
+      log.push([now, 'create', String(o.rid), sv_(row[x.h.indexOf('id')]), '', '', '']);
+      TRACK.forEach(function (f) { var v = sv_(row[x.h.indexOf(f)]); if (v !== '') log.push([now, 'update', String(o.rid), sv_(row[x.h.indexOf('id')]), f, '', v]); });
+    }
+    appendBlock_(x, blk); inShard += take; done += take; n += take;
   }
-  return out_({rows: rows.slice(0, 500), total: rows.length, ver: VER});
+  logAppend_(log);
+  var echo = {}, f0 = rows[0];                       // อ่านกลับ: บอกแอปว่าค่าที่เก็บจริงใน Sheet คืออะไร
+  if (f0 && pos[String(f0.rid)]) {
+    var p = pos[String(f0.rid)], sx = shards_('m')[p.si], v = sx.sh.getRange(p.row, 1, 1, sx.h.length).getValues()[0];
+    ['rclass', 'flow1', 'err1', 'ship', 'customer', 'shipDate', 'install', 'installDate'].forEach(function (k) { var c = sx.h.indexOf(k); echo[k] = c < 0 ? '#ไม่มีคอลัมน์' : sv_(v[c]); });
+  }
+  return {saved: n, ver: VER, cols: head_().length, shards: shards_('m').length, echo: echo, newFile: newFile};
+}
+// ยกเลิก/ซ่อน (ไม่ลบแถวจริง) — action delete ของแอปรุ่นเก่าก็ถูกแปลงเป็นแบบนี้เสมอ · restore = กู้คืน
+function mark_(b) {
+  var idx = index_(), list = shards_('m'), now = String(Date.now()), log = [], cnt = 0, restore = b.action === 'restore', stamp = restore ? '' : new Date().toISOString();
+  (b.rids || []).forEach(function (rid) {
+    var at = idx[String(rid)]; if (!at) return;
+    var x = list[at.si], c = x.h.indexOf('deleted') + 1, id = x.sh.getRange(at.row, x.h.indexOf('id') + 1).getValue();
+    x.sh.getRange(at.row, c).setValue(stamp);
+    log.push([now, restore ? 'restore' : 'void', String(rid), sv_(id), 'deleted', '', stamp]); cnt++;
+  });
+  logAppend_(log);
+  return {deleted: cnt, voided: cnt, ver: VER};
 }
 function doPost(e) {
-  var b = JSON.parse(e.postData.contents);
+  var b;
+  try { b = JSON.parse(e.postData.contents); } catch (x) { return out_({error: 'ข้อมูลที่ส่งมาอ่านไม่ได้'}); }
   if (b.token !== TOKEN) return out_({error: 'token ไม่ถูกต้อง'});
-  var s = sheet_();
-  dedupe_(s);
-  var v = s.getDataRange().getValues(), h = v[0], ri = h.indexOf('rid');
-  if (b.action === 'delete') {
-    var del = 0;
-    for (var j = v.length - 1; j >= 1; j--) {
-      if (b.rids.indexOf(String(v[j][ri])) >= 0) { s.deleteRow(j + 1); del++; }
+  var lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    if (b.action === 'delete' || b.action === 'void' || b.action === 'restore') return out_(mark_(b));
+    return out_(upsert_(b));
+  } finally { lock.releaseLock(); }
+}
+// list: อ่านเป็นหน้า ๆ (offset/limit ≤ 5000) · since = เฉพาะที่แก้ไขหลังเวลานี้ · deleted=1 รวมที่ยกเลิก
+function list_(p) {
+  var shs = shards_('m'), lim = Math.min(+p.limit || 5000, 5000), start = +p.offset || 0, since = +p.since || 0, inc = p.deleted === '1';
+  var total = 0, counts = shs.map(function (x) { var n = rowsOf_(x); total += n; return n; }), out = [], left = lim, pos = 0, next = null;
+  for (var si = 0; si < shs.length; si++) {
+    var n = counts[si], x = shs[si];
+    if (start >= pos + n) { pos += n; continue; }
+    var from = Math.max(0, start - pos), take = Math.min(n - from, left);
+    if (take > 0) {
+      var v = x.sh.getRange(2 + from, 1, take, x.h.length).getValues(), dc = x.h.indexOf('deleted');
+      v.forEach(function (r) {
+        if (String(r[0]) === '') return;
+        if (!inc && sv_(r[dc]) !== '') return;
+        if (since && !(Number(r[x.h.indexOf('ts')]) > since)) return;
+        out.push(toObj_(x.h, r));
+      });
+      left -= take;
     }
-    return out_({deleted: del, ver: VER});
+    if (left <= 0) { next = pos + from + take; if (next >= total) next = null; break; }
+    pos += n;
   }
-  var idx = {}, n = 0;
-  for (var i = 1; i < v.length; i++) idx[String(v[i][ri])] = i;
-  b.rows.forEach(function (o) {
-    var at = idx[String(o.rid)], cur = at ? v[at] : [];
-    var row = h.map(function (k, c) {      // ช่องที่แอปไม่ได้ส่ง คงค่าเดิมไว้
-      return o[k] === undefined ? (cur[c] === undefined ? '' : cur[c]) : o[k];
-    });
-    if (at) { s.getRange(at + 1, 1, 1, h.length).setValues([row]); }
-    else { s.appendRow(row); }
-    n++;
-  });
-  var v2 = s.getDataRange().getValues(), h2 = v2[0], echo = {}, f0 = b.rows[0];   // อ่านกลับ: บอกแอปว่าค่าที่เก็บจริงใน Sheet คืออะไร
-  if (f0) {
-    var r2 = h2.indexOf('rid');
-    for (var q = 1; q < v2.length; q++) {
-      if (String(v2[q][r2]) === String(f0.rid)) {
-        ['rclass', 'flow1', 'err1', 'ship'].forEach(function (k) { var c = h2.indexOf(k); echo[k] = c < 0 ? '#ไม่มีคอลัมน์' : String(v2[q][c]); });
-        break;
+  return {rows: out, total: total, next: next, ver: VER};
+}
+// search: ค้นทั้งระบบทุกชีต (q = คำค้นหลายคำ, id = เลขมิเตอร์ตรงตัว, lot, customer, install, ship, from, to)
+function search_(p) {
+  var shs = shards_('m'), lim = Math.min(+p.limit || 200, 500), inc = p.deleted === '1', hits = [], terms = String(p.q || '').toLowerCase().split(/\\s+/).filter(String);
+  var CK = ['rid', 'id', 'lot', 'date', 'model', 'fw', 'batBrand', 'tester', 'ship', 'customer', 'shipDate', 'install', 'installDate', 'deleted'];
+  for (var si = 0; si < shs.length && hits.length < lim; si++) {
+    var x = shs[si], n = rowsOf_(x);
+    for (var from = 0; from < n && hits.length < lim; from += 5000) {
+      var take = Math.min(5000, n - from), col = {};
+      CK.forEach(function (k) { var c = x.h.indexOf(k) + 1; col[k] = c ? x.sh.getRange(2 + from, c, take, 1).getValues() : null; });
+      for (var i = 0; i < take && hits.length < lim; i++) {
+        var g = function (k) { return col[k] ? sv_(col[k][i][0]) : ''; };
+        if (!g('rid')) continue;
+        if (!inc && g('deleted') !== '') continue;
+        if (p.id && g('id') !== String(p.id)) continue;
+        if (p.lot && g('lot').toLowerCase().indexOf(String(p.lot).toLowerCase()) < 0) continue;
+        if (p.customer && g('customer').toLowerCase().indexOf(String(p.customer).toLowerCase()) < 0) continue;
+        if (p.install && g('install').toLowerCase().indexOf(String(p.install).toLowerCase()) < 0) continue;
+        if (p.ship && g('ship') !== p.ship) continue;
+        if (p.from && g('date') < p.from) continue;
+        if (p.to && g('date') > p.to) continue;
+        if (terms.length) { var hay = CK.map(g).join(' ').toLowerCase(); if (!terms.every(function (t) { return hay.indexOf(t) >= 0; })) continue; }
+        hits.push({si: si, row: 2 + from + i});
       }
     }
   }
-  return out_({saved: n, ver: VER, cols: h.length, echo: echo});
+  var rows = hits.map(function (a) { var x = shs[a.si]; return toObj_(x.h, x.sh.getRange(a.row, 1, 1, x.h.length).getValues()[0]); });
+  return {rows: rows, total: rows.length, truncated: hits.length >= lim, ver: VER};
+}
+// log: ประวัติการเปลี่ยนแปลงของมิเตอร์ (rid หรือ id) — ย้อนดูได้ว่าใครแก้ ติดตั้ง/ส่งมอบอะไร เมื่อไร
+function logq_(p) {
+  var out = [], shs = shards_('l'), key = String(p.rid || p.id || '');
+  if (!key) return {rows: [], ver: VER};
+  shs.forEach(function (x) {
+    var n = rowsOf_(x); if (n < 1) return;
+    var v = x.sh.getRange(2, 1, n, LOGHEAD.length).getValues();
+    v.forEach(function (r) { if (String(r[2]) === key || String(r[3]) === key) out.push(toObj_(LOGHEAD, r)); });
+  });
+  return {rows: out.slice(-500), total: out.length, ver: VER};
+}
+// stats: ความจุ/จำนวนที่เก็บ — แอปแสดงเป็นกราฟเตือนก่อนเต็ม
+function stats_() {
+  var shs = shards_('m'), cols = head_().length, total = 0, del = 0, rows = [];
+  shs.forEach(function (x) {
+    var n = rowsOf_(x), d = 0;
+    if (n > 0) x.sh.getRange(2, x.h.indexOf('deleted') + 1, n, 1).getValues().forEach(function (r) { if (sv_(r[0]) !== '') d++; });
+    total += n; del += d;
+    rows.push({name: x.sh.getName(), file: x.ss.getName(), rows: n, deleted: d, cap: CAP, pct: Math.round(n / CAP * 1000) / 10});
+  });
+  var files = ssIds_('SS_METERS').map(function (id) { var ss = openSs_(id), c = cellsOf_(ss); return {name: ss.getName(), url: ss.getUrl(), cells: c, pct: Math.round(c / LIMIT_CELLS * 1000) / 10}; });
+  var lg = 0; shards_('l').forEach(function (x) { lg += rowsOf_(x); });
+  return {ver: VER, cols: cols, cap: CAP, shards: rows, files: files, total: total, active: total - del, deleted: del, rowsPerFile: Math.floor(SAFE_CELLS / cols), log: lg, limitCells: LIMIT_CELLS};
+}
+function doGet(e) {
+  var p = (e && e.parameter) || {};
+  if (p.token !== TOKEN) return out_({error: 'token ไม่ถูกต้อง'});
+  if (p.action === 'stats') return out_(stats_());
+  if (p.action === 'search') return out_(search_(p));
+  if (p.action === 'log') return out_(logq_(p));
+  return out_(list_(p));
 }`;
 const flat=r=>{const o={};HEAD.forEach(c=>{if(c!=='vTest'&&c!=='vRead')o[c]=''});   // vTest/vRead ไม่ส่ง = คงค่าเดิมใน Sheet
  COLS.forEach(c=>o[c]=r[c]??'');
@@ -254,18 +408,19 @@ const flat=r=>{const o={};HEAD.forEach(c=>{if(c!=='vTest'&&c!=='vRead')o[c]=''})
  const T=(r.F||[]).filter(Boolean),w=T.length?T.reduce((m,q)=>Math.abs(q.err)>Math.abs(m.err)?q:m):null;   // คอลัมน์ flow/err เดิม = จุดที่คลาดเคลื่อนมากสุด
  o.flow=w?w.flow:'';o.err=w?w.err:'';o.result=T.length?(T.every(q=>q.pass)?'PASS':'FAIL'):'';o.src=(r.src||[]).join(', ');
  return o};
-const unflat=o=>{const r={};COLS.forEach(c=>r[c]=o[c]??'');['size','batV','maxErr','ts','kmix'].forEach(c=>{if(r[c]!==''&&isFinite(+r[c]))r[c]=+r[c]});r.F=[1,2,3,4].map(i=>o['err'+i]!==''&&o['err'+i]!=null&&isFinite(+o['err'+i])?{flow:+o['flow'+i],err:+o['err'+i],batch:String(o['batch'+i]||''),pass:Math.abs(+o['err'+i])<=(+o['flow'+i]<=16?5:2),n:1}:null);if(!r.F.some(Boolean)&&o.err!==''&&o.err!=null&&isFinite(+o.err)&&o.flow!==''&&o.flow!=null&&isFinite(+o.flow)){const fl=+o.flow,s=fl<=16.5?0:fl<=30?1:fl<=1500?2:3;r.F[s]={flow:fl,err:+o.err,batch:'',pass:Math.abs(+o.err)<=(fl<=16?5:2),n:1}}const k=Array.from({length:20},(_,i)=>o['K'+(i+1)]);r.K=k.every(v=>v!==''&&v!=null&&isFinite(+v))?k.map(Number):null;r.src=[];const nd=v=>{const t=String(v||'');if(/^\d{4}-\d{2}-\d{2}T/.test(t)){const ms=Date.parse(t);if(!isNaN(ms)){const d=new Date(ms+7*36e5);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')}}return t};r.date=nd(r.date);r.shipDate=nd(r.shipDate);{const lt=String(r.lot),zz=/^\d{4}-\d{2}-\d{2}T/.test(lt),pl=/^(\d{4})-(\d{2})-(\d{2})$/.exec(lt);if(zz){const ms=Date.parse(lt),b=isNaN(ms)?null:new Date(ms+7*36e5);r.lot=b?(b.getUTCMonth()+1)+'-'+b.getUTCDate()+'-'+b.getUTCFullYear():''}else if(pl)r.lot=(+pl[2])+'-'+(+pl[3])+'-'+pl[1]}r.rclass=r.rclass||'R160';if(!r.hw||r.hw==='I')r.hw='SMCV.4';r.F0=r.F;return r};
+const unflat=o=>{const r={};COLS.forEach(c=>r[c]=o[c]??'');['size','batV','maxErr','ts','kmix'].forEach(c=>{if(r[c]!==''&&isFinite(+r[c]))r[c]=+r[c]});r.F=[1,2,3,4].map(i=>o['err'+i]!==''&&o['err'+i]!=null&&isFinite(+o['err'+i])?{flow:+o['flow'+i],err:+o['err'+i],batch:String(o['batch'+i]||''),pass:Math.abs(+o['err'+i])<=(+o['flow'+i]<=16?5:2),n:1}:null);if(!r.F.some(Boolean)&&o.err!==''&&o.err!=null&&isFinite(+o.err)&&o.flow!==''&&o.flow!=null&&isFinite(+o.flow)){const fl=+o.flow,s=fl<=16.5?0:fl<=30?1:fl<=1500?2:3;r.F[s]={flow:fl,err:+o.err,batch:'',pass:Math.abs(+o.err)<=(fl<=16?5:2),n:1}}const k=Array.from({length:20},(_,i)=>o['K'+(i+1)]);r.K=k.every(v=>v!==''&&v!=null&&isFinite(+v))?k.map(Number):null;r.src=[];const nd=v=>{const t=String(v||'');if(/^\d{4}-\d{2}-\d{2}T/.test(t)){const ms=Date.parse(t);if(!isNaN(ms)){const d=new Date(ms+7*36e5);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')}}return t};r.date=nd(r.date);r.shipDate=nd(r.shipDate);{const lt=String(r.lot),zz=/^\d{4}-\d{2}-\d{2}T/.test(lt),pl=/^(\d{4})-(\d{2})-(\d{2})$/.exec(lt);if(zz){const ms=Date.parse(lt),b=isNaN(ms)?null:new Date(ms+7*36e5);r.lot=b?(b.getUTCMonth()+1)+'-'+b.getUTCDate()+'-'+b.getUTCFullYear():''}else if(pl)r.lot=(+pl[2])+'-'+(+pl[3])+'-'+pl[1]}r.rclass=r.rclass||'R160';if(!r.hw||r.hw==='I')r.hw='SMCV.4';if(!r.ship)r.ship='ผ่านทดสอบ';r.F0=r.F;return r};
 async function gsCall(c,params,body){let txt;
  try{const r=body?await fetch(c.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:c.token||'',...body})}):await fetch(c.url+(c.url.includes('?')?'&':'?')+new URLSearchParams({token:c.token||'',...params}));txt=await r.text()}
  catch(e){const x=new Error('เบราว์เซอร์เข้าลิงก์ Web App ไม่ได้ ('+(e.message||e)+')');x.hint='ตรวจ ① Deploy → “ผู้มีสิทธิ์เข้าถึง” ต้องเป็น “ทุกคน” (ไม่ใช่ “ทุกคนที่มีบัญชี Google”) ② ลิงก์ต้องลงท้าย /exec ③ ถ้าเปิดไฟล์จากเครื่อง (file://) ให้ลองเปิดผ่านเว็บ เช่น GitHub Pages ④ ต่ออินเทอร์เน็ต / ปิดตัวบล็อกโฆษณา';throw x}
  let j;try{j=JSON.parse(txt)}catch(e){const x=new Error('Google ตอบกลับเป็นหน้าเว็บ ไม่ใช่ข้อมูล JSON');x.hint='มักเกิดจาก ① Deploy ไม่ได้ตั้งเป็น “ทุกคน” หรือยังไม่กดอนุญาตสิทธิ์ ② เปิด Apps Script ไม่ได้มาจากในไฟล์ Google Sheet (ต้องมี Sheet ผูกอยู่) ③ โค้ดสคริปต์มีข้อผิดพลาด ④ แก้โค้ดแล้วยังไม่ Deploy เวอร์ชันใหม่ · ข้อความที่ Google ตอบ: '+String(txt).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,170);throw x}
  if(j&&j.error){const x=new Error(String(j.error));x.hint=/token/i.test(j.error)?'Token ในแอปต้องตรงกับค่า TOKEN ในสคริปต์ (แอปส่งค่า: '+(c.token||'ว่าง')+')':'ข้อความนี้ส่งมาจากสคริปต์ใน Google';throw x}
  if(body&&body.action==='upsert'){const bad=(m,h)=>{const e=new Error(m);e.hint=h;throw e};
-  if(!(j&&j.ver>=5))bad('Apps Script ที่ Deploy อยู่ยังเป็นเวอร์ชันเก่า'+(j&&j.ver?' (v'+j.ver+')':' (ไม่มีเลขเวอร์ชัน)')+' — Sheet ไม่ได้รับ %Error / Flow / R','ลบโค้ดเดิมใน Apps Script ทั้งหมด → วางโค้ดใหม่จากปุ่มคัดลอกในแท็บ ③ → บันทึก → Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ล่าสุดเท่านั้น) · ถ้าเปลี่ยนเป็นลิงก์ /exec ใหม่ ต้องวางลิงก์ใหม่ในแท็บ ③ ด้วย');
-  const s0=(body.rows||[])[0]||{},E=j.echo||{},miss=['rclass','flow1','err1','ship'].filter(k=>{const x=s0[k],y=E[k];if(x===''||x==null)return false;const nx=+x,ny=+y;return isFinite(nx)&&isFinite(ny)&&String(y)!==''?Math.abs(nx-ny)>1e-9:String(x)!==String(y)});
+  if(!(j&&j.ver>=6))bad('Apps Script ที่ Deploy อยู่ยังเป็นเวอร์ชันเก่า'+(j&&j.ver?' (v'+j.ver+')':' (ไม่มีเลขเวอร์ชัน)')+' — Sheet ไม่ได้รับ %Error / Flow / R','ลบโค้ดเดิมใน Apps Script ทั้งหมด → วางโค้ดใหม่จากปุ่มคัดลอกในแท็บ ③ → บันทึก → Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ล่าสุดเท่านั้น) · ถ้าเปลี่ยนเป็นลิงก์ /exec ใหม่ ต้องวางลิงก์ใหม่ในแท็บ ③ ด้วย');
+  const s0=(body.rows||[])[0]||{},E=j.echo||{},miss=['rclass','flow1','err1','ship','customer','shipDate','install','installDate'].filter(k=>{const x=s0[k],y=E[k];if(x===''||x==null)return false;const nx=+x,ny=+y;return isFinite(nx)&&isFinite(ny)&&String(y)!==''?Math.abs(nx-ny)>1e-9:String(x)!==String(y)});
   if(miss.length)bad('Sheet รับคำสั่งแล้ว แต่คอลัมน์ '+miss.join(', ')+' ไม่ตรงกับที่ส่ง (ใน Sheet: '+miss.map(k=>String(E[k]===''?'ว่าง':E[k])).join(', ')+')','ตรวจหัวตารางแถว 1 ของแผ่นงาน “Meters” ว่าชื่อคอลัมน์สะกดตรงเป๊ะ ไม่มีช่องว่างต่อท้าย ไม่ซ้ำ')}
  if(j&&Array.isArray(j.rows)&&j.rows.length&&!j.rows.some(o=>o&&o.rid)){const x=new Error(j.ver?'สคริปต์เป็นเวอร์ชัน '+j.ver+' แล้ว แต่ยังไม่พบคอลัมน์ rid ในแผ่นงาน':'อ่าน Sheet ได้ แต่ไม่พบคอลัมน์ rid (แถวแรกของ Sheet ไม่ใช่หัวตาราง) — สคริปต์ที่ใช้อยู่ยังเป็นเวอร์ชันเก่า');x.fix=1;x.hint=j.ver?'ตรวจว่าชื่อแผ่นงานในสคริปต์ (SHEET = \'Meters\') ตรงกับแผ่นที่มีข้อมูล หรือแทรกหัวตารางตามวิธีเร็วด้านล่าง':'🔧 วิธีเร็ว (10 วินาที ไม่ต้อง Deploy ใหม่): ใน Google Sheet คลิกขวาที่เลขแถว 1 → “แทรก 1 แถวด้านบน” → คลิกช่อง A1 → วาง (Ctrl+V) หัวตารางที่คัดลอกจากปุ่มด้านล่าง → กลับมากดใหม่ · 🔧 วิธีเต็ม: วางโค้ดใหม่ใน Apps Script แล้ว Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ไว้ล่าสุดเท่านั้น)';throw x}
  return j}
+async function gsAll(){let off=0,rows=[],j=null,pg=0;do{j=await gs({action:'list',limit:2000,offset:off});rows=rows.concat(j.rows||[]);off=j.next;pg++;if(j.next!=null)toast('กำลังดึง… '+rows.length+' / '+(j.total||'?'))}while(off!=null&&pg<500);return{rows,total:j.total,ver:j.ver}}
 async function gs(params,body){const c=DB.cfg;if(!c.url)throw new Error('ใส่ลิงก์ Web App ก่อน (แท็บ ③)');const j=await gsCall(c,params,body);SY.err=null;return j}
 function gErr(x,t){SY.err={msg:t+': '+(x.message||x),hint:x.hint||'',fix:x.fix};toast(t+': '+(x.message||x))}
 const fcells=(F,F0)=>`<div class="f4">${[0,1,2,3].map(i=>{const q=(F||[])[i],q0=(F0||[])[i];return `<div><small style="color:${SLOTS[i][2]}">${SLOTS[i][0]}${q?' · '+fm(q.flow)+' L/h':q0?' · ไม่เก็บ':''}</small>${q?ce(q):q0?'<span class="ce na">ไม่เก็บ</span>':'<span class="ce na">—</span>'}</div>`}).join('')}</div>`;
@@ -276,14 +431,15 @@ function gsTblHTML(L){const sets=ksets(L);return `<div class="sc"><table><tr><th
 function gsCard(){const L=gsFilterList();return `<div class="card em"><h3>☁️ ผลค้นหาจาก Google Sheet <small class="mu">(${L.length} รายการ${S.gsTotal>L.length?' · ใน Sheet ที่ตรงคำค้นทั้งหมด '+S.gsTotal:''})</small></h3>${S.gsr?(L.length?`<div class="bar" style="margin:8px 0"><button class="btn p" data-a="gimpall">⬇ นำเข้าทั้ง ${L.length} รายการเข้าทะเบียนในเครื่อง</button></div>`:'')+gsTblHTML(L):'<div class="empty"><b>ยังไม่ได้ค้นหา</b><span>พิมพ์คำค้น (ID, Lot, รุ่น, ผู้ทดสอบ …) ในช่องด้านบน แล้วกด “🔎 ค้นหาใน Google Sheet” หรือกด Enter</span></div>'}</div>`}
 async function gsSearch2(){try{toast('กำลังค้นหาใน Google Sheet…');const j=await gs({action:'search',q:S.q,from:S.d1,to:S.d2});S.gsraw=j.rows||[];S.gsr=S.gsraw.map(unflat);S.gsTotal=j.total||S.gsr.length;toast('พบ '+S.gsr.length+' รายการใน Google Sheet')}catch(x){gErr(x,'ค้นหาไม่สำเร็จ')}render()}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&S.src==='gs'&&e.target.dataset&&e.target.dataset.rf!==undefined){e.preventDefault();gsSearch2()}});
-function mergeIn(rows){let add=0,upd=0;rows.forEach(o=>{if(!o.rid)return;const n=unflat(o),i=DB.reg.findIndex(x=>x.rid===n.rid);if(i<0){DB.reg.push(n);add++}else if((+n.ts||0)>(+DB.reg[i].ts||0)){const l=DB.reg[i],m={...l};Object.keys(n).forEach(k=>{const v=n[k];if(k==='F'){if(v.some(Boolean))m.F=v}else if(k==='K'){if(v)m.K=v}else if(k==='src'||k==='F0'){}else if(v!==''&&v!=null)m[k]=v;else if(k==='customer'||k==='shipDate')m[k]=''});m.F0=l.F0||m.F;DB.reg[i]=m;upd++}});save();return[add,upd]}
+function autoShip(r){if(!r.ship)r.ship='ผ่านทดสอบ';const q=new Date(),T=q.getFullYear()+'-'+String(q.getMonth()+1).padStart(2,'0')+'-'+String(q.getDate()).padStart(2,'0');if(r.customer&&r.ship==='ผ่านทดสอบ')r.ship='พร้อมส่งมอบ';if(r.install&&['ผ่านทดสอบ','พร้อมส่งมอบ','ส่งมอบแล้ว'].includes(r.ship))r.ship='ติดตั้งแล้ว';if(r.ship==='ส่งมอบแล้ว'&&!r.shipDate)r.shipDate=T;if(r.ship==='ติดตั้งแล้ว'){if(!r.installDate)r.installDate=T;if(!r.shipDate)r.shipDate=r.installDate}}
+function mergeIn(rows){let add=0,upd=0;rows.forEach(o=>{if(!o.rid)return;const n=unflat(o),i=DB.reg.findIndex(x=>x.rid===n.rid);if(i<0){DB.reg.push(n);add++}else if((+n.ts||0)>(+DB.reg[i].ts||0)){const l=DB.reg[i],m={...l};Object.keys(n).forEach(k=>{const v=n[k];if(k==='F'){if(v.some(Boolean))m.F=v}else if(k==='K'){if(v)m.K=v}else if(k==='src'||k==='F0'){}else if(v!==''&&v!=null)m[k]=v;else if(k==='customer'||k==='shipDate'||k==='install'||k==='installDate')m[k]=''});m.F0=l.F0||m.F;DB.reg[i]=m;upd++}});save();return[add,upd]}
 /* ---------- ซิงก์อัตโนมัติลง Google Sheet ---------- */
 
 function syncUI(){const e=$('#sync');if(!e)return;const c=DB.cfg,n=(c.q||[]).length+(c.dq||[]).length;e.innerHTML=!c.url?'<span class="pill">☁️ ยังไม่ได้เชื่อม Sheet</span>':SY.st==='busy'?'<span class="pill">⏳ กำลังบันทึกลง Sheet…</span>':!c.auto?'<span class="pill a">☁️ ซิงก์อัตโนมัติ: ปิด'+(n?' · รอส่ง '+n:'')+'</span>':n?'<span class="pill r blink">⚠ รอส่ง '+n+' รายการ</span>':'<span class="pill g">☁️ ซิงก์แล้ว'+(c.last?' · '+esc(c.last):'')+'</span>'}
 function queue(rids,del){const c=DB.cfg;c.q=c.q||[];c.dq=c.dq||[];rids.forEach(r=>{if(del){c.q=c.q.filter(x=>x!==r);if(!c.dq.includes(r))c.dq.push(r)}else{c.dq=c.dq.filter(x=>x!==r);if(!c.q.includes(r))c.q.push(r)}});save();syncUI();if(c.auto&&c.url)flush()}
 async function flush(manual){const c=DB.cfg;if(!c.url){if(manual)toast('ใส่ลิงก์ Web App ก่อน (แท็บ ③)');return}if(flushing)return;const q=[...(c.q||[])],dq=[...(c.dq||[])];if(!q.length&&!dq.length){if(manual)toast('ไม่มีรายการค้างส่ง');return}flushing=true;SY.st='busy';syncUI();
- try{if(q.length){const rows=q.map(id=>DB.reg.find(r=>r.rid===id)).filter(Boolean).map(flat);if(rows.length)await gs({},{action:'upsert',rows})}
-  if(dq.length)await gs({},{action:'delete',rids:dq});
+ try{if(q.length){const rows=q.map(id=>DB.reg.find(r=>r.rid===id)).filter(Boolean).map(flat);for(let i=0;i<rows.length;i+=100)await gs({},{action:'upsert',rows:rows.slice(i,i+100)})}
+  for(let i=0;i<dq.length;i+=100)await gs({},{action:'void',rids:dq.slice(i,i+100)});
   c.q=(c.q||[]).filter(x=>!q.includes(x));c.dq=(c.dq||[]).filter(x=>!dq.includes(x));const n=new Date();c.last=n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})+' '+n.toLocaleDateString('th-TH');save();SY.st='ok';toast('☁️ บันทึกลง Google Sheet แล้ว ('+(q.length+dq.length)+' รายการ)')}
  catch(e){SY.st='err';gErr(e,'☁️ ส่งขึ้น Sheet ไม่สำเร็จ (เก็บไว้ในคิวรอส่งใหม่)')}
  flushing=false;syncUI();if(S.tab==='gs')render()}
@@ -300,7 +456,7 @@ function vGs(){const c=DB.cfg,gr=S.gs;
 const HK=HEAD;
 function rcsv(){const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"',L=outRows();dl('SMCV4_Meters_Passed_'+new Date().toISOString().slice(0,10)+'.csv','\ufeff'+HK.join(',')+'\n'+L.map(r=>{const o=flat(r);return HK.map(c=>q(o[c])).join(',')}).join('\n'),'text/csv');toast('ดาวน์โหลด CSV '+L.length+' รายการ')}
 async function rxl(){await needXLSX();const L=outRows(),wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([HK,...L.map(r=>{const o=flat(r);return HK.map(c=>o[c])})]);ws['!cols']=HK.map((c,i)=>({wch:/^K\d+$/.test(c)?8:14}));XLSX.utils.book_append_sheet(wb,ws,'Meters');XLSX.writeFile(wb,'SMCV4_Meters_Passed_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('ดาวน์โหลด Excel แล้ว')}
-function addSel(){const E=evalAll().filter(x=>x.ok&&S.sel.has(x.id)),d=DB.def;let n=0,u=0;const ch=[];E.forEach(x=>{const date=d.date||x.date,rid=x.id+'@'+date,rec={rid,id:x.id,date,tester:d.tester||x.tester,dept:d.dept,lot:d.lot||x.lot,model:d.model,size:+d.size||x.size||15,type:d.type,hw:d.hw||'SMCV.4',fw:d.fw,batBrand:d.batBrand,batModel:d.batModel,batV:x.batV,F:x.F,F0:x.Fall,rclass:d.rclass||'R160',K:x.K,kmix:x.kmix,maxErr:+x.maxErr.toFixed(2),status:'ผ่านครบ '+x.tested+' น้ำ',ship:'ผ่านทดสอบ',customer:'',shipDate:'',note:d.note,src:x.files,ts:Date.now()},i=DB.reg.findIndex(z=>z.rid===rid)>=0?DB.reg.findIndex(z=>z.rid===rid):(S.incReg?DB.reg.findIndex(z=>z.id===x.id):-1);if(i>=0){rec.rid=DB.reg[i].rid;rec.ship=DB.reg[i].ship;rec.customer=DB.reg[i].customer;rec.shipDate=DB.reg[i].shipDate;DB.reg[i]=rec;u++}else{DB.reg.push(rec);n++}ch.push(rec.rid)});
+function addSel(){const E=evalAll().filter(x=>x.ok&&S.sel.has(x.id)),d=DB.def;let n=0,u=0;const ch=[];E.forEach(x=>{const date=d.date||x.date,rid=x.id+'@'+date,rec={rid,id:x.id,date,tester:d.tester||x.tester,dept:d.dept,lot:d.lot||x.lot,model:d.model,size:+d.size||x.size||15,type:d.type,hw:d.hw||'SMCV.4',fw:d.fw,batBrand:d.batBrand,batModel:d.batModel,batV:x.batV,F:x.F,F0:x.Fall,rclass:d.rclass||'R160',K:x.K,kmix:x.kmix,maxErr:+x.maxErr.toFixed(2),status:'ผ่านครบ '+x.tested+' น้ำ',ship:'ผ่านทดสอบ',customer:'',shipDate:'',install:'',installDate:'',note:d.note,src:x.files,ts:Date.now()},i=DB.reg.findIndex(z=>z.rid===rid)>=0?DB.reg.findIndex(z=>z.rid===rid):(S.incReg?DB.reg.findIndex(z=>z.id===x.id):-1);if(i>=0){rec.rid=DB.reg[i].rid;rec.ship=DB.reg[i].ship;rec.customer=DB.reg[i].customer;rec.shipDate=DB.reg[i].shipDate;rec.install=DB.reg[i].install||'';rec.installDate=DB.reg[i].installDate||'';DB.reg[i]=rec;u++}else{DB.reg.push(rec);n++}ch.push(rec.rid)});
  save();autoSel();S.tab='reg';render();toast('บันทึกเข้าทะเบียน: เพิ่ม '+n+' · อัปเดต '+u+' ตัว');queue(ch)}
 /* ---------- พรีวิว / พิมพ์ / บันทึก PDF ---------- */
 const thLong=()=>new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'})+' '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
@@ -335,20 +491,20 @@ document.addEventListener('click',async e=>{const t=e.target.closest('[data-a]')
  else if(a==='use'){DB.use[+d.v]=t.checked?1:0;save();autoSel()} else if(a==='pv'){S.pv.on=1;pvDraw();return} else if(a==='pvclose'){S.pv.on=0;pvDraw();return} else if(a==='pvprint'){window.print();return} else if(a==='pvcsv'){rcsv();return} else if(a==='pvxl'){rxl();return} else if(a==='pvcopy'){pvCopy();return} else if(a==='increg'){S.incReg=S.incReg?0:1;autoSel()} else if(a==='add')addSel();
  else if(a==='open')S.open=S.open===d.id?null:d.id;
  else if(a==='rdel'){if(!confirm('ลบรายการนี้ออกจากทะเบียน?'))return;DB.reg=DB.reg.filter(r=>r.rid!==d.id);S.regSel.delete(d.id);save();queue([d.id],true)}
- else if(a==='esave'){const r=DB.reg.find(x=>x.rid===d.id);if(r){document.querySelectorAll('[data-ef]').forEach(el=>{const k=el.dataset.ef;if(k==='id')return;let v=el.value.trim();if(['size','batV'].includes(k))v=v!==''&&isFinite(+v)?+v:'';r[k]=v});if(r.customer&&r.ship==='ผ่านทดสอบ')r.ship='พร้อมส่งมอบ';if(r.ship==='ส่งมอบแล้ว'&&!r.shipDate)r.shipDate=(()=>{const q=new Date();return q.getFullYear()+'-'+String(q.getMonth()+1).padStart(2,'0')+'-'+String(q.getDate()).padStart(2,'0')})();r.F0=r.F0||r.F;r.F=(r.F0||[]).map((q,i)=>{const cb=document.querySelector('[data-ew="'+i+'"]');return cb&&!cb.checked?null:q});r.ts=Date.now();save();toast('บันทึกแล้ว: '+r.id);queue([r.rid])}}
+ else if(a==='esave'){const r=DB.reg.find(x=>x.rid===d.id);if(r){document.querySelectorAll('[data-ef]').forEach(el=>{const k=el.dataset.ef;if(k==='id')return;let v=el.value.trim();if(['size','batV'].includes(k))v=v!==''&&isFinite(+v)?+v:'';r[k]=v});autoShip(r);r.F0=r.F0||r.F;r.F=(r.F0||[]).map((q,i)=>{const cb=document.querySelector('[data-ew="'+i+'"]');return cb&&!cb.checked?null:q});r.ts=Date.now();save();toast('บันทึกแล้ว: '+r.id);queue([r.rid])}}
  else if(a==='rclr'){Object.assign(S,{rc:'',q:'',sz:'',md:'',sh:'',ks:'',d1:'',d2:'',pendOnly:0})}
  else if(a==='rcsv'){rcsv();return}else if(a==='rxl'){rxl();return}
  else if(a==='rjson'){dl('smacv4_tracker_backup_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(DB),'application/json');return}
  else if(a==='rimp'){$('#fj').value='';$('#fj').click();return}
  else if(a==='rall')regFilter().forEach(r=>S.regSel.add(r.rid));else if(a==='rnone')S.regSel=new Set();
- else if(a==='bulk'){const v={};document.querySelectorAll('[data-bk]').forEach(el=>{if(el.value.trim())v[el.dataset.bk]=el.value.trim()});if(!S.regSel.size||!Object.keys(v).length){toast('เลือกแถว และกรอกอย่างน้อย 1 ช่อง');return}DB.reg.forEach(r=>{if(S.regSel.has(r.rid)){Object.assign(r,v);if(r.customer&&r.ship==='ผ่านทดสอบ')r.ship='พร้อมส่งมอบ';if(r.ship==='ส่งมอบแล้ว'&&!r.shipDate)r.shipDate=(()=>{const q=new Date();return q.getFullYear()+'-'+String(q.getMonth()+1).padStart(2,'0')+'-'+String(q.getDate()).padStart(2,'0')})();r.ts=Date.now()}});save();toast('อัปเดต '+S.regSel.size+' ตัวแล้ว');queue([...S.regSel])}
+ else if(a==='bulk'){const v={};document.querySelectorAll('[data-bk]').forEach(el=>{if(el.value.trim())v[el.dataset.bk]=el.value.trim()});if(!S.regSel.size||!Object.keys(v).length){toast('เลือกแถว และกรอกอย่างน้อย 1 ช่อง');return}DB.reg.forEach(r=>{if(S.regSel.has(r.rid)){Object.assign(r,v);autoShip(r);r.ts=Date.now()}});save();toast('อัปเดต '+S.regSel.size+' ตัวแล้ว');queue([...S.regSel])}
  else if(a==='bulkship'){if(!S.regSel.size){toast('ติ๊กเลือกแถวในตารางก่อน');return}const c=(document.querySelector('[data-bk="customer"]')||{}).value||'',dt=(document.querySelector('[data-bk="shipDate"]')||{}).value||(()=>{const q=new Date();return q.getFullYear()+'-'+String(q.getMonth()+1).padStart(2,'0')+'-'+String(q.getDate()).padStart(2,'0')})();if(!c.trim()&&!confirm('ยังไม่ได้ใส่ลูกค้า/ปลายทาง — บันทึกเป็น “ส่งมอบแล้ว” ต่อไปหรือไม่?'))return;DB.reg.forEach(r=>{if(S.regSel.has(r.rid)){r.ship='ส่งมอบแล้ว';r.shipDate=dt;if(c.trim())r.customer=c.trim();r.ts=Date.now()}});save();toast('📦 ตั้งเป็นส่งมอบแล้ว '+S.regSel.size+' ตัว ('+dt+')');queue([...S.regSel])}
  else if(a==='wipe'){if(!confirm('ล้าง Batch ที่โหลดไว้ทั้ง 4 น้ำ? (ทะเบียนมิเตอร์ไม่หาย)'))return;DB.slots=[[],[],[],[]];save();autoSel()}
  else if(a==='copyhead'){navigator.clipboard.writeText(HEAD.join('\t')).then(()=>toast('คัดลอกหัวตารางแล้ว — วางที่ช่อง A1 ของแถวที่แทรกใหม่'),()=>toast('คัดลอกไม่ได้'));return} else if(a==='copygs'){navigator.clipboard.writeText(GS_CODE).then(()=>toast('คัดลอกโค้ดแล้ว'),()=>toast('คัดลอกไม่ได้'));return}
  else if(a==='gpush'||a==='gpushsel'){try{const L=a==='gpush'?DB.reg:DB.reg.filter(r=>S.regSel.has(r.rid));if(!L.length){toast('ไม่มีรายการให้ส่ง');return}toast('กำลังส่ง…');const j=await gs({},{action:'upsert',rows:L.map(flat)});DB.cfg.last=new Date().toLocaleString('th-TH');if(a==='gpush')DB.cfg.q=[];save();toast('ส่งขึ้น Sheet แล้ว '+(j.saved??L.length)+' รายการ')}catch(x){gErr(x,'ส่งไม่สำเร็จ')}}
- else if(a==='gpull'){try{toast('กำลังดึง…');const j=await gs({action:'list'}),[ad,up]=mergeIn(j.rows||[]);DB.cfg.last=new Date().toLocaleString('th-TH');save();toast('ดึงแล้ว: เพิ่ม '+ad+' · อัปเดต '+up+(DB.reg.some(r=>!(r.F||[]).some(Boolean))?' · ⚠ มีมิเตอร์ที่ยังไม่มีผล 4 น้ำ (Sheet เดิมไม่ได้เก็บไว้) — โหลดไฟล์ Batch แล้วกด “🔄 เติมผลทดสอบ” ระบบจะเติมและส่งขึ้น Sheet ให้':''))}catch(x){gErr(x,'ดึงไม่สำเร็จ')}}
+ else if(a==='gpull'){try{toast('กำลังดึง…');const j=await gsAll(),[ad,up]=mergeIn(j.rows||[]);DB.cfg.last=new Date().toLocaleString('th-TH');save();toast('ดึงแล้ว: เพิ่ม '+ad+' · อัปเดต '+up+(DB.reg.some(r=>!(r.F||[]).some(Boolean))?' · ⚠ มีมิเตอร์ที่ยังไม่มีผล 4 น้ำ (Sheet เดิมไม่ได้เก็บไว้) — โหลดไฟล์ Batch แล้วกด “🔄 เติมผลทดสอบ” ระบบจะเติมและส่งขึ้น Sheet ให้':''))}catch(x){gErr(x,'ดึงไม่สำเร็จ')}}
  else if(a==='gsearch'){try{toast('กำลังค้นหา…');const j=await gs({action:'search',q:S.gsq,id:S.gsid,lot:S.gslot});S.gs=j.rows||[];toast('พบ '+S.gs.length+' รายการ'+(j.total>S.gs.length?' (แสดง '+S.gs.length+' จาก '+j.total+')':''))}catch(x){gErr(x,'ค้นหาไม่สำเร็จ')}}
- else if(a==='flush'){flush(true);return} else if(a==='gtest'){try{toast('กำลังทดสอบการเชื่อมต่อ…');const j=await gs({action:'list'});toast('✅ เชื่อมต่อ Google Sheet สำเร็จ · พบ '+((j.rows||[]).length)+' แถว · สคริปต์เวอร์ชัน '+(j.ver>=5?j.ver+' (ล่าสุด)':j.ver?j.ver+' — เก่า ต้อง Deploy โค้ด VER 5 ใหม่':'เก่า — ยังไม่ได้ Deploy โค้ดใหม่'))}catch(x){gErr(x,'เชื่อมต่อไม่ได้')}} else if(a==='src'){S.src=d.v} else if(a==='gsearch2'){gsSearch2();return} else if(a==='gimp1'){const o=(S.gsraw||[]).find(x=>x.rid===d.id);if(o){const[ad,up]=mergeIn([o]);toast('นำเข้า: เพิ่ม '+ad+' · อัปเดต '+up)}} else if(a==='gimpall'){const ids=new Set(gsFilterList().map(r=>r.rid)),[ad,up]=mergeIn((S.gsraw||[]).filter(o=>ids.has(o.rid)));toast('นำเข้า: เพิ่ม '+ad+' · อัปเดต '+up)} else if(a==='backfill'){const n=backfill();toast(n?'เติมผลทดสอบ 4 น้ำ/K ให้ '+n+' ตัวแล้ว (และส่งขึ้น Sheet)':'ไม่มีข้อมูลให้เติม — โหลดไฟล์ Batch ของมิเตอร์เหล่านั้นก่อน')} else if(a==='gimp'){const [ad,up]=mergeIn(S.gs);toast('นำเข้า: เพิ่ม '+ad+' · อัปเดต '+up)}
+ else if(a==='flush'){flush(true);return} else if(a==='gtest'){try{toast('กำลังทดสอบการเชื่อมต่อ…');const j=await gs({action:'list'});toast('✅ เชื่อมต่อ Google Sheet สำเร็จ · พบ '+(j.total??(j.rows||[]).length)+' แถว · สคริปต์เวอร์ชัน '+(j.ver>=6?j.ver+' (ล่าสุด)':j.ver?j.ver+' — เก่า ต้อง Deploy โค้ด VER 6 ใหม่':'เก่า — ยังไม่ได้ Deploy โค้ดใหม่'))}catch(x){gErr(x,'เชื่อมต่อไม่ได้')}} else if(a==='src'){S.src=d.v} else if(a==='gsearch2'){gsSearch2();return} else if(a==='gimp1'){const o=(S.gsraw||[]).find(x=>x.rid===d.id);if(o){const[ad,up]=mergeIn([o]);toast('นำเข้า: เพิ่ม '+ad+' · อัปเดต '+up)}} else if(a==='gimpall'){const ids=new Set(gsFilterList().map(r=>r.rid)),[ad,up]=mergeIn((S.gsraw||[]).filter(o=>ids.has(o.rid)));toast('นำเข้า: เพิ่ม '+ad+' · อัปเดต '+up)} else if(a==='backfill'){const n=backfill();toast(n?'เติมผลทดสอบ 4 น้ำ/K ให้ '+n+' ตัวแล้ว (และส่งขึ้น Sheet)':'ไม่มีข้อมูลให้เติม — โหลดไฟล์ Batch ของมิเตอร์เหล่านั้นก่อน')} else if(a==='gimp'){const [ad,up]=mergeIn(S.gs);toast('นำเข้า: เพิ่ม '+ad+' · อัปเดต '+up)}
  else return;render()});
 document.addEventListener('input',e=>{const t=e.target,d=t.dataset;if(d.rf!==undefined){S[d.rf]=d.rf==='pendOnly'?+t.value:t.value;regRefresh()}else if(d.gq!==undefined){S['gs'+d.gq]=t.value}});
 document.addEventListener('change',e=>{const t=e.target,d=t.dataset;if(d.df){DB.def[d.df]=t.value.trim();save();render()}else if(d.cf){DB.cfg[d.cf]=d.cf==='auto'?+t.value:t.value.trim();save();syncUI();toast('บันทึกการตั้งค่าแล้ว');if(d.cf==='auto'&&+t.value)flush()}else if(d.rl){DB.rule[d.rl]=d.rl==='multi'?t.value:+t.value;save();autoSel();render()}else if(d.rg){const[i,j]=d.rg.split('.');DB.rg[+i][+j]=+t.value;save();render()}else if(d.rf!==undefined){S[d.rf]=d.rf==='pendOnly'?+t.value:t.value;regRefresh()}});

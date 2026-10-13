@@ -2,7 +2,7 @@
 <html lang="th"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0">
-<title>SMCV.4 Electronics Water Meter Dashboard · VER 5</title>
+<title>SMCV.4 Electronics Water Meter Dashboard · VER 6</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg1:#ffffff;--bg2:#eaf6fb;--ac:#0891b2;--ac2:#0ea5e9;--ok:#059669;--bad:#e11d48;--wn:#d97706;--tx:#0f2a3d;--mu:#5b7a8e;--gl:rgba(255,255,255,.72);--bd:rgba(8,145,178,.18)}
@@ -195,11 +195,12 @@ svg text{fill:var(--mu);font-size:11px}.leg{display:flex;flex-wrap:wrap;gap:10px
 .tv5-stp{display:flex;align-items:stretch;gap:0;margin:6px 0}.tv5-stp>span{flex:1;min-width:0;text-align:center;padding:8px 6px;border-radius:12px;border:1px solid #1e293b;background:#0b1324;color:#64748b}.tv5-stp>em{width:16px;align-self:center;height:3px;background:#1e293b;flex:none}
 .tv5-stp i{display:block;font-style:normal;font-size:1.2rem}.tv5-stp b{display:block;font-size:.84rem}.tv5-stp small{display:block;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tv5-stp .done{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.1);color:#6ee7b7}.tv5-stp .now{border-color:#22d3ee;background:rgba(34,211,238,.14);color:#67e8f9;box-shadow:0 0 0 1px #22d3ee66}.tv5-stp .bad{border-color:#fb7185;background:rgba(251,113,133,.12);color:#fda4af}
+.tv5-bar{height:8px;border-radius:6px;background:#1e293b;overflow:hidden;margin-top:3px}.tv5-bar i{display:block;height:100%;border-radius:6px}
 </style></head><body>
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 <svg class="wave" viewBox="0 0 1200 90" preserveAspectRatio="none"><path fill="#22d3ee" d="M0 40 Q150 0 300 40 T600 40 T900 40 T1200 40 V90 H0Z"/></svg>
 <div class="wrap">
-<header><h1><div class="mqw"><span class="drop"></span><div class="mq"><b>SMCV.4 Electronics Water Meter Dashboard</b><span class="tv5-ver">VER 5</span></div></div><small>ระบบติดตามผลทดสอบมาตรน้ำอิเล็กทรอนิกส์ · หัวอ่าน · บอดี้แมคคานิค · ค่าคงที่ K1–K20 · %Error</small></h1>
+<header><h1><div class="mqw"><span class="drop"></span><div class="mq"><b>SMCV.4 Electronics Water Meter Dashboard</b><span class="tv5-ver">VER 6</span></div></div><small>ระบบติดตามผลทดสอบมาตรน้ำอิเล็กทรอนิกส์ · หัวอ่าน · บอดี้แมคคานิค · ค่าคงที่ K1–K20 · %Error</small></h1>
 <div class="bar"><label class="btn p">⬆ นำเข้าไฟล์ .xlsx<input id="fi" type="file" accept=".xlsx,.xls" multiple hidden></label><button class="btn" data-a="exp">⬇ สำรอง JSON</button><label class="btn">⬆ กู้คืน<input id="fj" type="file" accept=".json" hidden></label><button class="btn" onclick="print()">🖨 พิมพ์</button></div></header>
 <div class="bar" id="mbar"></div><div class="bar" id="sbar"></div>
 <div class="tabs" id="tabs"></div><div id="view"></div>
@@ -712,120 +713,274 @@ function rpXlsx(){if(!window.XLSX)return needXLSX().then(rpXlsx);const m=ksModel
  XLSX.writeFile(wb,'Repeat5_Multijet15_NewK_'+new Date().toISOString().slice(0,10)+'.xlsx');toast('ดาวน์โหลด Excel แล้ว')}
 /* ---------- โหมดติดตามมิเตอร์ (Tracker) ---------- */
 /* ---------- โหมดติดตามมิเตอร์ (Tracker) · VER 5 — โครงข้อมูลเดียวกับ meter_tracker.html และ Google Sheet ---------- */
-const TRK_VER=5;
+const TRK_VER=6;
 const LEG_HEAD=['rid', 'date', 'id', 'lot', 'model', 'size', 'type', 'hw', 'fw', 'batBrand', 'batV', 'flow', 'vTest', 'vRead', 'err', 'result', 'tester', 'dept', 'note', 'src', 'ts', 'K1', 'K2', 'K3', 'K4', 'K5', 'K6', 'K7', 'K8', 'K9', 'K10', 'K11', 'K12', 'K13', 'K14', 'K15', 'K16', 'K17', 'K18', 'K19', 'K20'];
-const TRK_EXTRA=['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix'];
+const TRK_EXTRA=['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix','install','installDate','deleted'];
 const TRK_HEAD=LEG_HEAD.concat(TRK_EXTRA);   // หัวตาราง = เหมือน Apps Script (LEGACY + EXTRA) ทุกตัวอักษร
-const TRK_COLS=TRK_HEAD.filter(c=>!/^K\d+$/.test(c)&&!['flow','vTest','vRead','err','result','src'].includes(c));   // ฟิลด์ของรายการ (ไม่รวม K, F, src และคอลัมน์สะท้อนเดิม)
+const TRK_COLS=TRK_HEAD.filter(c=>!/^K\d+$/.test(c)&&!['flow','vTest','vRead','err','result','src','deleted'].includes(c));   // ฟิลด์ของรายการ (ไม่รวม K, F, src และคอลัมน์สะท้อนเดิม)
 const TRK_SL=[['น้ำที่ 1','ไหลต่ำ','#22d3ee'],['น้ำที่ 2','ไหลต่ำ–กลาง','#a78bfa'],['น้ำที่ 3','ไหลกลาง–สูง','#fbbf24'],['น้ำที่ 4','ไหลสูงสุด','#34d399']];
-const TRK_RC=['R100','R160','R200','R400'],TRK_SHIP=['ผ่านทดสอบ','พร้อมส่งมอบ','ส่งมอบแล้ว','ส่งซ่อม/ทดสอบซ้ำ'],TRK_PEND='รอระบุ',TRK_KC=['#22d3ee','#fbbf24','#a78bfa','#f472b6','#34d399','#fb923c'];
+const TRK_RC=['R100','R160','R200','R400'],TRK_SHIP=['ผ่านทดสอบ','พร้อมส่งมอบ','ส่งมอบแล้ว','ติดตั้งแล้ว','ส่งซ่อม/ทดสอบซ้ำ'],TRK_PEND='รอระบุ',TRK_KC=['#22d3ee','#fbbf24','#a78bfa','#f472b6','#34d399','#fb923c'];
 const GS_DEFAULT={url:'https://script.google.com/macros/s/AKfycbxo0sEfBznbnavl_FyT_4zXVG_E6H3UTmERlf9NddMFa1wRtdKYYQl951bk46b0Dr_k/exec',token:'1234'};   // ลิงก์ Web App + Token เริ่มต้น (แก้ได้ที่นี่ หรือที่การ์ด ☁️ ในแท็บ 📇)
 function ensureCfg(){DB.trkCfg=DB.trkCfg||{url:'',token:'',last:''};if(!DB.trkCfg.url){DB.trkCfg.url=GS_DEFAULT.url;DB.trkCfg.token=GS_DEFAULT.token;save()}}
-const GS_CODE=`var SHEET = 'Meters';
-var VER = 5;           // เลขเวอร์ชันสคริปต์ (แอปใช้ตรวจว่า Deploy โค้ดใหม่แล้ว)
-var TOKEN = '1234';   // ต้องตรงกับ Token ในแอป (แนะนำให้เปลี่ยนเป็นรหัสที่เดายาก)
+const GS_CODE=`var VER = 6;            // เลขเวอร์ชันสคริปต์ (แอปใช้ตรวจว่า Deploy โค้ดใหม่แล้ว)
+var TOKEN = '1234';     // ต้องตรงกับ Token ในแอป (แนะนำให้เปลี่ยนเป็นรหัสที่เดายาก)
+var BASE = 'Meters';    // ชีตชุดแรกชื่อ Meters เต็มแล้วสร้าง Meters2, Meters3, ... ให้เอง
+var CAP = 20000;        // จำนวนแถวข้อมูลสูงสุดต่อ 1 ชีต (ชีตละ ~1.3 ล้านเซลล์ เปิด/อ่านยังเร็ว)
+var LOGBASE = 'Log';    // ประวัติการเปลี่ยนแปลง (ติดตั้ง/ส่งมอบ/ยกเลิก) เก็บถาวร ไม่ลบ
+var LOGCAP = 100000;
+var SAFE_CELLS = 9000000;    // เพดานต่อ 1 ไฟล์ Spreadsheet (Google จำกัด 10,000,000 เซลล์) ใกล้เต็มแล้วสร้างไฟล์ใหม่ให้เอง
+var LIMIT_CELLS = 10000000;
 // คอลัมน์เดิม (ลำดับที่ใช้ตอนแรก) — ใช้ซ่อมหัวตารางถ้าแถวแรกเป็นข้อมูล
 var LEGACY = ['rid','date','id','lot','model','size','type','hw','fw','batBrand','batV','flow','vTest','vRead','err','result','tester','dept','note','src','ts','K1','K2','K3','K4','K5','K6','K7','K8','K9','K10','K11','K12','K13','K14','K15','K16','K17','K18','K19','K20'];
-// คอลัมน์ที่เพิ่มต่อท้ายอัตโนมัติ ถ้ายังไม่มี
-var EXTRA = ['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix'];
+// คอลัมน์ที่เพิ่มต่อท้ายอัตโนมัติ ถ้ายังไม่มี (install = ติดตั้งที่ไหน, deleted = ยกเลิก/ซ่อน แต่ไม่ลบแถวจริง)
+var EXTRA = ['batModel','rclass','flow1','err1','batch1','flow2','err2','batch2','flow3','err3','batch3','flow4','err4','batch4','maxErr','status','ship','customer','shipDate','kmix','install','installDate','deleted'];
+var LOGHEAD = ['ts','action','rid','id','field','old','new'];
+var TRACK = ['ship','customer','shipDate','install','installDate'];
 
-function sheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var s = ss.getSheetByName(SHEET);
-  var HEAD = LEGACY.concat(EXTRA);
-  if (!s) { s = ss.insertSheet(SHEET); }
-  if (s.getLastRow() === 0) { s.getRange(1, 1, 1, HEAD.length).setValues([HEAD]); s.getRange(1, 1, s.getMaxRows(), HEAD.length).setNumberFormat('@'); return s; }
+function head_() { return LEGACY.concat(EXTRA); }
+var KIND = {
+  m: {base: BASE, key: 'SS_METERS', title: 'SMCV4 Meters #', cap: function () { return CAP; }, head: head_},
+  l: {base: LOGBASE, key: 'SS_LOG', title: 'SMCV4 Log #', cap: function () { return LOGCAP; }, head: function () { return LOGHEAD; }}
+};
+var MEMO = {};
+function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+function sv_(v) { return v instanceof Date ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(v === undefined || v === null ? '' : v); }
+function toObj_(h, r) { var o = {}; h.forEach(function (k, i) { if (k !== '') o[k] = (r[i] instanceof Date) ? sv_(r[i]) : r[i]; }); return o; }
+function ssIds_(key) { var raw = PropertiesService.getScriptProperties().getProperty(key); return raw ? JSON.parse(raw) : ['']; }
+function ssSave_(key, ids) { PropertiesService.getScriptProperties().setProperty(key, JSON.stringify(ids)); }
+function openSs_(id) { return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActiveSpreadsheet(); }
+function cellsOf_(ss) { var t = 0; ss.getSheets().forEach(function (s) { t += s.getMaxRows() * s.getMaxColumns(); }); return t; }
+
+// ตรวจ/ซ่อมหัวตาราง + เพิ่มคอลัมน์ที่ขาด + บังคับเป็น “ข้อความ” กัน Sheets แปลงวันที่/Lot (เช่น 1-10-2569) เป็นวันที่เอง
+function ensureHead_(s, kind) {
+  var HEAD = KIND[kind].head();
+  if (s.getLastRow() === 0) {
+    if (s.getMaxColumns() < HEAD.length) s.insertColumnsAfter(s.getMaxColumns(), HEAD.length - s.getMaxColumns());
+    s.getRange(1, 1, 1, HEAD.length).setValues([HEAD]);
+    s.getRange(1, 1, s.getMaxRows(), HEAD.length).setNumberFormat('@');
+    return HEAD.slice();
+  }
   var h = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
-  if (String(h[0]) !== 'rid') {            // แถวแรกเป็นข้อมูล (ไม่มีหัวตาราง) -> แทรกหัวตารางไว้บนสุด
+  if (kind === 'm' && String(h[0]) !== 'rid') {      // แถวแรกเป็นข้อมูล (ไม่มีหัวตาราง) -> แทรกหัวตารางไว้บนสุด
     s.insertRowBefore(1);
+    if (s.getMaxColumns() < LEGACY.length) s.insertColumnsAfter(s.getMaxColumns(), LEGACY.length - s.getMaxColumns());
     s.getRange(1, 1, 1, LEGACY.length).setValues([LEGACY]);
     h = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
   }
-  var col = h.length;
-  HEAD.forEach(function (k) {              // เพิ่มคอลัมน์ที่ขาด
-    if (h.indexOf(k) < 0) { col++; s.getRange(1, col).setValue(k); h.push(k); }
+  var added = false;
+  HEAD.forEach(function (k) {
+    if (h.indexOf(k) < 0) {
+      var c = h.length + 1;
+      if (s.getMaxColumns() < c) s.insertColumnsAfter(s.getMaxColumns(), 1);
+      s.getRange(1, c).setValue(k); h.push(k); added = true;
+    }
   });
-  // บังคับทุกคอลัมน์เป็น “ข้อความ” กัน Google Sheets แปลงวันที่/Lot (เช่น 1-10-2569) เป็นวันที่เอง
-  var fm = s.getRange(2, 1, 1, h.length).getNumberFormats()[0];
-  if (fm.some(function (f) { return f !== '@'; })) s.getRange(1, 1, s.getMaxRows(), h.length).setNumberFormat('@');
-  return s;
+  var fm = s.getRange(Math.min(2, s.getMaxRows()), 1, 1, h.length).getNumberFormats()[0];
+  if (added || fm.some(function (f) { return f !== '@'; })) s.getRange(1, 1, s.getMaxRows(), h.length).setNumberFormat('@');
+  return h;
 }
-function out_(o) {
-  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+// รายการชีตทั้งหมดของชนิดนั้น (Meters, Meters2, ... อาจอยู่คนละไฟล์) เรียงตามเลข
+function shards_(kind) {
+  if (MEMO[kind]) return MEMO[kind];
+  var K = KIND[kind], re = new RegExp('^' + K.base + '(\\\\d*)$'), out = [];
+  ssIds_(K.key).forEach(function (id) {
+    var ss = openSs_(id);
+    ss.getSheets().forEach(function (s) { var m = re.exec(s.getName()); if (m) out.push({n: m[1] ? +m[1] : 1, sh: s, ss: ss}); });
+  });
+  out.sort(function (a, b) { return a.n - b.n; });
+  out.forEach(function (x) { x.h = ensureHead_(x.sh, kind); });
+  MEMO[kind] = out;
+  return out;
 }
-function rows_() {
-  var v = sheet_().getDataRange().getValues(), h = v.shift(), tz = Session.getScriptTimeZone();
-  return v.filter(function (r) { return String(r[0]) !== ''; }).map(function (r) {
-    var o = {};
-    h.forEach(function (k, i) {
-      if (k === '') return;
-      var x = r[i];
-      if (x instanceof Date) x = Utilities.formatDate(x, tz, 'yyyy-MM-dd');
-      o[k] = x;
-    });
-    return o;
+// สร้างชีตถัดไป — ถ้าไฟล์ปัจจุบันใกล้เต็ม (เซลล์) จะสร้างไฟล์ Spreadsheet ใหม่ให้อัตโนมัติ
+function newShard_(kind) {
+  var K = KIND[kind], list = shards_(kind), n = 1, ids = ssIds_(K.key), ss = null, created = null, need = K.cap() * K.head().length + 50000, i;
+  list.forEach(function (x) { if (x.n >= n) n = x.n + 1; });
+  for (i = 0; i < ids.length; i++) { var c = openSs_(ids[i]); if (cellsOf_(c) + need <= SAFE_CELLS) { ss = c; break; } }
+  if (!ss) { ss = SpreadsheetApp.create(K.title + (ids.length + 1)); ids.push(ss.getId()); ssSave_(K.key, ids); created = ss.getUrl(); }
+  var s = ss.insertSheet(K.base + (n > 1 ? n : ''));
+  var def = ss.getSheetByName('Sheet1');
+  if (created && def && ss.getSheets().length > 1) ss.deleteSheet(def);
+  var x = {n: n, sh: s, ss: ss, created: created};
+  x.h = ensureHead_(s, kind);
+  list.push(x);
+  return x;
+}
+function appendBlock_(x, block) {
+  var last = Math.max(x.sh.getLastRow(), 1), need = last + block.length;
+  if (need > x.sh.getMaxRows()) x.sh.insertRowsAfter(x.sh.getMaxRows(), need - x.sh.getMaxRows() + 200);
+  var r = x.sh.getRange(last + 1, 1, block.length, x.h.length);
+  r.setNumberFormat('@'); r.setValues(block);
+}
+function rowsOf_(x) { return Math.max(0, x.sh.getLastRow() - 1); }
+function index_() {                         // rid -> ตำแหน่ง (ชีตที่ i, แถวที่)
+  var idx = {};
+  shards_('m').forEach(function (x, si) {
+    var n = rowsOf_(x); if (n < 1) return;
+    var v = x.sh.getRange(2, x.h.indexOf('rid') + 1, n, 1).getValues();
+    for (var i = 0; i < n; i++) { var k = String(v[i][0]); if (k) idx[k] = {si: si, row: i + 2}; }
+  });
+  return idx;
+}
+function compose_(h, o, cur) {              // ช่องที่แอปไม่ได้ส่ง คงค่าเดิมไว้ · deleted: อัปเสิร์ตแปลว่ากลับมาใช้งาน
+  return h.map(function (k, c) {
+    if (k === 'deleted') return o.deleted === undefined ? '' : o.deleted;
+    return o[k] === undefined ? (cur[c] === undefined ? '' : cur[c]) : o[k];
   });
 }
-function dedupe_(s) {                      // รวมแถวที่ rid ซ้ำ เก็บแถวล่าสุด
-  var v = s.getDataRange().getValues(), seen = {}, n = 0;
-  for (var i = v.length - 1; i >= 1; i--) {
-    var k = String(v[i][0]);
-    if (seen[k]) { s.deleteRow(i + 1); n++; } else { seen[k] = 1; }
+function logAppend_(ent) {
+  if (!ent.length) return;
+  var list = shards_('l'), x = list.length ? list[list.length - 1] : newShard_('l'), rows = rowsOf_(x), i = 0;
+  while (i < ent.length) {
+    if (rows >= LOGCAP) { x = newShard_('l'); rows = 0; }
+    var take = Math.min(ent.length - i, LOGCAP - rows);
+    appendBlock_(x, ent.slice(i, i + take)); rows += take; i += take;
   }
-  return n;
 }
-function doGet(e) {
-  var p = e.parameter;
-  if (p.token !== TOKEN) return out_({error: 'token ไม่ถูกต้อง'});
-  var rows = rows_();
-  if (p.action === 'search') {
-    var q = (p.q || '').toLowerCase().split(/\\s+/).filter(String);
-    rows = rows.filter(function (o) {
-      if (p.id && String(o.id).indexOf(p.id) < 0) return false;
-      if (p.lot && String(o.lot).toLowerCase().indexOf(p.lot.toLowerCase()) < 0) return false;
-      if (p.from && String(o.date) < p.from) return false;
-      if (p.to && String(o.date) > p.to) return false;
-      var h = JSON.stringify(o).toLowerCase();
-      return q.every(function (t) { return h.indexOf(t) >= 0; });
+function upsert_(b) {
+  var now = String(Date.now()), seen = {}, rows = [], i;
+  (b.rows || []).forEach(function (o) { var k = String(o.rid); if (!k || k === 'undefined') return; seen[k] = o; });
+  Object.keys(seen).forEach(function (k) { rows.push(seen[k]); });
+  var list = shards_('m');
+  if (!list.length) newShard_('m');
+  var idx = index_(), pos = {}, log = [], fresh = [], newFile = null, n = 0;
+  list = shards_('m');
+  rows.forEach(function (o) {
+    var k = String(o.rid), at = idx[k];
+    if (!at) { fresh.push(o); return; }
+    var x = list[at.si], h = x.h, cur = x.sh.getRange(at.row, 1, 1, h.length).getValues()[0], row = compose_(h, o, cur);
+    TRACK.forEach(function (f) {
+      var c = h.indexOf(f); if (c < 0 || o[f] === undefined) return;
+      var a = sv_(cur[c]), z = sv_(row[c]); if (a !== z) log.push([now, 'update', k, sv_(row[h.indexOf('id')]), f, a, z]);
     });
+    var dc = h.indexOf('deleted'); if (sv_(cur[dc]) !== '') log.push([now, 'restore', k, sv_(row[h.indexOf('id')]), 'deleted', sv_(cur[dc]), '']);
+    x.sh.getRange(at.row, 1, 1, h.length).setValues([row]);
+    pos[k] = at; n++;
+  });
+  var x = list[list.length - 1], inShard = rowsOf_(x), done = 0;
+  while (done < fresh.length) {
+    if (inShard >= CAP) { x = newShard_('m'); inShard = 0; if (x.created && !newFile) newFile = x.created; list = shards_('m'); }
+    var take = Math.min(fresh.length - done, CAP - inShard), blk = [], start = Math.max(x.sh.getLastRow(), 1) + 1;
+    for (i = 0; i < take; i++) {
+      var o = fresh[done + i], row = compose_(x.h, o, []);
+      blk.push(row); pos[String(o.rid)] = {si: list.indexOf(x), row: start + i};
+      log.push([now, 'create', String(o.rid), sv_(row[x.h.indexOf('id')]), '', '', '']);
+      TRACK.forEach(function (f) { var v = sv_(row[x.h.indexOf(f)]); if (v !== '') log.push([now, 'update', String(o.rid), sv_(row[x.h.indexOf('id')]), f, '', v]); });
+    }
+    appendBlock_(x, blk); inShard += take; done += take; n += take;
   }
-  return out_({rows: rows.slice(0, 500), total: rows.length, ver: VER});
+  logAppend_(log);
+  var echo = {}, f0 = rows[0];                       // อ่านกลับ: บอกแอปว่าค่าที่เก็บจริงใน Sheet คืออะไร
+  if (f0 && pos[String(f0.rid)]) {
+    var p = pos[String(f0.rid)], sx = shards_('m')[p.si], v = sx.sh.getRange(p.row, 1, 1, sx.h.length).getValues()[0];
+    ['rclass', 'flow1', 'err1', 'ship', 'customer', 'shipDate', 'install', 'installDate'].forEach(function (k) { var c = sx.h.indexOf(k); echo[k] = c < 0 ? '#ไม่มีคอลัมน์' : sv_(v[c]); });
+  }
+  return {saved: n, ver: VER, cols: head_().length, shards: shards_('m').length, echo: echo, newFile: newFile};
+}
+// ยกเลิก/ซ่อน (ไม่ลบแถวจริง) — action delete ของแอปรุ่นเก่าก็ถูกแปลงเป็นแบบนี้เสมอ · restore = กู้คืน
+function mark_(b) {
+  var idx = index_(), list = shards_('m'), now = String(Date.now()), log = [], cnt = 0, restore = b.action === 'restore', stamp = restore ? '' : new Date().toISOString();
+  (b.rids || []).forEach(function (rid) {
+    var at = idx[String(rid)]; if (!at) return;
+    var x = list[at.si], c = x.h.indexOf('deleted') + 1, id = x.sh.getRange(at.row, x.h.indexOf('id') + 1).getValue();
+    x.sh.getRange(at.row, c).setValue(stamp);
+    log.push([now, restore ? 'restore' : 'void', String(rid), sv_(id), 'deleted', '', stamp]); cnt++;
+  });
+  logAppend_(log);
+  return {deleted: cnt, voided: cnt, ver: VER};
 }
 function doPost(e) {
-  var b = JSON.parse(e.postData.contents);
+  var b;
+  try { b = JSON.parse(e.postData.contents); } catch (x) { return out_({error: 'ข้อมูลที่ส่งมาอ่านไม่ได้'}); }
   if (b.token !== TOKEN) return out_({error: 'token ไม่ถูกต้อง'});
-  var s = sheet_();
-  dedupe_(s);
-  var v = s.getDataRange().getValues(), h = v[0], ri = h.indexOf('rid');
-  if (b.action === 'delete') {
-    var del = 0;
-    for (var j = v.length - 1; j >= 1; j--) {
-      if (b.rids.indexOf(String(v[j][ri])) >= 0) { s.deleteRow(j + 1); del++; }
+  var lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    if (b.action === 'delete' || b.action === 'void' || b.action === 'restore') return out_(mark_(b));
+    return out_(upsert_(b));
+  } finally { lock.releaseLock(); }
+}
+// list: อ่านเป็นหน้า ๆ (offset/limit ≤ 5000) · since = เฉพาะที่แก้ไขหลังเวลานี้ · deleted=1 รวมที่ยกเลิก
+function list_(p) {
+  var shs = shards_('m'), lim = Math.min(+p.limit || 5000, 5000), start = +p.offset || 0, since = +p.since || 0, inc = p.deleted === '1';
+  var total = 0, counts = shs.map(function (x) { var n = rowsOf_(x); total += n; return n; }), out = [], left = lim, pos = 0, next = null;
+  for (var si = 0; si < shs.length; si++) {
+    var n = counts[si], x = shs[si];
+    if (start >= pos + n) { pos += n; continue; }
+    var from = Math.max(0, start - pos), take = Math.min(n - from, left);
+    if (take > 0) {
+      var v = x.sh.getRange(2 + from, 1, take, x.h.length).getValues(), dc = x.h.indexOf('deleted');
+      v.forEach(function (r) {
+        if (String(r[0]) === '') return;
+        if (!inc && sv_(r[dc]) !== '') return;
+        if (since && !(Number(r[x.h.indexOf('ts')]) > since)) return;
+        out.push(toObj_(x.h, r));
+      });
+      left -= take;
     }
-    return out_({deleted: del, ver: VER});
+    if (left <= 0) { next = pos + from + take; if (next >= total) next = null; break; }
+    pos += n;
   }
-  var idx = {}, n = 0;
-  for (var i = 1; i < v.length; i++) idx[String(v[i][ri])] = i;
-  b.rows.forEach(function (o) {
-    var at = idx[String(o.rid)], cur = at ? v[at] : [];
-    var row = h.map(function (k, c) {      // ช่องที่แอปไม่ได้ส่ง คงค่าเดิมไว้
-      return o[k] === undefined ? (cur[c] === undefined ? '' : cur[c]) : o[k];
-    });
-    if (at) { s.getRange(at + 1, 1, 1, h.length).setValues([row]); }
-    else { s.appendRow(row); }
-    n++;
-  });
-  var v2 = s.getDataRange().getValues(), h2 = v2[0], echo = {}, f0 = b.rows[0];   // อ่านกลับ: บอกแอปว่าค่าที่เก็บจริงใน Sheet คืออะไร
-  if (f0) {
-    var r2 = h2.indexOf('rid');
-    for (var q = 1; q < v2.length; q++) {
-      if (String(v2[q][r2]) === String(f0.rid)) {
-        ['rclass', 'flow1', 'err1', 'ship'].forEach(function (k) { var c = h2.indexOf(k); echo[k] = c < 0 ? '#ไม่มีคอลัมน์' : String(v2[q][c]); });
-        break;
+  return {rows: out, total: total, next: next, ver: VER};
+}
+// search: ค้นทั้งระบบทุกชีต (q = คำค้นหลายคำ, id = เลขมิเตอร์ตรงตัว, lot, customer, install, ship, from, to)
+function search_(p) {
+  var shs = shards_('m'), lim = Math.min(+p.limit || 200, 500), inc = p.deleted === '1', hits = [], terms = String(p.q || '').toLowerCase().split(/\\s+/).filter(String);
+  var CK = ['rid', 'id', 'lot', 'date', 'model', 'fw', 'batBrand', 'tester', 'ship', 'customer', 'shipDate', 'install', 'installDate', 'deleted'];
+  for (var si = 0; si < shs.length && hits.length < lim; si++) {
+    var x = shs[si], n = rowsOf_(x);
+    for (var from = 0; from < n && hits.length < lim; from += 5000) {
+      var take = Math.min(5000, n - from), col = {};
+      CK.forEach(function (k) { var c = x.h.indexOf(k) + 1; col[k] = c ? x.sh.getRange(2 + from, c, take, 1).getValues() : null; });
+      for (var i = 0; i < take && hits.length < lim; i++) {
+        var g = function (k) { return col[k] ? sv_(col[k][i][0]) : ''; };
+        if (!g('rid')) continue;
+        if (!inc && g('deleted') !== '') continue;
+        if (p.id && g('id') !== String(p.id)) continue;
+        if (p.lot && g('lot').toLowerCase().indexOf(String(p.lot).toLowerCase()) < 0) continue;
+        if (p.customer && g('customer').toLowerCase().indexOf(String(p.customer).toLowerCase()) < 0) continue;
+        if (p.install && g('install').toLowerCase().indexOf(String(p.install).toLowerCase()) < 0) continue;
+        if (p.ship && g('ship') !== p.ship) continue;
+        if (p.from && g('date') < p.from) continue;
+        if (p.to && g('date') > p.to) continue;
+        if (terms.length) { var hay = CK.map(g).join(' ').toLowerCase(); if (!terms.every(function (t) { return hay.indexOf(t) >= 0; })) continue; }
+        hits.push({si: si, row: 2 + from + i});
       }
     }
   }
-  return out_({saved: n, ver: VER, cols: h.length, echo: echo});
+  var rows = hits.map(function (a) { var x = shs[a.si]; return toObj_(x.h, x.sh.getRange(a.row, 1, 1, x.h.length).getValues()[0]); });
+  return {rows: rows, total: rows.length, truncated: hits.length >= lim, ver: VER};
+}
+// log: ประวัติการเปลี่ยนแปลงของมิเตอร์ (rid หรือ id) — ย้อนดูได้ว่าใครแก้ ติดตั้ง/ส่งมอบอะไร เมื่อไร
+function logq_(p) {
+  var out = [], shs = shards_('l'), key = String(p.rid || p.id || '');
+  if (!key) return {rows: [], ver: VER};
+  shs.forEach(function (x) {
+    var n = rowsOf_(x); if (n < 1) return;
+    var v = x.sh.getRange(2, 1, n, LOGHEAD.length).getValues();
+    v.forEach(function (r) { if (String(r[2]) === key || String(r[3]) === key) out.push(toObj_(LOGHEAD, r)); });
+  });
+  return {rows: out.slice(-500), total: out.length, ver: VER};
+}
+// stats: ความจุ/จำนวนที่เก็บ — แอปแสดงเป็นกราฟเตือนก่อนเต็ม
+function stats_() {
+  var shs = shards_('m'), cols = head_().length, total = 0, del = 0, rows = [];
+  shs.forEach(function (x) {
+    var n = rowsOf_(x), d = 0;
+    if (n > 0) x.sh.getRange(2, x.h.indexOf('deleted') + 1, n, 1).getValues().forEach(function (r) { if (sv_(r[0]) !== '') d++; });
+    total += n; del += d;
+    rows.push({name: x.sh.getName(), file: x.ss.getName(), rows: n, deleted: d, cap: CAP, pct: Math.round(n / CAP * 1000) / 10});
+  });
+  var files = ssIds_('SS_METERS').map(function (id) { var ss = openSs_(id), c = cellsOf_(ss); return {name: ss.getName(), url: ss.getUrl(), cells: c, pct: Math.round(c / LIMIT_CELLS * 1000) / 10}; });
+  var lg = 0; shards_('l').forEach(function (x) { lg += rowsOf_(x); });
+  return {ver: VER, cols: cols, cap: CAP, shards: rows, files: files, total: total, active: total - del, deleted: del, rowsPerFile: Math.floor(SAFE_CELLS / cols), log: lg, limitCells: LIMIT_CELLS};
+}
+function doGet(e) {
+  var p = (e && e.parameter) || {};
+  if (p.token !== TOKEN) return out_({error: 'token ไม่ถูกต้อง'});
+  if (p.action === 'stats') return out_(stats_());
+  if (p.action === 'search') return out_(search_(p));
+  if (p.action === 'log') return out_(logq_(p));
+  return out_(list_(p));
 }`;
 /* ----- วันที่ / Lot : ซ่อมค่าที่ Google Sheet แปลงเป็นวันที่เอง ----- */
 const trkLoc=d=>d.getFullYear()+'-'+rpPad(d.getMonth()+1)+'-'+rpPad(d.getDate());
@@ -840,12 +995,12 @@ const trkTh=iso=>{const x=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');return x?x[3]
 const trkLim=fl=>fl<=16?5:2;
 const trkSlotOf=fl=>{fl=+fl;return fl<=16.5?0:fl<=30?1:fl<=1500?2:3};
 const trkPend=r=>['fw','batBrand','batModel'].filter(k=>!r[k]||r[k]===TRK_PEND).length;
-const trkBlank=()=>({rid:'',date:trkToday(),id:'',lot:'',model:'Multijet',size:15,rclass:'R160',type:'อิเล็กทรอนิกส์ (Hall)',hw:'SMCV.4',fw:'',batBrand:'',batModel:'',batV:'',tester:'',dept:'ฝ่ายผลิต',note:'',ship:'ผ่านทดสอบ',customer:'',shipDate:'',K:'',F:[null,null,null,null],src:['คีย์เอง']});
+const trkBlank=()=>({rid:'',date:trkToday(),id:'',lot:'',model:'Multijet',size:15,rclass:'R160',type:'อิเล็กทรอนิกส์ (Hall)',hw:'SMCV.4',fw:'',batBrand:'',batModel:'',batV:'',tester:'',dept:'ฝ่ายผลิต',note:'',ship:'ผ่านทดสอบ',customer:'',shipDate:'',install:'',installDate:'',K:'',F:[null,null,null,null],src:['คีย์เอง']});
 /* ปรับรายการเก่า (ก่อน VER 5 ที่เก็บ Flow เดียว) ให้เป็นโครงใหม่ — เรียกซ้ำได้ ไม่ทำลายข้อมูล */
 function trkMig(r){
  if(!Array.isArray(r.F)||r.F.length!==4){const F=[null,null,null,null];if(r.err!==''&&r.err!=null&&isFinite(+r.err)&&r.flow!==''&&r.flow!=null&&isFinite(+r.flow))F[trkSlotOf(r.flow)]={flow:+r.flow,err:+r.err,batch:Array.isArray(r.src)?r.src.join(', '):String(r.src||''),pass:Math.abs(+r.err)<=trkLim(+r.flow),legacy:1};r.F=F}
  r.date=trkNd(r.date);r.shipDate=r.shipDate?trkNd(r.shipDate):'';r.lot=trkLot(r.lot);
- if(!r.hw||r.hw==='I')r.hw='SMCV.4';r.rclass=r.rclass||'R160';['batModel','customer','status'].forEach(k=>{if(r[k]==null)r[k]=''});r.ship=r.ship||'ผ่านทดสอบ';
+ if(!r.hw||r.hw==='I')r.hw='SMCV.4';r.rclass=r.rclass||'R160';['batModel','customer','status','install'].forEach(k=>{if(r[k]==null)r[k]=''});r.installDate=r.installDate?trkNd(r.installDate):'';r.ship=r.ship||'ผ่านทดสอบ';
  r.src=Array.isArray(r.src)?r.src:(r.src?[String(r.src)]:[]);
  const T=r.F.filter(Boolean);r.maxErr=T.length?+Math.max(...T.map(q=>Math.abs(q.err))).toFixed(2):'';
  return r}
@@ -866,27 +1021,27 @@ function trkKsets(L){const m=new Map();L.forEach(r=>{if(!r.K)return;const k=r.K.
 const trkKsOf=(sets,r)=>r.K?sets.find(z=>z.k.join()===r.K.join()):null;
 function trkFilter(){const q=(ui.trkQ||'').toLowerCase().split(/\s+/).filter(Boolean),A=(DB.trk||[]).map(trkMig),sets=trkKsets(A);
  return A.filter(r=>{if(ui.trkSz&&String(r.size)!==ui.trkSz)return false;if(ui.trkRc&&r.rclass!==ui.trkRc)return false;if(ui.trkMd&&r.model!==ui.trkMd)return false;if(ui.trkRs&&trkRes(r)!==ui.trkRs)return false;if(ui.trkSh&&r.ship!==ui.trkSh)return false;if(ui.trkD1&&String(r.date)<ui.trkD1)return false;if(ui.trkD2&&String(r.date)>ui.trkD2)return false;if(ui.trkPend==='1'&&!trkPend(r))return false;
-  const ks=trkKsOf(sets,r),h=[r.id,r.lot,r.model,r.rclass,r.size+' mm',r.type,r.hw,r.fw,r.batBrand,r.batModel,r.batV,r.tester,r.dept,r.note,r.date,trkTh(r.date),r.ship,r.customer,r.status,trkRes(r),ks?ks.name:'',(r.src||[]).join(' ')].join(' ').toLowerCase();return q.every(t=>h.includes(t))}).sort((a,b)=>String(b.date).localeCompare(String(a.date))||(b.ts||0)-(a.ts||0)||String(a.id).localeCompare(String(b.id)))}
+  const ks=trkKsOf(sets,r),h=[r.id,r.lot,r.model,r.rclass,r.size+' mm',r.type,r.hw,r.fw,r.batBrand,r.batModel,r.batV,r.tester,r.dept,r.note,r.date,trkTh(r.date),r.ship,r.customer,r.install,r.installDate,r.status,trkRes(r),ks?ks.name:'',(r.src||[]).join(' ')].join(' ').toLowerCase();return q.every(t=>h.includes(t))}).sort((a,b)=>String(b.date).localeCompare(String(a.date))||(b.ts||0)-(a.ts||0)||String(a.id).localeCompare(String(b.id)))}
 /* ----- ส่วนแสดงผล (การ์ด / ตาราง) ----- */
 const trkTag=(c,t,x)=>`<span class="tv5-t ${c}" ${x||''}>${t}</span>`;
 const trkChip=(q,i)=>!q?'<span class="tv5-ce na">—</span>':`<span class="tv5-ce ${q.pass?'ok':'no'}" title="${esc(q.batch||'')}">${q.pass?'✔':'✖'} ${sgn(q.err)}%</span>`;
 const trkW4=r=>`<div class="tv5-w">${[0,1,2,3].map(i=>{const q=r.F[i];return q?`<div class="${q.pass?'ok':'no'}" title="${esc(q.batch||'')}"><small style="color:${TRK_SL[i][2]}">น้ำ ${i+1} · ${fm(q.flow)} L/h</small><b>${q.pass?'✔':'✖'} ${sgn(q.err)}%</b></div>`:`<div class="na"><small>น้ำ ${i+1}</small><b>—</b></div>`}).join('')}</div>`;
 const trkF4=r=>`<div class="f4">${[0,1,2,3].map(i=>{const q=r.F[i];return `<div><small style="color:${TRK_SL[i][2]}">น้ำ ${i+1}${q?' · '+fm(q.flow)+' L/h':''}</small>${trkChip(q,i)}</div>`}).join('')}</div>`;
 const trkSt=r=>{const res=trkRes(r),bad=r.F.map((q,i)=>q&&!q.pass?i+1:0).filter(Boolean),n=r.F.filter(Boolean).length;return res==='PASS'?trkTag('ok','ผ่านครบ '+n+' น้ำ'):res==='FAIL'?trkTag('no','ไม่ผ่าน น้ำ '+bad.join(', ')):trkTag('','ไม่มีผลทดสอบ')};
-const trkShipTag=r=>trkTag(r.ship==='ส่งมอบแล้ว'?'ok':r.ship==='ส่งซ่อม/ทดสอบซ้ำ'?'no':'v',esc(r.ship));
+const trkShipTag=r=>trkTag(r.ship==='ส่งมอบแล้ว'||r.ship==='ติดตั้งแล้ว'?'ok':r.ship==='ส่งซ่อม/ทดสอบซ้ำ'?'no':'v',esc(r.ship));
 const trkBat=r=>`${esc(r.batBrand)||'—'}${r.batModel?' <small>'+esc(r.batModel)+'</small>':''}<br><small>${r.batV!==''&&r.batV!=null?esc(r.batV)+' V':'— V'}</small>`;
 function trkDetail(r,ks){const kv=(l,v)=>`<div><small>${l}</small><b>${v===''||v==null?'—':esc(v)}</b></div>`;
- return `<div class="tv5-det"><div class="tv5-info">${kv('วันที่ทดสอบ',trkTh(r.date))}${kv('ID มิเตอร์',r.id)}${kv('Lot',r.lot)}${kv('รุ่น',r.model)}${kv('ขนาด',r.size?r.size+' mm':'')}${kv('ชั้นความแม่นยำ',r.rclass)}${kv('ชนิด',r.type)}${kv('Hardware Model',r.hw)}${kv('เฟิร์มแวร์',r.fw)}${kv('ยี่ห้อแบตเตอรี่',r.batBrand)}${kv('รุ่นแบตเตอรี่',r.batModel)}${kv('แรงดันแบต',r.batV!==''&&r.batV!=null?r.batV+' V':'')}${kv('ผู้ทดสอบ',r.tester)}${kv('ฝ่าย',r.dept)}${kv('สถานะ',r.ship)}${kv('ลูกค้า / ปลายทาง',r.customer)}${kv('วันที่ส่งมอบ',r.shipDate?trkTh(r.shipDate):'')}${kv('คลาดเคลื่อนสูงสุด',r.maxErr!==''?r.maxErr+'%':'')}</div>
+ return `<div class="tv5-det"><div class="tv5-info">${kv('วันที่ทดสอบ',trkTh(r.date))}${kv('ID มิเตอร์',r.id)}${kv('Lot',r.lot)}${kv('รุ่น',r.model)}${kv('ขนาด',r.size?r.size+' mm':'')}${kv('ชั้นความแม่นยำ',r.rclass)}${kv('ชนิด',r.type)}${kv('Hardware Model',r.hw)}${kv('เฟิร์มแวร์',r.fw)}${kv('ยี่ห้อแบตเตอรี่',r.batBrand)}${kv('รุ่นแบตเตอรี่',r.batModel)}${kv('แรงดันแบต',r.batV!==''&&r.batV!=null?r.batV+' V':'')}${kv('ผู้ทดสอบ',r.tester)}${kv('ฝ่าย',r.dept)}${kv('สถานะ',r.ship)}${kv('ลูกค้า / ปลายทาง',r.customer)}${kv('วันที่ส่งมอบ',r.shipDate?trkTh(r.shipDate):'')}${kv('ติดตั้งที่ไหน',r.install)}${kv('วันที่ติดตั้ง',r.installDate?trkTh(r.installDate):'')}${kv('คลาดเคลื่อนสูงสุด',r.maxErr!==''?r.maxErr+'%':'')}</div>
 <h4 class="rp-h">💧 ผลทดสอบทั้ง 4 น้ำ</h4><div class="sc" style="max-height:none"><table><tr><th>น้ำ</th><th>Flow (L/h)</th><th>%Error</th><th>เกณฑ์ ±%</th><th>ผล</th><th>จาก Batch</th></tr>${r.F.map((q,i)=>`<tr><td style="color:${TRK_SL[i][2]}"><b>${TRK_SL[i][0]}</b> <small>${TRK_SL[i][1]}</small></td>${q?`<td>${fm(q.flow)}</td><td>${sgn(q.err)}%</td><td>±${trkLim(q.flow)}</td><td>${q.pass?trkTag('ok','ผ่าน'):trkTag('no','ไม่ผ่าน')}</td><td>${esc(q.batch)||'—'}</td>`:`<td colspan="5" class="mu">ไม่ได้ทดสอบ / ไม่ได้เก็บ</td>`}</tr>`).join('')}</table></div>
 ${r.F.some(q=>q&&q.legacy)?'<p class="mu" style="font-size:.8rem;margin:6px 0 0">ℹ️ รายการนี้บันทึกก่อน VER 5 (มีผลเพียงน้ำเดียว) — ดึงจาก Google Sheet อีกครั้งหรือแก้ไขเพื่อเติมผลครบ 4 น้ำ</p>':''}
 ${trkShipPanel(r)}<h4 class="rp-h">🧮 ค่าคงที่ K1–K20</h4>${ks?`<div style="margin:-4px 0 6px">${trkTag('v',ks.name,'style="background:'+ks.c+'22;color:'+ks.c+'"')} <small class="mu">${ks.ids.length} ตัวใช้ชุดเดียวกัน</small>${r.kmix?' '+trkTag('','⚠ K ไม่เหมือนกันทุกน้ำ'):''}</div>`:''}${r.K?'':'<span class="mu">— ไม่ได้บันทึกค่า K —</span>'}<div class="ks-gr">${(r.K||[]).map((k,i)=>`<div class="ks-k"><b>K${i+1}</b><small>${fm(k)}</small></div>`).join('')}</div>
 <p class="mu" style="margin:10px 0 0;font-size:.82rem">📝 ${esc(r.note)||'—'} · ที่มา: ${esc((r.src||[]).join(', '))||'—'} · รหัสรายการ ${esc(r.rid)}</p>
-<div class="bar" style="margin-top:10px"><button class="btn p" data-a="trkedit" data-id="${esc(r.rid)}">✎ แก้ไขรายการนี้</button><button class="btn" data-a="trkopen" data-id="${esc(r.rid)}">ปิด</button><button class="btn" data-a="trkdel" data-id="${esc(r.rid)}" style="color:#fda4af">✕ ลบ</button></div></div>`}
+<div class="bar" style="margin-top:10px"><button class="btn p" data-a="trkedit" data-id="${esc(r.rid)}">✎ แก้ไขรายการนี้</button><button class="btn" data-a="trkopen" data-id="${esc(r.rid)}">ปิด</button><button class="btn" data-a="trkdel" data-id="${esc(r.rid)}" style="color:#fda4af" title="ซ่อนจากหน้าจอ — ไม่ลบจริง ยังเก็บใน Google Sheet">🗂 ซ่อน (เก็บประวัติ)</button></div></div>`}
 function trkCard(r,sets){const res=trkRes(r),cls=res==='PASS'?'ok':res==='FAIL'?'no':'na',ks=trkKsOf(sets,r),open=ui.trkOpen===r.rid,p=trkPend(r);
  return `<div class="tv5-card ${cls}${open?' open':''}${ui.trkSel[r.rid]?' sel':''}">${trkCk(r)}<div class="tv5-sum" data-a="trkopen" data-id="${esc(r.rid)}"><div class="tv5-h"><div><div class="tv5-id">${esc(r.id)}</div><small>🗓 ${trkTh(r.date)} · Lot ${esc(r.lot)||'—'}</small></div><div style="text-align:right">${trkSt(r)}<div style="margin-top:4px">${trkShipTag(r)}</div>${(DB.trkCfg.q||[]).includes(r.rid)?'<div style="margin-top:4px">'+trkTag('','⏳ รอส่งขึ้น Sheet')+'</div>':''}</div></div>
 <div class="tv5-md"><b>${esc(r.model)} ${esc(r.size)} mm</b> ${trkTag('c',esc(r.rclass))} <small>${esc(r.type)}${r.hw?' · HW '+esc(r.hw):''}</small></div>${trkW4(r)}
-<div class="tv5-kv"><div>🔧 เฟิร์มแวร์ <b>${esc(r.fw)||'—'}</b></div><div>🔋 แบต <b>${esc(r.batBrand)||'—'}${r.batModel?' '+esc(r.batModel):''}${r.batV!==''&&r.batV!=null?' · '+esc(r.batV)+' V':''}</b></div><div>👤 ผู้ทดสอบ <b>${esc(r.tester)||'—'}</b> <small>${esc(r.dept)}</small></div><div>🧮 ชุด K ${ks?trkTag('v',ks.name,'style="background:'+ks.c+'22;color:'+ks.c+'"'):trkTag('no','ไม่มี K')}${r.kmix?' '+trkTag('','⚠'):''}</div><div>🏢 ปลายทาง <b class="${r.customer?'':'dim'}">${esc(r.customer)||'ยังไม่ระบุ'}</b></div><div>📅 ส่งมอบ <b class="${r.shipDate?'':'dim'}">${r.shipDate?trkTh(r.shipDate):'—'}</b></div></div>${p?`<div style="margin-top:8px">${trkTag('','⚠ รอระบุ '+p+' รายการ (เฟิร์มแวร์/แบต)','title="กดเพื่อเปิดแล้วแก้ไข"')}</div>`:''}</div>${open?trkDetail(r,ks):''}</div>`}
-function trkTable(L,sets){return `<div class="sc" style="max-height:640px"><table><tr><th></th><th>วันที่ทดสอบ</th><th>ID / Lot</th><th>รุ่น · ขนาด · ชั้น R</th><th>เฟิร์มแวร์</th><th>แบตเตอรี่</th><th>ผลทดสอบ 4 น้ำ (Flow · %Error)</th><th>ชุด K</th><th>ผู้ทดสอบ</th><th>สถานะ</th><th></th></tr>${L.map(r=>{const open=ui.trkOpen===r.rid,ks=trkKsOf(sets,r),p=trkPend(r);return `<tr class="tk-r${open?' act':''}" data-a="trkopen" data-id="${esc(r.rid)}"><td>${trkCk(r)}</td><td>${trkTh(r.date)}</td><td><b class="mo">${esc(r.id)}</b><br><small>${esc(r.lot)||'—'}</small></td><td>${esc(r.model)} ${esc(r.size)} mm ${trkTag('c',esc(r.rclass))}<br><small>${esc(r.type)}${r.hw?' · HW '+esc(r.hw):''}</small></td><td>${esc(r.fw)||'—'}</td><td>${trkBat(r)}</td><td>${trkF4(r)}</td><td>${ks?trkTag('v',ks.name,'style="background:'+ks.c+'22;color:'+ks.c+'"'):trkTag('no','ไม่มี K')}</td><td>${esc(r.tester)||'—'}<br><small>${esc(r.dept)}</small></td><td>${trkSt(r)}<br>${trkShipTag(r)}${(DB.trkCfg.q||[]).includes(r.rid)?'<br>'+trkTag('','⏳ รอส่ง Sheet'):''}${r.customer||r.shipDate?`<br><small>🏢 ${esc(r.customer)||'—'}${r.shipDate?' · 📅 '+trkTh(r.shipDate):''}</small>`:''}${p?'<br>'+trkTag('','⚠ รอระบุ '+p):''}</td><td style="white-space:nowrap"><button class="btn" data-a="trkedit" data-id="${esc(r.rid)}" style="padding:2px 8px">✎</button> <button class="btn" data-a="trkdel" data-id="${esc(r.rid)}" style="padding:2px 8px">✕</button></td></tr>${open?`<tr><td colspan="11" style="background:rgba(34,211,238,.05)">${trkDetail(r,ks)}</td></tr>`:''}`}).join('')}</table></div>`}
+<div class="tv5-kv"><div>🔧 เฟิร์มแวร์ <b>${esc(r.fw)||'—'}</b></div><div>🔋 แบต <b>${esc(r.batBrand)||'—'}${r.batModel?' '+esc(r.batModel):''}${r.batV!==''&&r.batV!=null?' · '+esc(r.batV)+' V':''}</b></div><div>👤 ผู้ทดสอบ <b>${esc(r.tester)||'—'}</b> <small>${esc(r.dept)}</small></div><div>🧮 ชุด K ${ks?trkTag('v',ks.name,'style="background:'+ks.c+'22;color:'+ks.c+'"'):trkTag('no','ไม่มี K')}${r.kmix?' '+trkTag('','⚠'):''}</div><div>🏢 ปลายทาง <b class="${r.customer?'':'dim'}">${esc(r.customer)||'ยังไม่ระบุ'}</b></div><div>📅 ส่งมอบ <b class="${r.shipDate?'':'dim'}">${r.shipDate?trkTh(r.shipDate):'—'}</b></div><div style="grid-column:1/-1">📍 ติดตั้งที่ <b class="${r.install?'':'dim'}">${esc(r.install)||'ยังไม่ระบุ'}</b>${r.installDate?' <small>('+trkTh(r.installDate)+')</small>':''}</div></div>${p?`<div style="margin-top:8px">${trkTag('','⚠ รอระบุ '+p+' รายการ (เฟิร์มแวร์/แบต)','title="กดเพื่อเปิดแล้วแก้ไข"')}</div>`:''}</div>${open?trkDetail(r,ks):''}</div>`}
+function trkTable(L,sets){return `<div class="sc" style="max-height:640px"><table><tr><th></th><th>วันที่ทดสอบ</th><th>ID / Lot</th><th>รุ่น · ขนาด · ชั้น R</th><th>เฟิร์มแวร์</th><th>แบตเตอรี่</th><th>ผลทดสอบ 4 น้ำ (Flow · %Error)</th><th>ชุด K</th><th>ผู้ทดสอบ</th><th>สถานะ</th><th></th></tr>${L.map(r=>{const open=ui.trkOpen===r.rid,ks=trkKsOf(sets,r),p=trkPend(r);return `<tr class="tk-r${open?' act':''}" data-a="trkopen" data-id="${esc(r.rid)}"><td>${trkCk(r)}</td><td>${trkTh(r.date)}</td><td><b class="mo">${esc(r.id)}</b><br><small>${esc(r.lot)||'—'}</small></td><td>${esc(r.model)} ${esc(r.size)} mm ${trkTag('c',esc(r.rclass))}<br><small>${esc(r.type)}${r.hw?' · HW '+esc(r.hw):''}</small></td><td>${esc(r.fw)||'—'}</td><td>${trkBat(r)}</td><td>${trkF4(r)}</td><td>${ks?trkTag('v',ks.name,'style="background:'+ks.c+'22;color:'+ks.c+'"'):trkTag('no','ไม่มี K')}</td><td>${esc(r.tester)||'—'}<br><small>${esc(r.dept)}</small></td><td>${trkSt(r)}<br>${trkShipTag(r)}${(DB.trkCfg.q||[]).includes(r.rid)?'<br>'+trkTag('','⏳ รอส่ง Sheet'):''}${r.customer||r.shipDate?`<br><small>🏢 ${esc(r.customer)||'—'}${r.shipDate?' · 📅 '+trkTh(r.shipDate):''}</small>`:''}${r.install?`<br><small>📍 ${esc(r.install)}${r.installDate?' · '+trkTh(r.installDate):''}</small>`:''}${p?'<br>'+trkTag('','⚠ รอระบุ '+p):''}</td><td style="white-space:nowrap"><button class="btn" data-a="trkedit" data-id="${esc(r.rid)}" style="padding:2px 8px">✎</button> <button class="btn" data-a="trkdel" data-id="${esc(r.rid)}" style="padding:2px 8px" title="ซ่อน (ไม่ลบจริง เก็บใน Google Sheet)">🗂</button></td></tr>${open?`<tr><td colspan="11" style="background:rgba(34,211,238,.05)">${trkDetail(r,ks)}</td></tr>`:''}`}).join('')}</table></div>`}
 function trkBody(){const L=trkFilter(),sets=trkKsets((DB.trk||[]).map(trkMig));if(!L.length)return '<div class="ks-empty"><b>ไม่พบรายการ</b><span>ล้างตัวกรอง หรือกด “⬇ ดึงจาก Google Sheet” / “＋ เพิ่มรายการ” / “📥 นำเข้าจากผลทดสอบ Batch”</span></div>';return ui.trkView==='tbl'?trkTable(L,sets):`<div class="tv5-list">${L.map(r=>trkCard(r,sets)).join('')}</div>`}
 function trkRefresh(){const t=document.getElementById('trk-list');if(t)t.innerHTML=trkBody();const c=document.getElementById('trk-cnt');if(c)c.textContent=trkFilter().length+' / '+(DB.trk||[]).length;const s=document.getElementById('trk-selc');if(s)s.textContent=trkSelIds().length}
 /* ----- บันทึก / นำเข้า / ส่งออก ----- */
@@ -905,7 +1060,7 @@ function trkImport(){DB.trk=DB.trk||[];const M=new Map();DB.batches.filter(b=>!b
   if(!F.some(Boolean))return;
   const last=A[A.length-1],b=last.b,R=last.m.r[1]||last.m.r[0],bt=String(R.bat??'').trim(),bv=/^(\d+(?:\.\d+)?)\s*V?$/i.exec(bt),k=R.k.filter(Number.isFinite),i=DB.trk.findIndex(x=>x.id===id);
   if(i>=0){const x=trkMig(DB.trk[i]);let ch=0;F.forEach((q,s)=>{if(q&&!x.F[s]){x.F[s]=q;ch=1}});if(!x.K&&k.length===20){x.K=k;ch=1}if(ch){x.ts=Date.now();upd++;chg.push(x.rid)}return}
-  const r=trkMig({rid:id+'@'+last.d,date:last.d,id,lot:b.prod||'',model:b.m==='MJ'?'Multijet':'Single Jet',size:b.sz,rclass:'R160',type:'อิเล็กทรอนิกส์ (Hall)',hw:'SMCV.4',fw:TRK_PEND,batBrand:TRK_PEND,batModel:TRK_PEND,batV:bv&&+bv[1]<10?+bv[1]:'',tester:b.op||'',dept:'ฝ่ายผลิต',note:'นำเข้าจาก Batch'+(bt&&!(bv&&+bv[1]<10)?' · Battery raw: '+bt:''),ship:'ผ่านทดสอบ',customer:'',shipDate:'',K:k.length===20?k:null,F,kmix:0,src:[...new Set(A.map(z=>z.b.id))],ts:Date.now()});
+  const r=trkMig({rid:id+'@'+last.d,date:last.d,id,lot:b.prod||'',model:b.m==='MJ'?'Multijet':'Single Jet',size:b.sz,rclass:'R160',type:'อิเล็กทรอนิกส์ (Hall)',hw:'SMCV.4',fw:TRK_PEND,batBrand:TRK_PEND,batModel:TRK_PEND,batV:bv&&+bv[1]<10?+bv[1]:'',tester:b.op||'',dept:'ฝ่ายผลิต',note:'นำเข้าจาก Batch'+(bt&&!(bv&&+bv[1]<10)?' · Battery raw: '+bt:''),ship:'ผ่านทดสอบ',customer:'',shipDate:'',install:'',installDate:'',K:k.length===20?k:null,F,kmix:0,src:[...new Set(A.map(z=>z.b.id))],ts:Date.now()});
   const T=r.F.filter(Boolean);r.status=T.every(q=>q.pass)?'ผ่านครบ '+T.length+' น้ำ':'ไม่ผ่านบางน้ำ';DB.trk.push(r);add++;chg.push(r.rid)});
  logEv('นำเข้ามิเตอร์จาก Batch เพิ่ม '+add+' · เติม '+upd);save();if(chg.length)trkQueue(chg);toast(add||upd?'นำเข้าจาก Batch: เพิ่ม '+add+' · เติมข้อมูล '+upd+' ตัว (ค่าที่ “รอระบุ” แก้ได้ทีหลัง)':'ไม่มีรายการใหม่ให้นำเข้า')}
 function trkCsv(){const H=TRK_HEAD,q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';dl('SMCV4_Meter_Tracker_'+trkToday()+'.csv','\ufeff'+H.join(',')+'\n'+trkFilter().map(r=>{const o=trkFlat(r);return H.map(c=>q(o[c])).join(',')}).join('\n'),'text/csv');toast('ดาวน์โหลด CSV ('+trkFilter().length+' รายการ)')}
@@ -916,8 +1071,8 @@ async function gsCall(c,params,body){let txt;
  let j;try{j=JSON.parse(txt)}catch(e){const x=new Error('Google ตอบกลับเป็นหน้าเว็บ ไม่ใช่ข้อมูล JSON');x.hint='มักเกิดจาก ① Deploy ไม่ได้ตั้งเป็น “ทุกคน” หรือยังไม่กดอนุญาตสิทธิ์ ② เปิด Apps Script ไม่ได้มาจากในไฟล์ Google Sheet (ต้องมี Sheet ผูกอยู่) ③ โค้ดสคริปต์มีข้อผิดพลาด ④ แก้โค้ดแล้วยังไม่ Deploy เวอร์ชันใหม่ · ข้อความที่ Google ตอบ: '+String(txt).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,170);throw x}
  if(j&&j.error){const x=new Error(String(j.error));x.hint=/token/i.test(j.error)?'Token ในแอปต้องตรงกับค่า TOKEN ในสคริปต์ (แอปส่งค่า: '+(c.token||'ว่าง')+')':'ข้อความนี้ส่งมาจากสคริปต์ใน Google';throw x}
  if(body&&body.action==='upsert'){const bad=(m,h)=>{const e=new Error(m);e.hint=h;throw e};
-  if(!(j&&j.ver>=5))bad('Apps Script ที่ Deploy อยู่ยังเป็นเวอร์ชันเก่า'+(j&&j.ver?' (v'+j.ver+')':' (ไม่มีเลขเวอร์ชัน)')+' — Sheet ไม่ได้รับ %Error / Flow / R','ลบโค้ดเดิมใน Apps Script ทั้งหมด → กดปุ่ม “⎘ คัดลอกโค้ด Apps Script VER 5” ในการ์ด ☁️ เชื่อม Google Sheet แล้ววางโค้ดใหม่ → บันทึก → Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ล่าสุดเท่านั้น) · ถ้าเปลี่ยนเป็นลิงก์ /exec ใหม่ ต้องวางลิงก์ใหม่ในการ์ด ☁️ ด้วย');
-  const s0=(body.rows||[])[0]||{},E=j.echo||{},miss=['rclass','flow1','err1','ship'].filter(k=>{const x=s0[k],y=E[k];if(x===''||x==null)return false;const nx=+x,ny=+y;return isFinite(nx)&&isFinite(ny)&&String(y)!==''?Math.abs(nx-ny)>1e-9:String(x)!==String(y)});
+  if(!(j&&j.ver>=6))bad('Apps Script ที่ Deploy อยู่ยังเป็นเวอร์ชันเก่า'+(j&&j.ver?' (v'+j.ver+')':' (ไม่มีเลขเวอร์ชัน)')+' — Sheet ไม่มีระบบแบ่งชีต/เก็บประวัติ/ติดตั้งที่ไหน (ต้อง VER 6)','ลบโค้ดเดิมใน Apps Script ทั้งหมด → กดปุ่ม “⎘ คัดลอกโค้ด Apps Script VER 6” ในการ์ด ☁️ เชื่อม Google Sheet แล้ววางโค้ดใหม่ → บันทึก → Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ล่าสุดเท่านั้น) · ถ้าเปลี่ยนเป็นลิงก์ /exec ใหม่ ต้องวางลิงก์ใหม่ในการ์ด ☁️ ด้วย');
+  const s0=(body.rows||[])[0]||{},E=j.echo||{},miss=['rclass','flow1','err1','ship','customer','shipDate','install','installDate'].filter(k=>{const x=s0[k],y=E[k];if(x===''||x==null)return false;const nx=+x,ny=+y;return isFinite(nx)&&isFinite(ny)&&String(y)!==''?Math.abs(nx-ny)>1e-9:String(x)!==String(y)});
   if(miss.length)bad('Sheet รับคำสั่งแล้ว แต่คอลัมน์ '+miss.join(', ')+' ไม่ตรงกับที่ส่ง (ใน Sheet: '+miss.map(k=>String(E[k]===''?'ว่าง':E[k])).join(', ')+')','ตรวจหัวตารางแถว 1 ของแผ่นงาน “Meters” ว่าชื่อคอลัมน์สะกดตรงเป๊ะ ไม่มีช่องว่างต่อท้าย ไม่ซ้ำ')}
  if(j&&Array.isArray(j.rows)&&j.rows.length&&!j.rows.some(o=>o&&o.rid)){const x=new Error(j.ver?'สคริปต์เป็นเวอร์ชัน '+j.ver+' แล้ว แต่ยังไม่พบคอลัมน์ rid ในแผ่นงาน':'อ่าน Sheet ได้ แต่ไม่พบคอลัมน์ rid (แถวแรกของ Sheet ไม่ใช่หัวตาราง) — สคริปต์ที่ใช้อยู่ยังเป็นเวอร์ชันเก่า');x.fix=1;x.hint=j.ver?'ตรวจว่าชื่อแผ่นงานในสคริปต์ (SHEET = \'Meters\') ตรงกับแผ่นที่มีข้อมูล หรือแทรกหัวตารางตามวิธีเร็วด้านล่าง':'🔧 วิธีเร็ว (10 วินาที ไม่ต้อง Deploy ใหม่): ใน Google Sheet คลิกขวาที่เลขแถว 1 → “แทรก 1 แถวด้านบน” → คลิกช่อง A1 → วาง (Ctrl+V) หัวตารางที่คัดลอกจากปุ่มด้านล่าง → กลับมากดใหม่ · 🔧 วิธีเต็ม: วางโค้ดใหม่ใน Apps Script แล้ว Deploy → จัดการการทำให้ใช้งาน → ✎ แก้ไข → เวอร์ชัน “เวอร์ชันใหม่” → ทำให้ใช้งาน (กดบันทึกโค้ดอย่างเดียวไม่พอ ลิงก์ /exec ใช้โค้ดที่ Deploy ไว้ล่าสุดเท่านั้น)';throw x}
  return j}
@@ -932,16 +1087,16 @@ function tv5Page(){const L=trkFilter(),sets=trkKsets((DB.trk||[]).map(trkMig)),P
  head=`<div class="pvh"><div><h1>📇 รายงานทะเบียนมิเตอร์ที่ผ่านการทดสอบ</h1><div class="sub">SMCV.4 Electronics Water Meter · VER ${TRK_VER}</div></div><div class="pvd">พิมพ์เมื่อ ${tv5Now()}<br>${L.length} รายการ</div></div>
 <div class="pvs"><div><b>${L.length}</b><span>รายการ</span></div><div class="g"><b>${ok}</b><span>ผ่านครบทุกน้ำ</span></div><div class="r"><b>${no}</b><span>ไม่ผ่านบางน้ำ</span></div><div><b>${L.filter(r=>r.ship==='ส่งมอบแล้ว').length}</b><span>ส่งมอบแล้ว</span></div></div><div class="pvf">เงื่อนไข: ${esc(tv5FilterTxt())} · เกณฑ์ผ่าน ±5% ที่ Flow ≤ 16 L/h, ±2% ที่ Flow สูงกว่า</div>`;
  let body='';
- if(P.mode==='card')body=`<div class="pvc">${L.map(r=>`<div class="pvcard ${trkRes(r)==='PASS'?'ok':'no'}"><div class="ch"><b>${esc(r.id)}</b><span>${trkTh(r.date)} · Lot ${esc(r.lot)||'—'}</span><i>${trkRes(r)==='PASS'?'ผ่านครบ':'ไม่ผ่าน'}</i></div><div class="cm">${esc(r.model)} ${esc(r.size)} mm · ${esc(r.rclass)} · ${esc(r.type)}${r.hw?' · HW '+esc(r.hw):''}</div><table class="wt"><tr>${[0,1,2,3].map(i=>w(r.F[i],i)).join('')}</tr></table><div class="ck">เฟิร์มแวร์ <b>${esc(r.fw)||'—'}</b> · แบต <b>${esc(r.batBrand)||'—'} ${esc(r.batModel)} ${r.batV!==''?esc(r.batV)+' V':''}</b> · ผู้ทดสอบ <b>${esc(r.tester)||'—'}</b> (${esc(r.dept)}) · ${esc(r.ship)}${r.customer?' → '+esc(r.customer):''}${r.shipDate?' ('+trkTh(r.shipDate)+')':''} · ${ks(r)}</div>${P.k&&r.K?`<div class="kg">${r.K.map((k,i)=>`<span><u>K${i+1}</u>${fm(k)}</span>`).join('')}</div>`:''}</div>`).join('')}</div>`;
- else{body=`<table class="mt"><tr><th>#</th><th>วันที่</th><th>ID / Lot</th><th>รุ่น · ขนาด · ชั้น R</th><th>FW</th><th>แบตเตอรี่</th><th>น้ำ 1</th><th>น้ำ 2</th><th>น้ำ 3</th><th>น้ำ 4</th><th>ชุด K</th><th>ผู้ทดสอบ</th><th>สถานะ</th></tr>${L.map((r,n)=>`<tr><td>${n+1}</td><td>${trkTh(r.date)}</td><td><b>${esc(r.id)}</b><br><small>${esc(r.lot)||'—'}</small></td><td>${esc(r.model)} ${esc(r.size)} mm <b>${esc(r.rclass)}</b></td><td>${esc(r.fw)||'—'}</td><td>${esc(r.batBrand)||'—'} ${esc(r.batModel)}<br><small>${r.batV!==''?esc(r.batV)+' V':'—'}</small></td>${[0,1,2,3].map(i=>w(r.F[i],i)).join('')}<td>${ks(r)}</td><td>${esc(r.tester)||'—'}<br><small>${esc(r.dept)}</small></td><td>${esc(r.ship)}${r.customer||r.shipDate?'<br><small>'+esc(r.customer)+(r.shipDate?' · '+trkTh(r.shipDate):'')+'</small>':''}</td></tr>`).join('')}</table>`;
+ if(P.mode==='card')body=`<div class="pvc">${L.map(r=>`<div class="pvcard ${trkRes(r)==='PASS'?'ok':'no'}"><div class="ch"><b>${esc(r.id)}</b><span>${trkTh(r.date)} · Lot ${esc(r.lot)||'—'}</span><i>${trkRes(r)==='PASS'?'ผ่านครบ':'ไม่ผ่าน'}</i></div><div class="cm">${esc(r.model)} ${esc(r.size)} mm · ${esc(r.rclass)} · ${esc(r.type)}${r.hw?' · HW '+esc(r.hw):''}</div><table class="wt"><tr>${[0,1,2,3].map(i=>w(r.F[i],i)).join('')}</tr></table><div class="ck">เฟิร์มแวร์ <b>${esc(r.fw)||'—'}</b> · แบต <b>${esc(r.batBrand)||'—'} ${esc(r.batModel)} ${r.batV!==''?esc(r.batV)+' V':''}</b> · ผู้ทดสอบ <b>${esc(r.tester)||'—'}</b> (${esc(r.dept)}) · ${esc(r.ship)}${r.customer?' → '+esc(r.customer):''}${r.shipDate?' ('+trkTh(r.shipDate)+')':''}${r.install?' · 📍 '+esc(r.install):''} · ${ks(r)}</div>${P.k&&r.K?`<div class="kg">${r.K.map((k,i)=>`<span><u>K${i+1}</u>${fm(k)}</span>`).join('')}</div>`:''}</div>`).join('')}</div>`;
+ else{body=`<table class="mt"><tr><th>#</th><th>วันที่</th><th>ID / Lot</th><th>รุ่น · ขนาด · ชั้น R</th><th>FW</th><th>แบตเตอรี่</th><th>น้ำ 1</th><th>น้ำ 2</th><th>น้ำ 3</th><th>น้ำ 4</th><th>ชุด K</th><th>ผู้ทดสอบ</th><th>สถานะ</th></tr>${L.map((r,n)=>`<tr><td>${n+1}</td><td>${trkTh(r.date)}</td><td><b>${esc(r.id)}</b><br><small>${esc(r.lot)||'—'}</small></td><td>${esc(r.model)} ${esc(r.size)} mm <b>${esc(r.rclass)}</b></td><td>${esc(r.fw)||'—'}</td><td>${esc(r.batBrand)||'—'} ${esc(r.batModel)}<br><small>${r.batV!==''?esc(r.batV)+' V':'—'}</small></td>${[0,1,2,3].map(i=>w(r.F[i],i)).join('')}<td>${ks(r)}</td><td>${esc(r.tester)||'—'}<br><small>${esc(r.dept)}</small></td><td>${esc(r.ship)}${r.customer||r.shipDate?'<br><small>'+esc(r.customer)+(r.shipDate?' · '+trkTh(r.shipDate):'')+'</small>':''}${r.install?'<br><small>📍 '+esc(r.install)+(r.installDate?' · '+trkTh(r.installDate):'')+'</small>':''}</td></tr>`).join('')}</table>`;
   if(P.k)body+=`<h3 class="pvk">ค่าคงที่ K1–K20</h3><table class="mt kt"><tr><th>ID</th><th>ชุด K</th>${Array.from({length:20},(_,i)=>`<th>K${i+1}</th>`).join('')}</tr>${L.filter(r=>r.K).map(r=>`<tr><td><b>${esc(r.id)}</b></td><td>${ks(r)}</td>${r.K.map(k=>`<td>${fm(k)}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="22">ไม่มีค่า K</td></tr>'}</table>`}
  return head+(L.length?body:'<p style="text-align:center;padding:30px;color:#64748b">ไม่มีรายการตามเงื่อนไข</p>')+`<div class="pvsg"><div>ผู้ทดสอบ / ผู้จัดทำ<br><br>ลงชื่อ ...........................................</div><div>ผู้ตรวจสอบ (QA)<br><br>ลงชื่อ ...........................................</div><div>ผู้อนุมัติ<br><br>ลงชื่อ ...........................................</div></div>`}
 function tv5PvRender(){let o=document.getElementById('tv5pv');if(!o){o=document.createElement('div');o.id='tv5pv';document.body.appendChild(o)}const P=ui.pv,c=(a,v,t,on)=>`<span class="chip ${on?'on':''}" data-a="${a}" data-v="${v}">${t}</span>`;
  o.hidden=!P.on;document.body.classList.toggle('tv5p',!!P.on);if(!P.on){o.innerHTML='';return}
  let g=document.getElementById('tv5pg');if(!g){g=document.createElement('style');g.id='tv5pg';document.head.appendChild(g)}g.textContent='@page{size:A4 '+P.orient+';margin:8mm}';
  o.innerHTML=`<div class="tv5pv-tools"><b style="color:#fff">🖨 พรีวิว</b>มุมมอง ${c('trkpvset','mode:table','📋 ตาราง',P.mode==='table')}${c('trkpvset','mode:card','🗂 การ์ด',P.mode==='card')} กระดาษ ${c('trkpvset','orient:landscape','แนวนอน',P.orient==='landscape')}${c('trkpvset','orient:portrait','แนวตั้ง',P.orient==='portrait')} ${c('trkpvset','k:'+(P.k?0:1),'☑ แสดง K1–K20',P.k)}<span style="flex:1"></span><button class="btn p" data-a="trkprint">🖨 พิมพ์ / บันทึกเป็น PDF</button><button class="btn" data-a="trkpdf">⬇ ดาวน์โหลด PDF</button><button class="btn" data-a="trkimg">🖼 บันทึกรูปภาพ PNG</button><button class="btn" data-a="trkpvx">✕ ปิด</button></div><div class="tv5pv-wrap"><div class="tv5-page ${P.orient}" id="tv5page">${tv5Page()}</div></div>`}
-function tv5Rep(){const L=trkFilter(),sets=trkKsets((DB.trk||[]).map(trkMig)),H=['ลำดับ','วันที่ทดสอบ','ID มิเตอร์','Lot','รุ่น','ขนาด (mm)','ชั้น R','ชนิด','เฟิร์มแวร์','ยี่ห้อแบต','รุ่นแบต','แรงดันแบต (V)',...[1,2,3,4].flatMap(i=>['น้ำ '+i+' Flow (L/h)','น้ำ '+i+' %Error','น้ำ '+i+' ผล']),'ผลรวม','คลาดเคลื่อนสูงสุด (%)','ชุด K','ผู้ทดสอบ','ฝ่าย','สถานะ','ลูกค้า / ปลายทาง','วันที่ส่งมอบ','หมายเหตุ'];
- return{H,L,sets,R:L.map((r,n)=>[n+1,trkTh(r.date),r.id,r.lot,r.model,r.size,r.rclass,r.type,r.fw,r.batBrand,r.batModel,r.batV,...r.F.flatMap(q=>q?[q.flow,q.err,q.pass?'ผ่าน':'ไม่ผ่าน']:['','','']),trkRes(r)||'',r.maxErr,(trkKsOf(sets,r)||{}).name||'',r.tester,r.dept,r.ship,r.customer,r.shipDate?trkTh(r.shipDate):'',r.note])}}
+function tv5Rep(){const L=trkFilter(),sets=trkKsets((DB.trk||[]).map(trkMig)),H=['ลำดับ','วันที่ทดสอบ','ID มิเตอร์','Lot','รุ่น','ขนาด (mm)','ชั้น R','ชนิด','เฟิร์มแวร์','ยี่ห้อแบต','รุ่นแบต','แรงดันแบต (V)',...[1,2,3,4].flatMap(i=>['น้ำ '+i+' Flow (L/h)','น้ำ '+i+' %Error','น้ำ '+i+' ผล']),'ผลรวม','คลาดเคลื่อนสูงสุด (%)','ชุด K','ผู้ทดสอบ','ฝ่าย','สถานะ','ลูกค้า / ปลายทาง','วันที่ส่งมอบ','ติดตั้งที่ไหน','วันที่ติดตั้ง','หมายเหตุ'];
+ return{H,L,sets,R:L.map((r,n)=>[n+1,trkTh(r.date),r.id,r.lot,r.model,r.size,r.rclass,r.type,r.fw,r.batBrand,r.batModel,r.batV,...r.F.flatMap(q=>q?[q.flow,q.err,q.pass?'ผ่าน':'ไม่ผ่าน']:['','','']),trkRes(r)||'',r.maxErr,(trkKsOf(sets,r)||{}).name||'',r.tester,r.dept,r.ship,r.customer,r.shipDate?trkTh(r.shipDate):'',r.install,r.installDate?trkTh(r.installDate):'',r.note])}}
 function tv5Xlsx(){if(!window.XLSX)return needXLSX().then(tv5Xlsx);const{H,L,sets,R}=tv5Rep(),wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet([['รายงานทะเบียนมิเตอร์ที่ผ่านการทดสอบ · SMCV.4 · พิมพ์เมื่อ '+tv5Now()],['เงื่อนไข: '+tv5FilterTxt()],[],H,...R]);ws['!cols']=H.map((h,i)=>({wch:i===0?6:i<12?14:11}));XLSX.utils.book_append_sheet(wb,ws,'รายงาน');
  const k=XLSX.utils.aoa_to_sheet([['ID','ชุด K',...Array.from({length:20},(_,i)=>'K'+(i+1))],...L.filter(r=>r.K).map(r=>[r.id,(trkKsOf(sets,r)||{}).name||'',...r.K])]);k['!cols']=[{wch:12},{wch:10},...Array(20).fill({wch:8})];XLSX.utils.book_append_sheet(wb,k,'K1-K20');
  const ok=L.filter(r=>trkRes(r)==='PASS').length;XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['สรุป',''],['รายการทั้งหมด',L.length],['ผ่านครบทุกน้ำ',ok],['ไม่ผ่านบางน้ำ',L.length-ok],['ส่งมอบแล้ว',L.filter(r=>r.ship==='ส่งมอบแล้ว').length]]),'สรุป');XLSX.writeFile(wb,'SMCV4_Meter_Report_'+trkToday()+'.xlsx');toast('ดาวน์โหลด Excel รายงานแล้ว ('+L.length+' รายการ)')}
@@ -956,45 +1111,71 @@ async function tv5Pdf(){try{toast('กำลังสร้าง PDF…');const
 /* ---------- ปลายทาง / ส่งมอบ : กรอกทีหลังได้ทุกเมื่อ (ทีละตัวหรือหลายตัว) ---------- */
 ui.trkSel=ui.trkSel||{};
 const trkSelIds=()=>Object.keys(ui.trkSel).filter(k=>ui.trkSel[k]);
-function trkStepper(r){if(r.ship==='ส่งซ่อม/ทดสอบซ้ำ')return '<div class="tv5-stp"><span class="now bad"><i>🔧</i><b>ส่งซ่อม / ทดสอบซ้ำ</b><small>กลับมาแล้วเปลี่ยนสถานะได้</small></span></div>';const i=r.ship==='ส่งมอบแล้ว'?2:r.ship==='พร้อมส่งมอบ'?1:0,S=[['✔','ผ่านทดสอบ',trkTh(r.date)],['📦','พร้อมส่งมอบ',r.customer||'ยังไม่ระบุปลายทาง'],['🚚','ส่งมอบแล้ว',r.shipDate?trkTh(r.shipDate):'—']];return '<div class="tv5-stp">'+S.map((s,k)=>`<span class="${k<i?'done':k===i?'now':''}"><i>${k<i?'✔':s[0]}</i><b>${s[1]}</b><small>${esc(s[2])}</small></span>`).join('<em></em>')+'</div>'}
-const trkShipPanel=r=>`<h4 class="rp-h">📦 ปลายทาง & การส่งมอบ</h4>${trkStepper(r)}<p class="mu" style="font-size:.8rem;margin:6px 0">ไม่ต้องกรอกตอนลงทะเบียน — กรอก/แก้ไขได้ทุกเมื่อที่รู้ปลายทาง · รู้ว่าจะส่งที่ไหน → “พร้อมส่งมอบ” + ลูกค้า · ส่งแล้ว → “ส่งมอบแล้ว” + วันที่ (ไม่ใส่วันที่ ระบบใช้วันนี้ให้)</p><div class="tk-grid" data-shipbox="${esc(r.rid)}"><label>สถานะ<select data-ts="ship">${TRK_SHIP.map(s=>`<option ${r.ship===s?'selected':''}>${s}</option>`).join('')}</select></label><label class="w2">ลูกค้า / ปลายทาง<input data-ts="customer" value="${esc(r.customer)}" placeholder="เช่น การประปา… / บริษัท…"></label><label>วันที่ส่งมอบ<input type="date" data-ts="shipDate" value="${esc(r.shipDate)}"></label></div><div class="bar" style="margin-top:8px"><button class="btn p" data-a="trkship" data-id="${esc(r.rid)}">💾 บันทึกการส่งมอบ</button><button class="btn" data-a="trkshipnow" data-id="${esc(r.rid)}">✔ ส่งมอบแล้ววันนี้</button></div><p class="mu" style="font-size:.78rem;margin:6px 0 0">${trkSyncNote()}</p>`;
+function trkStepper(r){if(r.ship==='ส่งซ่อม/ทดสอบซ้ำ')return '<div class="tv5-stp"><span class="now bad"><i>🔧</i><b>ส่งซ่อม / ทดสอบซ้ำ</b><small>กลับมาแล้วเปลี่ยนสถานะได้</small></span></div>';const i=r.ship==='ติดตั้งแล้ว'?3:r.ship==='ส่งมอบแล้ว'?2:r.ship==='พร้อมส่งมอบ'?1:0,S=[['✔','ผ่านทดสอบ',trkTh(r.date)],['📦','พร้อมส่งมอบ',r.customer||'ยังไม่ระบุปลายทาง'],['🚚','ส่งมอบแล้ว',r.shipDate?trkTh(r.shipDate):'—'],['🏗','ติดตั้งแล้ว',r.install?esc(r.install):'ยังไม่ระบุจุดติดตั้ง']];return '<div class="tv5-stp">'+S.map((s,k)=>`<span class="${k<i?'done':k===i?'now':''}"><i>${k<i?'✔':s[0]}</i><b>${s[1]}</b><small>${esc(s[2])}</small></span>`).join('<em></em>')+'</div>'}
+const trkShipPanel=r=>`<h4 class="rp-h">📦 ปลายทาง & การส่งมอบ</h4>${trkStepper(r)}<p class="mu" style="font-size:.8rem;margin:6px 0">ไม่ต้องกรอกตอนลงทะเบียน — กรอก/แก้ไขได้ทุกเมื่อ · รู้ปลายทาง → “พร้อมส่งมอบ” + ลูกค้า · ส่งแล้ว → “ส่งมอบแล้ว” + วันที่ · ติดตั้งแล้ว → ใส่ “ติดตั้งที่ไหน” (สถานะเป็น “ติดตั้งแล้ว” ให้เอง) · ทุกการแก้ไขเก็บประวัติใน Sheet ไม่ลบ</p><div class="tk-grid" data-shipbox="${esc(r.rid)}"><label>สถานะ<select data-ts="ship">${TRK_SHIP.map(s=>`<option ${r.ship===s?'selected':''}>${s}</option>`).join('')}</select></label><label class="w2">ลูกค้า / ปลายทาง<input data-ts="customer" value="${esc(r.customer)}" placeholder="เช่น การประปา… / บริษัท…"></label><label>วันที่ส่งมอบ<input type="date" data-ts="shipDate" value="${esc(r.shipDate)}"></label><label class="w2">📍 ติดตั้งที่ไหน (สถานที่ / จุดติดตั้ง)<input data-ts="install" value="${esc(r.install)}" placeholder="เช่น สถานีสูบน้ำ… / DMA… / ที่อยู่ลูกค้า"></label><label>วันที่ติดตั้ง<input type="date" data-ts="installDate" value="${esc(r.installDate)}"></label></div><div class="bar" style="margin-top:8px"><button class="btn p" data-a="trkship" data-id="${esc(r.rid)}">💾 บันทึกการส่งมอบ</button><button class="btn" data-a="trkshipnow" data-id="${esc(r.rid)}">✔ ส่งมอบแล้ววันนี้</button><button class="btn" data-a="trklog" data-id="${esc(r.rid)}">🕘 ประวัติการเปลี่ยนแปลง</button></div>${trkLogHtml(r)}<p class="mu" style="font-size:.78rem;margin:6px 0 0">${trkSyncNote()}</p>`;
 function trkShipSave(id,now){const r=(DB.trk||[]).find(x=>x.rid===id);if(!r)return;const bx=[...document.querySelectorAll('[data-shipbox]')].find(b=>b.dataset.shipbox===id);if(bx)bx.querySelectorAll('[data-ts]').forEach(el=>r[el.dataset.ts]=el.value.trim());if(now){r.ship='ส่งมอบแล้ว';r.shipDate=trkToday()}trkAutoShip(r);r.ts=Date.now();logEv('ส่งมอบ '+r.id+' → '+(r.customer||'-'));save();trkQueue([r.rid]);toast(r.ship==='ส่งมอบแล้ว'&&!r.customer?'บันทึกแล้ว — ⚠ ยังไม่ได้ระบุลูกค้า/ปลายทาง':'บันทึกการส่งมอบ '+r.id+' แล้ว');render()}
-function trkBulk(mode){const ids=trkSelIds();if(!ids.length){toast('ติ๊กเลือกมิเตอร์ในรายการก่อน');return}const g=k=>{const e=document.querySelector('[data-tb="'+k+'"]');return e?e.value.trim():''};let sh=g('ship'),cu=g('customer'),dt=g('shipDate');if(mode==='done'){sh='ส่งมอบแล้ว';dt=dt||trkToday()}
- if(!sh&&!cu&&!dt){toast('กรอกอย่างน้อย 1 ช่อง (สถานะ / ลูกค้า / วันที่ส่งมอบ)');return}if(sh==='ส่งมอบแล้ว'&&!cu&&!confirm('ยังไม่ได้ใส่ลูกค้า/ปลายทาง — บันทึกต่อหรือไม่?'))return;
- (DB.trk||[]).forEach(r=>{if(!ui.trkSel[r.rid])return;if(sh)r.ship=sh;if(cu)r.customer=cu;if(dt)r.shipDate=dt;trkAutoShip(r);r.ts=Date.now()});logEv('อัปเดตส่งมอบ '+ids.length+' ตัว');save();trkQueue(ids);toast('📦 อัปเดต '+ids.length+' ตัวแล้ว');render()}
+function trkBulk(mode){const ids=trkSelIds();if(!ids.length){toast('ติ๊กเลือกมิเตอร์ในรายการก่อน');return}const g=k=>{const e=document.querySelector('[data-tb="'+k+'"]');return e?e.value.trim():''};let sh=g('ship'),cu=g('customer'),dt=g('shipDate'),ins=g('install'),idt=g('installDate');if(mode==='done'){sh='ส่งมอบแล้ว';dt=dt||trkToday()}
+ if(!sh&&!cu&&!dt&&!ins&&!idt){toast('กรอกอย่างน้อย 1 ช่อง (สถานะ / ลูกค้า / วันที่ส่งมอบ / ติดตั้งที่ไหน)');return}if(sh==='ส่งมอบแล้ว'&&!cu&&!confirm('ยังไม่ได้ใส่ลูกค้า/ปลายทาง — บันทึกต่อหรือไม่?'))return;
+ (DB.trk||[]).forEach(r=>{if(!ui.trkSel[r.rid])return;if(sh)r.ship=sh;if(cu)r.customer=cu;if(dt)r.shipDate=dt;if(ins)r.install=ins;if(idt)r.installDate=idt;trkAutoShip(r);r.ts=Date.now()});logEv('อัปเดตส่งมอบ '+ids.length+' ตัว');save();trkQueue(ids);toast('📦 อัปเดต '+ids.length+' ตัวแล้ว');render()}
 const trkCk=r=>`<span class="tv5-ck ${ui.trkSel[r.rid]?'on':''}" data-a="trksel" data-id="${esc(r.rid)}" title="เลือกเพื่อกำหนดลูกค้า / ส่งมอบหลายตัวพร้อมกัน">✓</span>`;
 function trkErr(e,m){ui.trkErr={msg:m+': '+(e.message||e),hint:e.hint||'',fix:e.fix};toast(ui.trkErr.msg)}
 /* ----- ซิงก์ Google Sheet: คิวส่งอัตโนมัติ · ดึง · ตรวจความตรงกัน · ล้างอย่างปลอดภัย ----- */
 let trkBusy=false;
-const trkAutoShip=r=>{if(r.customer&&r.ship==='ผ่านทดสอบ')r.ship='พร้อมส่งมอบ';if(r.ship==='ส่งมอบแล้ว'&&!r.shipDate)r.shipDate=trkToday()};   // ใส่ลูกค้า → พร้อมส่งมอบ · ส่งมอบแล้วไม่ใส่วัน → วันนี้
+const TRK_LOCAL_MAX=3000,TRK_CHUNK=100,TRK_PAGE=2000;
+const trkAutoShip=r=>{if(r.customer&&r.ship==='ผ่านทดสอบ')r.ship='พร้อมส่งมอบ';if(r.install&&['ผ่านทดสอบ','พร้อมส่งมอบ','ส่งมอบแล้ว'].includes(r.ship))r.ship='ติดตั้งแล้ว';if(r.ship==='ส่งมอบแล้ว'&&!r.shipDate)r.shipDate=trkToday();if(r.ship==='ติดตั้งแล้ว'){if(!r.installDate)r.installDate=trkToday();if(!r.shipDate)r.shipDate=r.installDate}};   // ใส่ลูกค้า → พร้อมส่งมอบ · ใส่จุดติดตั้ง → ติดตั้งแล้ว · ไม่ใส่วันที่ → วันนี้
 const trkPendN=()=>{const c=DB.trkCfg||{};return(c.q||[]).length+(c.dq||[]).length};
 function trkSyncBadge(){const c=DB.trkCfg||{},n=trkPendN();return !c.url?trkTag('','☁️ ยังไม่ได้เชื่อม Sheet'):trkBusy?trkTag('v','⏳ กำลังบันทึกลง Sheet…'):n?trkTag('no','⚠ รอส่งขึ้น Sheet '+n+' รายการ'+(c.auto===0?' (ซิงก์อัตโนมัติปิดอยู่)':'')):trkTag('ok','☁️ ซิงก์แล้ว'+(c.last?' · '+esc(c.last):''))}
-const trkSyncNote=()=>{const c=DB.trkCfg||{};return !c.url?'⚠ ยังไม่ได้เชื่อม Google Sheet — บันทึกอยู่ในเครื่องนี้เท่านั้น (ใส่ลิงก์ที่การ์ด ☁️ ด้านล่าง)':c.auto===0?'⚠ ซิงก์อัตโนมัติปิดอยู่ — ต้องกด “⬆ ส่งขึ้น Google Sheet” เอง':'☁️ บันทึกในเครื่องแล้ว และระบบส่งขึ้น Google Sheet ให้อัตโนมัติ (ล้าง/โหลดใหม่แล้วข้อมูลลูกค้า·วันส่งมอบจะกลับมาครบ)'};
+const trkSyncNote=()=>{const c=DB.trkCfg||{};return !c.url?'⚠ ยังไม่ได้เชื่อม Google Sheet — บันทึกอยู่ในเครื่องนี้เท่านั้น (ใส่ลิงก์ที่การ์ด ☁️ ด้านล่าง)':c.auto===0?'⚠ ซิงก์อัตโนมัติปิดอยู่ — ต้องกด “⬆ ส่งขึ้น Google Sheet” เอง':'☁️ บันทึกในเครื่องแล้ว และส่งขึ้น Google Sheet ให้อัตโนมัติ — เก็บถาวร ไม่ลบ (ล้างเครื่อง/โหลดใหม่แล้วข้อมูลกลับมาครบ)'};
 function trkSyncUI(){const e=document.getElementById('trk-sync');if(e)e.innerHTML=trkSyncBadge()}
 function trkQueue(rids,del){const c=DB.trkCfg=DB.trkCfg||{url:'',token:'',last:''};c.q=c.q||[];c.dq=c.dq||[];rids.forEach(r=>{if(del){c.q=c.q.filter(x=>x!==r);if(!c.dq.includes(r))c.dq.push(r)}else{c.dq=c.dq.filter(x=>x!==r);if(!c.q.includes(r))c.q.push(r)}});save();trkSyncUI();if(c.auto!==0&&c.url)trkFlush()}
+/* ส่งเป็นชุดละ 100 แถว (กัน timeout เมื่อมีจำนวนมาก) · “ลบ” = void (ซ่อน เก็บแถวไว้ใน Sheet เสมอ) */
+async function trkSend(c,q,dq){for(let i=0;i<dq.length;i+=TRK_CHUNK)await gsCall(c,{},{action:'void',rids:dq.slice(i,i+TRK_CHUNK)});const rows=q.map(id=>(DB.trk||[]).find(r=>r.rid===id)).filter(Boolean).map(trkFlat);let last=null;for(let i=0;i<rows.length;i+=TRK_CHUNK){last=await gsCall(c,{},{action:'upsert',rows:rows.slice(i,i+TRK_CHUNK)});if(rows.length>TRK_CHUNK)toast('กำลังส่งขึ้น Sheet '+Math.min(i+TRK_CHUNK,rows.length)+' / '+rows.length+'…')}return last}
 async function trkFlush(manual){const c=DB.trkCfg||{};if(!c.url){if(manual)toast('ใส่ลิงก์ Apps Script ก่อน');return false}if(trkBusy)return false;const q=[...(c.q||[])],dq=[...(c.dq||[])];if(!q.length&&!dq.length){if(manual)toast('ไม่มีรายการค้างส่ง');return true}
- trkBusy=true;trkSyncUI();let ok=false;try{if(dq.length)await gsCall(c,{},{action:'delete',rids:dq});if(q.length){const rows=q.map(id=>(DB.trk||[]).find(r=>r.rid===id)).filter(Boolean).map(trkFlat);if(rows.length)await gsCall(c,{},{action:'upsert',rows})}
-  c.q=(c.q||[]).filter(x=>!q.includes(x));c.dq=(c.dq||[]).filter(x=>!dq.includes(x));c.last=new Date().toLocaleString('th-TH');ui.trkErr=null;save();ok=true;toast('☁️ บันทึกลง Google Sheet แล้ว ('+(q.length+dq.length)+' รายการ)')}
+ trkBusy=true;trkSyncUI();let ok=false;const t0=Date.now();try{const last=await trkSend(c,q,dq);
+  c.q=(c.q||[]).filter(x=>!q.includes(x));c.dq=(c.dq||[]).filter(x=>!dq.includes(x));q.forEach(id=>{const r=(DB.trk||[]).find(x=>x.rid===id);if(r)r.sy=t0});c.last=new Date().toLocaleString('th-TH');ui.trkErr=null;trkTrim();save();ok=true;toast('☁️ บันทึกลง Google Sheet แล้ว ('+(q.length+dq.length)+' รายการ)'+(last&&last.newFile?' · 📁 ชีตเต็ม: Google สร้างไฟล์ Spreadsheet ใหม่ให้อัตโนมัติ':''))}
  catch(e){ui.trkErr={msg:'☁️ ส่งขึ้น Sheet ไม่สำเร็จ (เก็บไว้ในคิว จะส่งใหม่ให้): '+(e.message||e),hint:e.hint||'',fix:e.fix};toast(ui.trkErr.msg)}
  trkBusy=false;trkSyncUI();if(ok&&trkPendN())setTimeout(()=>trkFlush(),200);if(!ok||manual)render();return ok}
+/* ดึงเป็นหน้า ๆ (หน้าละ 2,000 แถว) — รองรับหลักหมื่น/แสน · since = ดึงเฉพาะที่เปลี่ยนหลังเวลานี้ */
+async function trkListAll(c,since){let off=0,rows=[],j=null,pg=0;do{j=await gsCall(c,{action:'list',limit:TRK_PAGE,offset:off,...(since?{since}:{})});rows=rows.concat(j.rows||[]);off=j.next;pg++;if(j.next!=null)toast('กำลังดึงจาก Google Sheet… '+rows.length+' / '+(j.total||'?')+' แถว')}while(off!=null&&off!==undefined&&pg<500);return{rows,total:j.total,ver:j.ver}}
+function trkMerge(rows){const c=DB.trkCfg;let add=0,upd=0;DB.trk=DB.trk||[];const now=Date.now();
+ rows.forEach(o=>{if(!o.rid)return;if((c.dq||[]).includes(o.rid))return;const n=trkUnflat(o),i=DB.trk.findIndex(x=>x.rid===n.rid);
+  if(i<0){n.sy=now;DB.trk.push(n);add++;return}
+  const l=trkMig(DB.trk[i]),nw=(+n.ts||0)>(+l.ts||0),lg=!l.F.some(q=>q&&!q.legacy)&&n.F.some(q=>q&&!q.legacy);   // รายการในเครื่องที่ยังเป็นโครงเก่า → เติมผล 4 น้ำจาก Sheet
+  if(nw||lg){const m={...l};Object.keys(n).forEach(k=>{const v=n[k];if(k==='F'){if(v.some(Boolean))m.F=v}else if(k==='K'){if(v)m.K=v}else if(k==='src'){if(v.length)m.src=v}else if(v!==''&&v!=null)m[k]=v;else if(nw&&['customer','shipDate','install','installDate'].includes(k))m[k]=''});m.sy=now;DB.trk[i]=trkMig(m);upd++}
+  else if(!(c.q||[]).includes(l.rid)&&(+n.ts||0)>=(+l.ts||0))l.sy=now});
+ return[add,upd]}
+/* เก็บในเครื่องเฉพาะ 3,000 ล่าสุด (กัน localStorage เต็ม) — ลบจากเครื่องเฉพาะแถวที่ “ซิงก์แล้ว” เท่านั้น ที่เหลืออยู่ใน Sheet ครบ ค้นย้อนกลับได้ */
+function trkTrim(){const c=DB.trkCfg||{};if(!c.url||(DB.trk||[]).length<=TRK_LOCAL_MAX)return 0;const q=new Set(c.q||[]),ok=r=>r.sy&&r.sy>=(+r.ts||0)&&!q.has(r.rid),old=[...DB.trk].sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.ts||0)-(b.ts||0)),drop=new Set();let extra=DB.trk.length-TRK_LOCAL_MAX;for(let i=0;i<old.length&&extra>0;i++)if(ok(old[i])){drop.add(old[i].rid);extra--}if(drop.size){DB.trk=DB.trk.filter(r=>!drop.has(r.rid));c.trimmed=(c.trimmed||0)+drop.size}return drop.size}
 async function trkVerify(silent){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน');return}if(trkPendN())await trkFlush();if(!silent)toast('กำลังตรวจข้อมูลกับ Google Sheet…');
- try{const j=await gsCall(c,{action:'list'}),M=new Map((j.rows||[]).map(o=>[o.rid,trkUnflat(o)])),K=['ship','customer','shipDate','rclass','fw','batBrand','batModel','hw','tester','lot','date'],diff=[],miss=[];let ok=0;
+ try{const j=await trkListAll(c),M=new Map((j.rows||[]).map(o=>[o.rid,trkUnflat(o)])),K=['ship','customer','shipDate','install','installDate','rclass','fw','batBrand','batModel','hw','tester','lot','date'],diff=[],miss=[];let ok=0;
   (DB.trk||[]).forEach(r=>{trkMig(r);const s=M.get(r.rid);if(!s){miss.push(r.id);return}const bad=K.filter(k=>String(s[k]??'')!==String(r[k]??''));r.F.forEach((q,i)=>{const w=s.F[i];if((q?q.err:'')!==(w?w.err:'')||(q?q.flow:'')!==(w?w.flow:''))bad.push('น้ำ '+(i+1))});if(bad.length)diff.push({id:r.id,keys:bad});else ok++});
-  ui.trkVer={ok,total:(DB.trk||[]).length,diff,miss,at:new Date().toLocaleString('th-TH'),ver:j.ver};if(!silent||diff.length||miss.length)toast(diff.length||miss.length?'🔍 พบความต่าง '+(diff.length+miss.length)+' รายการ — ดูรายละเอียดที่การ์ด ☁️':'✅ ข้อมูลใน Google Sheet ตรงกับในเครื่องครบ '+ok+' รายการ')}
+  ui.trkVer={ok,total:(DB.trk||[]).length,sheet:j.total,diff,miss,at:new Date().toLocaleString('th-TH'),ver:j.ver};if(!silent||diff.length||miss.length)toast(diff.length||miss.length?'🔍 พบความต่าง '+(diff.length+miss.length)+' รายการ — ดูรายละเอียดที่การ์ด ☁️':'✅ ข้อมูลใน Google Sheet ตรงกับในเครื่องครบ '+ok+' รายการ (ใน Sheet มีทั้งหมด '+(j.total??'?')+')')}
  catch(e){trkErr(e,'ตรวจไม่สำเร็จ')}render()}
-const trkVerHtml=()=>{const v=ui.trkVer;if(!v)return '';const bad=v.diff.length||v.miss.length;return `<div class="ks-card" style="margin:10px 0 0;border-color:${bad?'#fbbf24':'#34d399'};background:${bad?'rgba(251,191,36,.08)':'rgba(52,211,153,.08)'}"><b style="color:${bad?'#fcd34d':'#6ee7b7'}">${bad?'🔍 พบความต่างระหว่างเครื่องกับ Google Sheet':'✅ ข้อมูลตรงกับ Google Sheet ครบ '+v.ok+' / '+v.total+' รายการ'}</b> <small class="mu">ตรวจเมื่อ ${esc(v.at)}</small>${bad?`<div class="mu" style="margin-top:6px;line-height:1.8;font-size:.82rem">${v.diff.slice(0,10).map(d=>'• <b>'+esc(d.id)+'</b> ต่างที่: '+esc(d.keys.join(', '))).join('<br>')}${v.diff.length>10?'<br>… อีก '+(v.diff.length-10)+' รายการ':''}${v.miss.length?'<br>• ยังไม่มีใน Sheet: '+esc(v.miss.slice(0,12).join(', '))+(v.miss.length>12?' …':''):''}<br><b>แก้:</b> กด “⬆ ส่งขึ้น Google Sheet” · ถ้ายังต่างที่ customer / shipDate ให้ตรวจว่า Apps Script เป็น VER ${TRK_VER} และหัวตารางมีคอลัมน์ครบ (กด “⎘ คัดลอกหัวตาราง”)</div>`:''}</div>`};
-async function trkPush(){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน (⚙ เชื่อม Google Sheet)');return}toast('กำลังส่งขึ้น Google Sheet…');try{if((c.dq||[]).length){await gsCall(c,{},{action:'delete',rids:c.dq});c.dq=[]}const j=await gsCall(c,{},{action:'upsert',rows:(DB.trk||[]).map(trkFlat)});ui.trkErr=null;c.q=[];c.last=new Date().toLocaleString('th-TH');save();toast('ส่งขึ้น Google Sheet แล้ว '+(j.saved??(DB.trk||[]).length)+' รายการ (สคริปต์ VER '+j.ver+') · กำลังตรวจความตรงกัน…');await trkVerify(true);return}catch(e){trkErr(e,'ส่งไม่สำเร็จ')}render()}
-async function trkPull(){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน (⚙ เชื่อม Google Sheet)');return}if(trkPendN())await trkFlush();toast('กำลังดึงจาก Google Sheet…');
- try{const j=await gsCall(c,{action:'list'});ui.trkErr=null;DB.trk=DB.trk||[];let add=0,upd=0;
-  (j.rows||[]).forEach(o=>{if(!o.rid)return;if((c.dq||[]).includes(o.rid))return;const n=trkUnflat(o),i=DB.trk.findIndex(x=>x.rid===n.rid);
-   if(i<0){DB.trk.push(n);add++;return}
-   const l=trkMig(DB.trk[i]),nw=(+n.ts||0)>(+l.ts||0),lg=!l.F.some(q=>q&&!q.legacy)&&n.F.some(q=>q&&!q.legacy);   // รายการในเครื่องที่ยังเป็นโครงเก่า → เติมผล 4 น้ำจาก Sheet
-   if(nw||lg){const m={...l};Object.keys(n).forEach(k=>{const v=n[k];if(k==='F'){if(v.some(Boolean))m.F=v}else if(k==='K'){if(v)m.K=v}else if(k==='src'){if(v.length)m.src=v}else if(v!==''&&v!=null)m[k]=v;else if(nw&&(k==='customer'||k==='shipDate'))m[k]=''});DB.trk[i]=trkMig(m);upd++}});
-  c.last=new Date().toLocaleString('th-TH');save();toast('ดึงแล้ว: เพิ่ม '+add+' · อัปเดต '+upd+' รายการ · สคริปต์ VER '+(j.ver||'เก่า'))}catch(e){trkErr(e,'ดึงไม่สำเร็จ')}render()}
-function trkWipe(){const n=(DB.trk||[]).length;if(!n){toast('ไม่มีรายการในเครื่อง');return}const pn=trkPendN();if(!confirm('ล้างรายการมิเตอร์ในเครื่องนี้ทั้ง '+n+' รายการ?\n(ข้อมูลใน Google Sheet ไม่หาย'+(pn?' · ⚠ มี '+pn+' รายการที่ยังไม่ได้ส่งขึ้น Sheet จะหาย':'')+')'))return;DB.trk=[];DB.trkCfg.q=[];DB.trkCfg.dq=[];ui.trkOpen=null;ui.trkSel={};logEv('ล้างรายการมิเตอร์ในเครื่อง '+n);save();toast('ล้างแล้ว '+n+' รายการ — กด “⬇ ดึงจาก Google Sheet” เพื่อดึงใหม่')}
+const trkVerHtml=()=>{const v=ui.trkVer;if(!v)return '';const bad=v.diff.length||v.miss.length;return `<div class="ks-card" style="margin:10px 0 0;border-color:${bad?'#fbbf24':'#34d399'};background:${bad?'rgba(251,191,36,.08)':'rgba(52,211,153,.08)'}"><b style="color:${bad?'#fcd34d':'#6ee7b7'}">${bad?'🔍 พบความต่างระหว่างเครื่องกับ Google Sheet':'✅ ข้อมูลตรงกับ Google Sheet ครบ '+v.ok+' / '+v.total+' รายการในเครื่อง'}</b> <small class="mu">ตรวจเมื่อ ${esc(v.at)} · ใน Sheet มีทั้งหมด ${v.sheet??'?'} แถว</small>${bad?`<div class="mu" style="margin-top:6px;line-height:1.8;font-size:.82rem">${v.diff.slice(0,10).map(d=>'• <b>'+esc(d.id)+'</b> ต่างที่: '+esc(d.keys.join(', '))).join('<br>')}${v.diff.length>10?'<br>… อีก '+(v.diff.length-10)+' รายการ':''}${v.miss.length?'<br>• ยังไม่มีใน Sheet: '+esc(v.miss.slice(0,12).join(', '))+(v.miss.length>12?' …':''):''}<br><b>แก้:</b> กด “⬆ ส่งขึ้น Google Sheet” · ถ้ายังต่างที่ customer / shipDate / install ให้ตรวจว่า Apps Script เป็น VER ${TRK_VER} และหัวตารางมีคอลัมน์ครบ (กด “⎘ คัดลอกหัวตาราง”)</div>`:''}</div>`};
+async function trkPush(){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน (⚙ เชื่อม Google Sheet)');return}toast('กำลังส่งขึ้น Google Sheet…');const t0=Date.now();try{const last=await trkSend(c,(DB.trk||[]).map(r=>r.rid),c.dq||[]);ui.trkErr=null;c.q=[];c.dq=[];(DB.trk||[]).forEach(r=>r.sy=t0);c.last=new Date().toLocaleString('th-TH');trkTrim();save();toast('ส่งขึ้น Google Sheet แล้ว '+(DB.trk||[]).length+' รายการ (สคริปต์ VER '+(last&&last.ver)+') · กำลังตรวจความตรงกัน…');await trkVerify(true);return}catch(e){trkErr(e,'ส่งไม่สำเร็จ')}render()}
+async function trkPull(full){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน (⚙ เชื่อม Google Sheet)');return}if(trkPendN())await trkFlush();
+ const inc=full!==true&&c.pullTs&&(DB.trk||[]).length>0&&(Date.now()-(c.fullAt||0))<864e5;toast(inc?'กำลังดึงเฉพาะที่เปลี่ยนจาก Google Sheet…':'กำลังดึงทั้งหมดจาก Google Sheet…');
+ try{const j=await trkListAll(c,inc?c.pullTs-120000:0);ui.trkErr=null;const[add,upd]=trkMerge(j.rows||[]),mx=Math.max(0,...(j.rows||[]).map(o=>+o.ts||0));c.pullTs=inc?Math.max(c.pullTs||0,mx):mx||c.pullTs||0;if(!inc)c.fullAt=Date.now();c.sheetTotal=j.total;c.last=new Date().toLocaleString('th-TH');const tr=trkTrim();save();toast('ดึงแล้ว: เพิ่ม '+add+' · อัปเดต '+upd+' รายการ · ใน Sheet มี '+(j.total??'?')+' แถว'+(tr?' · เก็บในเครื่องเฉพาะ '+TRK_LOCAL_MAX+' ล่าสุด':'')+' · สคริปต์ VER '+(j.ver||'เก่า'))}catch(e){trkErr(e,'ดึงไม่สำเร็จ')}render()}
+function trkWipe(){const n=(DB.trk||[]).length;if(!n){toast('ไม่มีรายการในเครื่อง');return}const pn=trkPendN();if(!confirm('ล้างรายการมิเตอร์ในเครื่องนี้ทั้ง '+n+' รายการ?\n(ข้อมูลใน Google Sheet ไม่หาย'+(pn?' · ⚠ มี '+pn+' รายการที่ยังไม่ได้ส่งขึ้น Sheet จะหาย':'')+')'))return;DB.trk=[];DB.trkCfg.q=[];DB.trkCfg.dq=[];DB.trkCfg.pullTs=0;ui.trkOpen=null;ui.trkSel={};logEv('ล้างรายการมิเตอร์ในเครื่อง '+n);save();toast('ล้างแล้ว '+n+' รายการ — กด “⬇ ดึงจาก Google Sheet” เพื่อดึงใหม่')}
 async function trkReload(){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน');return}
- if(trkPendN()){toast('กำลังส่งรายการที่ค้างขึ้น Sheet ก่อนล้าง…');const ok=await trkFlush();if(!ok&&trkPendN()){toast('⚠ ยังส่งรายการค้างขึ้น Sheet ไม่สำเร็จ — ไม่ล้างเพื่อกันข้อมูล (ลูกค้า/ส่งมอบ) หาย ตรวจการเชื่อมต่อแล้วลองใหม่');render();return}}
- const n=(DB.trk||[]).length;if(!confirm('ล้างรายการในเครื่อง ('+n+' รายการ) แล้วดึงใหม่ทั้งหมดจาก Google Sheet?\n(ข้อมูลที่ส่งขึ้น Sheet แล้ว รวมลูกค้า/วันส่งมอบ จะกลับมาครบ · ถ้าดึงไม่สำเร็จ ระบบคืนรายการเดิมให้)'))return;const bak=DB.trk||[];DB.trk=[];ui.trkOpen=null;ui.trkSel={};await trkPull();if(!DB.trk.length&&bak.length){DB.trk=bak;save();toast('ดึงไม่ได้ จึงคืนรายการเดิมในเครื่องให้แล้ว');render()}}
+ if(trkPendN()){toast('กำลังส่งรายการที่ค้างขึ้น Sheet ก่อนล้าง…');const ok=await trkFlush();if(!ok&&trkPendN()){toast('⚠ ยังส่งรายการค้างขึ้น Sheet ไม่สำเร็จ — ไม่ล้างเพื่อกันข้อมูล (ลูกค้า/ส่งมอบ/ติดตั้ง) หาย ตรวจการเชื่อมต่อแล้วลองใหม่');render();return}}
+ const n=(DB.trk||[]).length;if(!confirm('ล้างรายการในเครื่อง ('+n+' รายการ) แล้วดึงใหม่ทั้งหมดจาก Google Sheet?\n(ข้อมูลที่ส่งขึ้น Sheet แล้ว รวมลูกค้า/วันส่งมอบ/ติดตั้งที่ไหน จะกลับมาครบ · ถ้าดึงไม่สำเร็จ ระบบคืนรายการเดิมให้)'))return;const bak=DB.trk||[];DB.trk=[];ui.trkOpen=null;ui.trkSel={};await trkPull(true);if(!DB.trk.length&&bak.length){DB.trk=bak;save();toast('ดึงไม่ได้ จึงคืนรายการเดิมในเครื่องให้แล้ว');render()}}
+/* ค้นย้อนกลับจากทั้งระบบ (ทุกชีต Meters, Meters2, …) — เจอแล้วนำมาแสดงในรายการ */
+async function trkRemote(){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน');return}const q=(ui.trkQ||'').trim();if(!q&&!ui.trkSh&&!ui.trkD1&&!ui.trkD2){toast('พิมพ์คำค้น (ID / Lot / ลูกค้า / ติดตั้งที่ไหน …) หรือเลือกสถานะ/วันที่ก่อน');return}toast('กำลังค้นใน Google Sheet ทั้งระบบ…');
+ try{const j=await gsCall(c,{action:'search',q,ship:ui.trkSh||'',from:ui.trkD1||'',to:ui.trkD2||'',limit:300}),[a,u]=trkMerge(j.rows||[]);ui.trkRem={n:(j.rows||[]).length,trunc:!!j.truncated,q,at:new Date().toLocaleString('th-TH')};save();toast('🌐 พบใน Sheet '+(j.rows||[]).length+' รายการ'+(j.truncated?' (แสดง 300 แรก — เพิ่มคำค้นให้แคบลง)':'')+' · นำมาแสดงในรายการแล้ว')}catch(e){trkErr(e,'ค้นไม่สำเร็จ')}render()}
+async function trkVoidList(){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน');return}try{const j=await gsCall(c,{action:'search',deleted:'1',q:ui.trkQ||'',limit:200});ui.trkVoid={rows:(j.rows||[]).filter(r=>String(r.deleted||'')!==''),at:new Date().toLocaleString('th-TH')};toast('พบรายการที่ซ่อนไว้ '+ui.trkVoid.rows.length+' รายการ')}catch(e){trkErr(e,'ดึงรายการที่ซ่อนไม่สำเร็จ')}render()}
+async function trkRestore(rid){const c=DB.trkCfg;try{await gsCall(c,{},{action:'restore',rids:[rid]});const v=(ui.trkVoid&&ui.trkVoid.rows||[]).find(r=>r.rid===rid);if(v){const j=await gsCall(c,{action:'search',id:v.id,limit:50});trkMerge(j.rows||[])}if(ui.trkVoid)ui.trkVoid.rows=ui.trkVoid.rows.filter(r=>r.rid!==rid);save();toast('↩ กู้คืนแล้ว')}catch(e){trkErr(e,'กู้คืนไม่สำเร็จ')}render()}
+async function trkLogView(rid){const c=DB.trkCfg;if(!c.url){toast('ยังไม่ได้เชื่อม Google Sheet');return}try{const j=await gsCall(c,{action:'log',rid});ui.trkLog={rid,rows:j.rows||[],total:j.total||0}}catch(e){trkErr(e,'ดูประวัติไม่สำเร็จ')}render()}
+async function trkStats(){ensureCfg();const c=DB.trkCfg;if(!c.url){toast('ใส่ลิงก์ Apps Script ก่อน');return}try{toast('กำลังตรวจความจุ…');const j=await gsCall(c,{action:'stats'});if(j.ver<6)throw Object.assign(new Error('Apps Script ยังเป็นเวอร์ชันเก่า (v'+(j.ver||'?')+') — ไม่มีระบบแบ่งชีต'),{hint:'กดปุ่ม “⎘ คัดลอกโค้ด Apps Script VER 6” แล้ววางทับ → Deploy เวอร์ชันใหม่'});ui.trkStats={...j,at:new Date().toLocaleString('th-TH')}}catch(e){trkErr(e,'ตรวจความจุไม่ได้')}render()}
+const trkFld={ship:'สถานะ',customer:'ลูกค้า',shipDate:'วันที่ส่งมอบ',install:'ติดตั้งที่',installDate:'วันที่ติดตั้ง',deleted:'ซ่อน/ยกเลิก'},trkAct={create:'สร้างรายการ',update:'แก้ไข',void:'ซ่อน / ยกเลิก',restore:'กู้คืน'};
+const trkLogHtml=r=>{const L=ui.trkLog;if(!L||L.rid!==r.rid)return '';return `<div class="tv5-lg" style="margin-top:8px"><b style="color:#fff">🕘 ประวัติการเปลี่ยนแปลง (จาก Google Sheet · ${L.total} รายการ)</b>${L.rows.length?`<div class="sc" style="max-height:220px;margin-top:6px"><table><tr><th>เมื่อ</th><th>การกระทำ</th><th>ช่อง</th><th>จาก</th><th>เป็น</th></tr>${L.rows.slice().reverse().map(x=>`<tr><td>${esc(new Date(+x.ts).toLocaleString('th-TH'))}</td><td>${trkAct[x.action]||esc(x.action)}</td><td>${trkFld[x.field]||esc(x.field)}</td><td>${esc(x.old)||'—'}</td><td>${esc(x.new)||'—'}</td></tr>`).join('')}</table></div>`:'<div class="mu">ยังไม่มีประวัติ</div>'}</div>`};
+const trkVoidHtml=()=>{const v=ui.trkVoid;if(!v)return '';return `<div class="ks-card" style="margin:10px 0 0;border-color:#a78bfa"><b>🗂 รายการที่ซ่อนไว้ (เก็บประวัติใน Google Sheet ไม่ลบ)</b> <small class="mu">${esc(v.at)}</small>${v.rows.length?`<div class="sc" style="max-height:240px;margin-top:6px"><table><tr><th>ID</th><th>วันที่ทดสอบ</th><th>ลูกค้า / ติดตั้ง</th><th>ซ่อนเมื่อ</th><th></th></tr>${v.rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${trkTh(trkNd(x.date))}</td><td>${esc(x.customer)||'—'} · ${esc(x.install)||'—'}</td><td>${esc(String(x.deleted).slice(0,16).replace('T',' '))}</td><td><button class="btn" data-a="trkrestore" data-id="${esc(x.rid)}">↩ กู้คืน</button></td></tr>`).join('')}</table></div>`:'<div class="mu" style="margin-top:6px">ไม่มีรายการที่ซ่อนไว้</div>'}</div>`};
+const trkStatsHtml=()=>{const s=ui.trkStats;if(!s)return '';const bar=(p)=>`<div class="tv5-bar"><i style="width:${Math.min(100,p)}%;background:${p>=90?'#fb7185':p>=70?'#fbbf24':'#34d399'}"></i></div>`,last=s.shards[s.shards.length-1],warn=(last&&last.pct>=90)||s.files.some(f=>f.pct>=80);
+ return `<div class="ks-card" style="margin:10px 0 0;border-color:#22d3ee"><b>📈 ความจุ & จำนวนที่เก็บใน Google Sheet</b> <small class="mu">ตรวจเมื่อ ${esc(s.at)} · สคริปต์ VER ${s.ver}</small>
+<div class="tv5-info" style="margin-top:8px"><div><small>มิเตอร์ที่เก็บทั้งหมด</small><b>${fm(s.total)}</b></div><div><small>ใช้งานอยู่</small><b>${fm(s.active)}</b></div><div><small>ซ่อน/ยกเลิก (ยังเก็บไว้)</small><b>${fm(s.deleted)}</b></div><div><small>จำนวนชีต</small><b>${s.shards.length}</b></div><div><small>ไฟล์ Spreadsheet</small><b>${s.files.length}</b></div><div><small>บันทึกประวัติเปลี่ยนแปลง</small><b>${fm(s.log)}</b></div></div>
+<div style="margin-top:8px;font-size:.82rem" class="mu"><b style="color:#fff">แต่ละชีต</b> (จุถึง ${fm(s.cap)} แถว แล้วสร้างชีตถัดไปให้เอง)</div>${s.shards.map(x=>`<div style="margin-top:6px;font-size:.82rem"><b>${esc(x.name)}</b> <span class="mu">· ${esc(x.file)} · ${fm(x.rows)} / ${fm(x.cap)} แถว (${x.pct}%)${x.deleted?' · ซ่อน '+x.deleted:''}</span>${bar(x.pct)}</div>`).join('')}
+<div style="margin-top:10px;font-size:.82rem" class="mu"><b style="color:#fff">แต่ละไฟล์ Spreadsheet</b> (Google จำกัด ${fm(s.limitCells)} เซลล์ต่อไฟล์ ≈ ${fm(s.rowsPerFile)} มิเตอร์ที่ ${s.cols} คอลัมน์ · ใกล้เต็มแล้วสร้างไฟล์ใหม่ให้อัตโนมัติ)</div>${s.files.map(f=>`<div style="margin-top:6px;font-size:.82rem"><a href="${esc(f.url)}" target="_blank" rel="noopener" style="color:#67e8f9">${esc(f.name)}</a> <span class="mu">· ${fm(f.cells)} เซลล์ (${f.pct}%)</span>${bar(f.pct)}</div>`).join('')}
+<p class="mu" style="font-size:.8rem;margin:10px 0 0;line-height:1.7">${warn?'⚠ ใกล้เต็ม — ระบบจะสร้างชีต/ไฟล์ใหม่ให้เองเมื่อเต็ม (ต้องอนุญาตสิทธิ์ Drive ให้สคริปต์ครั้งแรกที่ Deploy) · ':''}ทุกตัวเก็บถาวร ไม่ลบแถวจริง · ค้นย้อนกลับได้ทุกชีตด้วยปุ่ม “🌐 ค้นใน Sheet ทั้งหมด” · ในเครื่องเก็บเฉพาะ ${fm(TRK_LOCAL_MAX)} ตัวล่าสุด (ซิงก์แล้วเท่านั้นที่ถูกพักออก)</p></div>`};
 async function trkTest(){ensureCfg();const c=DB.trkCfg;try{toast('กำลังทดสอบการเชื่อมต่อ…');const j=await gsCall(c,{action:'list'});ui.trkErr=null;toast('✅ เชื่อมต่อ Google Sheet สำเร็จ · พบ '+((j.rows||[]).length)+' แถว · สคริปต์เวอร์ชัน '+(j.ver>=TRK_VER?j.ver+' (ล่าสุด)':j.ver?j.ver+' — เก่า ต้อง Deploy โค้ด VER '+TRK_VER+' ใหม่':'เก่า — ยังไม่ได้ Deploy โค้ดใหม่'))}catch(e){trkErr(e,'เชื่อมต่อไม่ได้')}render()}
 /* ----- หน้าจอ ----- */
 function vTrk(){DB.trk=DB.trk||[];ensureCfg();DB.trk.forEach(trkMig);
@@ -1004,7 +1185,7 @@ function vTrk(){DB.trk=DB.trk||[];ensureCfg();DB.trk.forEach(trkMig);
   fld=(k,l,t,x)=>`<label>${l}<input data-tf="${k}" type="${t||'text'}" ${x||''} value="${esc(D[k])}"></label>`,
   sel=(k,l,o)=>`<label>${l}<select data-tf="${k}">${o.map(v=>`<option value="${esc(v[0])}" ${String(D[k])===String(v[0])?'selected':''}>${esc(v[1])}</option>`).join('')}</select></label>`,
   allSz=[...new Set([...SZ.SJ,...SZ.MJ])].map(s=>[s,s+' mm']),
-  form=ui.trkForm?`<div class="ks-card em"><h3>${ui.trkEdit?'✎ แก้ไขรายการ '+esc(D.id):'＋ เพิ่มมาตรที่ผ่านการทดสอบ'}</h3><div class="tk-grid" style="margin-top:8px">${fld('id','ID มิเตอร์ *')}${fld('date','วันที่ทดสอบ','date')}${fld('tester','ผู้ทดสอบ')}${sel('dept','ฝ่าย',[['ฝ่ายผลิต','ฝ่ายผลิต'],['QA/QC','QA/QC'],['R&D','R&D'],['อื่นๆ','อื่นๆ']])}${fld('lot','Lot ที่ผลิต')}${sel('model','รุ่น',[['Multijet','Multijet'],['Single Jet','Single Jet']])}${sel('size','ขนาด',allSz)}${sel('rclass','ชั้น R',TRK_RC.map(x=>[x,x]))}${fld('type','ชนิด / ประเภท')}${fld('hw','Hardware Model')}${fld('fw','เวอร์ชันเฟิร์มแวร์')}${fld('batBrand','ยี่ห้อแบตเตอรี่')}${fld('batModel','รุ่นแบตเตอรี่')}${fld('batV','แรงดันแบต (V)','number','step="0.01"')}${sel('ship','สถานะ',TRK_SHIP.map(x=>[x,x]))}${fld('customer','ลูกค้า / ปลายทาง (กรอกทีหลังได้)')}${fld('shipDate','วันที่ส่งมอบ (กรอกทีหลังได้)','date')}</div>
+  form=ui.trkForm?`<div class="ks-card em"><h3>${ui.trkEdit?'✎ แก้ไขรายการ '+esc(D.id):'＋ เพิ่มมาตรที่ผ่านการทดสอบ'}</h3><div class="tk-grid" style="margin-top:8px">${fld('id','ID มิเตอร์ *')}${fld('date','วันที่ทดสอบ','date')}${fld('tester','ผู้ทดสอบ')}${sel('dept','ฝ่าย',[['ฝ่ายผลิต','ฝ่ายผลิต'],['QA/QC','QA/QC'],['R&D','R&D'],['อื่นๆ','อื่นๆ']])}${fld('lot','Lot ที่ผลิต')}${sel('model','รุ่น',[['Multijet','Multijet'],['Single Jet','Single Jet']])}${sel('size','ขนาด',allSz)}${sel('rclass','ชั้น R',TRK_RC.map(x=>[x,x]))}${fld('type','ชนิด / ประเภท')}${fld('hw','Hardware Model')}${fld('fw','เวอร์ชันเฟิร์มแวร์')}${fld('batBrand','ยี่ห้อแบตเตอรี่')}${fld('batModel','รุ่นแบตเตอรี่')}${fld('batV','แรงดันแบต (V)','number','step="0.01"')}${sel('ship','สถานะ',TRK_SHIP.map(x=>[x,x]))}${fld('customer','ลูกค้า / ปลายทาง (กรอกทีหลังได้)')}${fld('shipDate','วันที่ส่งมอบ (กรอกทีหลังได้)','date')}${fld('install','📍 ติดตั้งที่ไหน (กรอกทีหลังได้)')}${fld('installDate','วันที่ติดตั้ง','date')}</div>
 <h4 class="rp-h" style="margin-top:12px">💧 ผลทดสอบ 4 น้ำ <small class="mu">(ใส่ Flow + %Error ของน้ำที่ทดสอบ · เว้นว่าง = ไม่ได้ทดสอบ · ผ่าน/ไม่ผ่านคำนวณให้เอง)</small></h4><div class="tv5-fwg">${TRK_SL.map((s,i)=>{const q=(D.F||[])[i]||{};return `<div class="tv5-fw" style="--c:${s[2]}"><b>${s[0]} <small class="mu">${s[1]}</small></b><label>Flow (L/h)<input data-tw="flow${i}" type="number" step="any" value="${esc(q.flow??'')}"></label><label>%Error<input data-tw="err${i}" type="number" step="any" value="${esc(q.err??'')}"></label><label>จาก Batch<input data-tw="batch${i}" value="${esc(q.batch||'')}"></label></div>`}).join('')}</div>
 <div class="tk-grid" style="margin-top:10px"><label class="w2">ค่าคงที่ K1–K20 (20 ค่า คั่นด้วยจุลภาค ช่องว่าง หรือ |)<textarea data-tf="K" rows="2">${esc(Array.isArray(D.K)?D.K.join(', '):D.K)}</textarea></label><label class="w2">หมายเหตุ<textarea data-tf="note" rows="2">${esc(D.note)}</textarea></label></div><div class="bar" style="margin-top:10px"><button class="btn p" data-a="trksave">💾 บันทึก</button><button class="btn" data-a="trkform">ยกเลิก</button><span class="mu" style="font-size:.8rem">เกณฑ์ผ่าน: Flow ≤ 16 L/h ใช้ ±5% · สูงกว่านั้นใช้ ±2%</span></div></div>`:'',
   opt=(v,t,cur)=>`<option value="${esc(v)}" ${cur===v?'selected':''}>${esc(t)}</option>`,
@@ -1012,11 +1193,11 @@ function vTrk(){DB.trk=DB.trk||[];ensureCfg();DB.trk.forEach(trkMig);
  return `<div class="ks"><div class="ks-hero"><div><span class="ks-pill g">โหมดติดตาม</span><span class="ks-pill a">VER ${TRK_VER}</span><span class="ks-pill" id="trk-sync">${trkSyncBadge()}</span><span class="ks-pill">ข้อมูลชุดเดียวกับ ทะเบียนมิเตอร์ · Google Sheet</span><h2>📇 ติดตามมิเตอร์ที่ผ่านการทดสอบ</h2><p>ทุกตัวแสดง <b>ผลทดสอบครบ 4 น้ำ (Flow · %Error ผ่าน/ไม่ผ่าน)</b> ชั้น R รุ่น/ขนาด แบตเตอรี่ เฟิร์มแวร์ ชุด K ผู้ทดสอบ และสถานะส่งมอบ — เหมือนหน้าเตรียมบันทึกลง Google Sheet ทุกประการ ไม่ว่าจะกรอกเองหรือดึงมาจาก Sheet</p></div></div>
 <div class="ks-top"><div class="ks-st" style="--c:#22d3ee"><small>รายการทั้งหมด</small><b>${A.length}</b><span>มิเตอร์ที่บันทึกไว้</span></div><div class="ks-st" style="--c:#34d399"><small>ผ่านครบทุกน้ำ</small><b>${ok}</b><span>${A.length?f(ok/A.length*100,0)+'% ของทั้งหมด':'—'}</span></div><div class="ks-st" style="--c:#fb7185"><small>ไม่ผ่านบางน้ำ</small><b>${no}</b><span>ต้องตรวจ/ทดสอบซ้ำ</span></div><div class="ks-st" style="--c:#a78bfa"><small>ส่งมอบแล้ว</small><b>${dv}</b><span>${pn?'⚠ ยังรอระบุข้อมูล '+pn+' ตัว':'ข้อมูลครบทุกตัว ✔'}</span></div><div class="ks-st" style="--c:#fbbf24"><small>ทดสอบล่าสุด</small><b style="font-size:1.15rem;line-height:2.2rem">${esc(last==='—'?last:trkTh(last))}</b><span>${DB.trkCfg.last?'Sync ล่าสุด '+esc(DB.trkCfg.last):'ยังไม่ได้ Sync Google Sheet'}</span></div></div>
 <div class="ks-card cy"><h3>🔎 ค้นหา</h3><div class="tk-grid"><label class="w2">คำค้น (ID / Lot / รุ่น / ผู้ทดสอบ / เฟิร์มแวร์ / แบต / ลูกค้า / ชุด K …)<input data-tk="Q" value="${esc(ui.trkQ||'')}" placeholder="พิมพ์หลายคำได้ เช่น 691000 multijet 15 รอระบุ"></label><label>ขนาด<select data-tk="Sz"><option value="">ทั้งหมด</option>${szs.map(s=>opt(s,s+' mm',ui.trkSz)).join('')}</select></label><label>ชั้น R<select data-tk="Rc"><option value="">ทั้งหมด</option>${TRK_RC.map(s=>opt(s,s,ui.trkRc)).join('')}</select></label><label>รุ่น<select data-tk="Md"><option value="">ทั้งหมด</option>${mds.map(s=>opt(s,s,ui.trkMd)).join('')}</select></label><label>ผลทดสอบ<select data-tk="Rs"><option value="">ทั้งหมด</option>${opt('PASS','ผ่านครบ (PASS)',ui.trkRs)}${opt('FAIL','ไม่ผ่านบางน้ำ (FAIL)',ui.trkRs)}</select></label><label>สถานะ<select data-tk="Sh"><option value="">ทั้งหมด</option>${TRK_SHIP.map(s=>opt(s,s,ui.trkSh)).join('')}</select></label><label>ตั้งแต่วันที่<input type="date" data-tk="D1" value="${esc(ui.trkD1||'')}"></label><label>ถึงวันที่<input type="date" data-tk="D2" value="${esc(ui.trkD2||'')}"></label><label>เฉพาะรอระบุ<select data-tk="Pend"><option value="0">ทั้งหมด</option>${opt('1','มีข้อมูลรอระบุ',ui.trkPend)}</select></label></div>
-<div class="bar" style="margin-top:10px"><button class="btn p" data-a="trkform">＋ เพิ่มรายการ</button><button class="btn" data-a="trkpull">⬇ ดึงจาก Google Sheet</button><button class="btn p" data-a="trkreload" title="ล้างรายการในเครื่อง แล้วดึงใหม่ทั้งหมดจาก Sheet">🔄 ล้างแล้วดึงใหม่</button><button class="btn" data-a="trkwipe" style="color:#fda4af">🗑 ล้างข้อมูลในเครื่อง</button><button class="btn" data-a="trkimp">📥 นำเข้าจากผลทดสอบ Batch</button><button class="btn" data-a="trkclr">ล้างตัวกรอง</button><span class="mu">พบ <b id="trk-cnt" style="color:#22d3ee">${trkFilter().length} / ${A.length}</b> รายการ</span></div></div>
+<div class="bar" style="margin-top:10px"><button class="btn p" data-a="trkform">＋ เพิ่มรายการ</button><button class="btn" data-a="trkremote" title="ค้นในทุกชีต Meters, Meters2, … ของ Google Sheet (รวมรุ่นเก่าที่ไม่ได้อยู่ในเครื่อง)">🌐 ค้นใน Sheet ทั้งหมด</button><button class="btn" data-a="trkpull">⬇ ดึงจาก Google Sheet</button><button class="btn p" data-a="trkreload" title="ล้างรายการในเครื่อง แล้วดึงใหม่ทั้งหมดจาก Sheet">🔄 ล้างแล้วดึงใหม่</button><button class="btn" data-a="trkwipe" style="color:#fda4af">🗑 ล้างข้อมูลในเครื่อง</button><button class="btn" data-a="trkimp">📥 นำเข้าจากผลทดสอบ Batch</button><button class="btn" data-a="trkclr">ล้างตัวกรอง</button><span class="mu">พบ <b id="trk-cnt" style="color:#22d3ee">${trkFilter().length} / ${A.length}</b> รายการ</span></div></div>
 ${form}
 <div class="ks-card"><div class="tv5-bh"><h3>📋 ประวัติมิเตอร์ <small class="mu">(คลิกการ์ด/แถวเพื่อดูรายละเอียดครบ · K1–K20)</small></h3><div class="bar"><span class="chip ${V==='card'?'on':''}" data-a="trkview" data-v="card">🗂 การ์ด</span><span class="chip ${V==='tbl'?'on':''}" data-a="trkview" data-v="tbl">📋 ตาราง</span></div></div>
-<div class="tv5-ex"><span class="tv5-exl">📤 ส่งออก / พิมพ์ <small>(ตามตัวกรองที่เลือก)</small></span><button class="btn p" data-a="trkpv">🖨 พรีวิว / พิมพ์</button><button class="btn" data-a="trkpdfq">📄 PDF</button><button class="btn" data-a="trkimgq">🖼 รูปภาพ</button><button class="btn" data-a="trkxlr">📊 Excel รายงาน</button><button class="btn" data-a="trkcsvr">⬇ CSV</button><button class="btn" data-a="trkcopy">⎘ คัดลอกตาราง</button><button class="btn" data-a="trkjson">💾 สำรอง JSON</button><button class="btn" data-a="trkxl" title="หัวตารางเหมือน Google Sheet ใช้นำเข้ากลับได้">⬇ Excel (รูปแบบ Sheet)</button></div><div class="tv5-lg"><span class="tv5-ce ok">✔ +0.50%</span> ผ่าน (อยู่ในเกณฑ์) <span class="tv5-ce no">✖ +4.20%</span> ไม่ผ่าน <span class="tv5-ce na">—</span> ไม่ได้ทดสอบ · เกณฑ์ ±5% ที่ Flow ≤ 16 L/h และ ±2% ที่ Flow สูงกว่า · เอาเมาส์ชี้ที่ผลเพื่อดูชื่อ Batch</div><div class="tv5-bulk"><div class="tv5-bt">📦 กำหนดลูกค้า / ส่งมอบหลายตัวพร้อมกัน <small>ติ๊กเลือก ✓ ที่การ์ด/แถว (เลือกแล้ว <b id="trk-selc">${trkSelIds().length}</b> ตัว) · ส่งชุดเดียวกันไปลูกค้าเดียว ทำทีเดียวได้ · กรอกทีหลังได้ทุกเมื่อ</small></div><div class="tk-grid"><label>สถานะ<select data-tb="ship"><option value="">— ไม่เปลี่ยน —</option>${TRK_SHIP.map(s=>`<option>${s}</option>`).join('')}</select></label><label class="w2">ลูกค้า / ปลายทาง<input data-tb="customer" placeholder="เช่น การประปา… / บริษัท…"></label><label>วันที่ส่งมอบ<input type="date" data-tb="shipDate"></label></div><div class="bar" style="margin-top:8px"><button class="btn p" data-a="trkbulk">💾 ใช้กับที่เลือก</button><button class="btn" data-a="trkbulkdone">✔ ส่งมอบแล้ว (วันนี้)</button><button class="btn" data-a="trkselall">☑ เลือกทั้งหมดที่แสดง</button><button class="btn" data-a="trkselnone">☐ ไม่เลือก</button></div></div><div id="trk-list">${trkBody()}</div></div>
-<div class="ks-card"><h3>☁️ เชื่อม Google Sheet <small class="mu">· สคริปต์ที่แอปต้องการ VER ${TRK_VER}</small></h3><p class="mu" style="margin:4px 0 8px">วางลิงก์ Web App ของ Google Apps Script (วิธีสร้างอยู่ในแท็บ 📖 คู่มือ หัวข้อ 7) แล้วกดส่ง/ดึงข้อมูล · ระบบรวมข้อมูลตามรหัสรายการ ถ้าซ้ำจะใช้รายการที่แก้ไขล่าสุด<br>✔ แท็บนี้ใช้ <b>หัวตารางและรูปแบบข้อมูลเดียวกับ meter_tracker.html (VER ${TRK_VER})</b> จึงใช้ Sheet แผ่นเดียวกันได้ · ถ้ากด “🩺 ทดสอบ” แล้วบอกว่าสคริปต์เก่า ให้กด “⎘ คัดลอกโค้ด Apps Script” แล้ววางทับ → Deploy เวอร์ชันใหม่</p><div class="tk-grid"><label class="w2">ลิงก์ Web App (…/exec)<input data-tc="url" value="${esc(DB.trkCfg.url)}" placeholder="https://script.google.com/macros/s/…/exec"></label><label>รหัสผ่าน (Token)<input data-tc="token" value="${esc(DB.trkCfg.token)}" type="password" placeholder="ต้องตรงกับใน Apps Script"></label></div>${g}<div class="bar" style="margin-top:10px"><button class="btn" data-a="trktest">🩺 ทดสอบการเชื่อมต่อ</button><button class="btn p" data-a="trkpush">⬆ ส่งขึ้น Google Sheet</button><button class="btn" data-a="trkpull">⬇ ดึงจาก Google Sheet</button><button class="btn" data-a="trkreload">🔄 ล้างแล้วดึงใหม่</button><button class="btn" data-a="trkverify">🔍 ตรวจข้อมูลตรงกับ Sheet</button><button class="btn" data-a="trkflush">⬆ ส่งที่ค้างส่ง</button><span class="chip ${DB.trkCfg.auto!==0?'on':''}" data-a="trkauto">☁️ ซิงก์อัตโนมัติ: ${DB.trkCfg.auto!==0?'เปิด':'ปิด'}</span><button class="btn" data-a="copygs">⎘ คัดลอกโค้ด Apps Script VER ${TRK_VER}</button><button class="btn" data-a="copyhead">⎘ คัดลอกหัวตาราง</button></div>${trkVerHtml()}</div></div>`}
+<div class="tv5-ex"><span class="tv5-exl">📤 ส่งออก / พิมพ์ <small>(ตามตัวกรองที่เลือก)</small></span><button class="btn p" data-a="trkpv">🖨 พรีวิว / พิมพ์</button><button class="btn" data-a="trkpdfq">📄 PDF</button><button class="btn" data-a="trkimgq">🖼 รูปภาพ</button><button class="btn" data-a="trkxlr">📊 Excel รายงาน</button><button class="btn" data-a="trkcsvr">⬇ CSV</button><button class="btn" data-a="trkcopy">⎘ คัดลอกตาราง</button><button class="btn" data-a="trkjson">💾 สำรอง JSON</button><button class="btn" data-a="trkxl" title="หัวตารางเหมือน Google Sheet ใช้นำเข้ากลับได้">⬇ Excel (รูปแบบ Sheet)</button></div><div class="tv5-lg"><span class="tv5-ce ok">✔ +0.50%</span> ผ่าน (อยู่ในเกณฑ์) <span class="tv5-ce no">✖ +4.20%</span> ไม่ผ่าน <span class="tv5-ce na">—</span> ไม่ได้ทดสอบ · เกณฑ์ ±5% ที่ Flow ≤ 16 L/h และ ±2% ที่ Flow สูงกว่า · เอาเมาส์ชี้ที่ผลเพื่อดูชื่อ Batch</div><div class="tv5-bulk"><div class="tv5-bt">📦 กำหนดลูกค้า / ส่งมอบหลายตัวพร้อมกัน <small>ติ๊กเลือก ✓ ที่การ์ด/แถว (เลือกแล้ว <b id="trk-selc">${trkSelIds().length}</b> ตัว) · ส่งชุดเดียวกันไปลูกค้าเดียว ทำทีเดียวได้ · กรอกทีหลังได้ทุกเมื่อ</small></div><div class="tk-grid"><label>สถานะ<select data-tb="ship"><option value="">— ไม่เปลี่ยน —</option>${TRK_SHIP.map(s=>`<option>${s}</option>`).join('')}</select></label><label class="w2">ลูกค้า / ปลายทาง<input data-tb="customer" placeholder="เช่น การประปา… / บริษัท…"></label><label>วันที่ส่งมอบ<input type="date" data-tb="shipDate"></label><label class="w2">📍 ติดตั้งที่ไหน<input data-tb="install" placeholder="สถานที่ / จุดติดตั้ง"></label><label>วันที่ติดตั้ง<input type="date" data-tb="installDate"></label></div><div class="bar" style="margin-top:8px"><button class="btn p" data-a="trkbulk">💾 ใช้กับที่เลือก</button><button class="btn" data-a="trkbulkdone">✔ ส่งมอบแล้ว (วันนี้)</button><button class="btn" data-a="trkselall">☑ เลือกทั้งหมดที่แสดง</button><button class="btn" data-a="trkselnone">☐ ไม่เลือก</button></div></div><div id="trk-list">${trkBody()}</div></div>
+<div class="ks-card"><h3>☁️ เชื่อม Google Sheet <small class="mu">· สคริปต์ที่แอปต้องการ VER ${TRK_VER}</small></h3><p class="mu" style="margin:4px 0 8px">วางลิงก์ Web App ของ Google Apps Script (วิธีสร้างอยู่ในแท็บ 📖 คู่มือ หัวข้อ 7) แล้วกดส่ง/ดึงข้อมูล · ระบบรวมข้อมูลตามรหัสรายการ ถ้าซ้ำจะใช้รายการที่แก้ไขล่าสุด<br>🔒 <b>มิเตอร์ที่ผ่านทดสอบทุกตัวเก็บถาวรใน Google Sheet — ไม่ลบแถวจริง</b> (ปุ่ม “ซ่อน” = เอาออกจากหน้าจอ ยังกู้คืนได้ · ทุกการเปลี่ยนติดตั้ง/ส่งมอบอยู่ในชีต Log) · เต็มแล้วสร้างชีต Meters2, Meters3, … และไฟล์ใหม่ให้อัตโนมัติ (รองรับหลักหมื่น–แสนตัว) · ✔ ใช้<b>หัวตารางเดียวกับ meter_tracker.html (VER ${TRK_VER})</b> จึงใช้ Sheet แผ่นเดียวกันได้ · ถ้ากด “🩺 ทดสอบ” แล้วบอกว่าสคริปต์เก่า ให้กด “⎘ คัดลอกโค้ด Apps Script” แล้ววางทับ → Deploy เวอร์ชันใหม่</p><div class="tk-grid"><label class="w2">ลิงก์ Web App (…/exec)<input data-tc="url" value="${esc(DB.trkCfg.url)}" placeholder="https://script.google.com/macros/s/…/exec"></label><label>รหัสผ่าน (Token)<input data-tc="token" value="${esc(DB.trkCfg.token)}" type="password" placeholder="ต้องตรงกับใน Apps Script"></label></div>${g}<div class="bar" style="margin-top:10px"><button class="btn" data-a="trktest">🩺 ทดสอบการเชื่อมต่อ</button><button class="btn p" data-a="trkpush">⬆ ส่งขึ้น Google Sheet</button><button class="btn" data-a="trkpull">⬇ ดึงจาก Google Sheet</button><button class="btn" data-a="trkreload">🔄 ล้างแล้วดึงใหม่</button><button class="btn" data-a="trkpullfull">⬇ ดึงทั้งหมด</button><button class="btn" data-a="trkstats">📈 ความจุ Sheet</button><button class="btn" data-a="trkvoidlist">🗂 ที่ซ่อนไว้ (กู้คืนได้)</button><button class="btn" data-a="trkverify">🔍 ตรวจข้อมูลตรงกับ Sheet</button><button class="btn" data-a="trkflush">⬆ ส่งที่ค้างส่ง</button><span class="chip ${DB.trkCfg.auto!==0?'on':''}" data-a="trkauto">☁️ ซิงก์อัตโนมัติ: ${DB.trkCfg.auto!==0?'เปิด':'ปิด'}</span><button class="btn" data-a="copygs">⎘ คัดลอกโค้ด Apps Script VER ${TRK_VER}</button><button class="btn" data-a="copyhead">⎘ คัดลอกหัวตาราง</button></div>${trkVerHtml()}${trkStatsHtml()}${trkVoidHtml()}</div></div>`}
 
 function vTrk2(){return `<div class="ks"><div class="ks-hero"><div><span class="ks-pill g">โหมดติดตาม</span><span class="ks-pill">ฝังจาก meter_tracker.html</span><h2>📇 ติดตามมิเตอร์ที่ผ่านการทดสอบ</h2><p>โหลด Excel แยก 4 น้ำ → คัดเลือกเฉพาะที่ผ่าน (เลือกเปิด/ปิดแต่ละน้ำได้) → ระบุชั้น R100/R160/R200/R400 → ทะเบียน · ค้นหา · พรีวิว/พิมพ์/PDF · Google Sheet</p></div><div class="bar"><a class="btn p" href="meter_tracker.html" target="_blank" style="text-decoration:none">↗ เปิดเต็มหน้าจอในแท็บใหม่</a></div></div><iframe src="meter_tracker.html" title="ทะเบียนมิเตอร์ที่ผ่านการทดสอบ" style="width:100%;height:calc(100vh - 150px);min-height:760px;border:1px solid #1e293b;border-radius:18px;background:#070d19"></iframe><p class="mu" style="font-size:.8rem;margin:6px 0 0">ถ้าหน้าต่างด้านบนว่าง แปลว่าไม่พบไฟล์ meter_tracker.html — ให้วางไว้โฟลเดอร์เดียวกับ index.html หรือกดปุ่มเปิดในแท็บใหม่</p></div>`}
 document.addEventListener('input',e=>{const k=e.target.dataset.tk;if(!k)return;ui['trk'+k]=e.target.value;trkRefresh()});
@@ -1262,7 +1443,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.nv-g'))document.que
  else if(a==='del'){if(!confirm('ลบ batch '+d.id+' ?'))return;DB.batches=DB.batches.filter(x=>x.id!==d.id);delete DB.rev[d.id];logEv('ลบ batch '+d.id);save()}
  else if(a==='reset'){if(!confirm('ล้างข้อมูลทั้งหมดและกลับค่าตั้งต้น?'))return;DB=seed();save();toast('คืนค่าแล้ว')}
  else if(a==='kt'){ui[d.v]=ui[d.v]?0:1;if(!ui.ksj&&!ui.kmj)ui[d.v]=1}else if(a==='kcsv'){const sj=sjK();dl('K1-K20_MJ15_vs_SJ15.csv','\ufeff'+[['K','Flow_Lh','Multijet15_K','Hex','SingleJet15_K'],...MJ15.k.map((r,i)=>['K'+r[0],r[1],r[2],hx(r[2]),sj[i]])].map(r=>r.join(',')).join('\n'),'text/csv')}else if(a==='acsv'){const F=SJ15A.flows;dl('SJ15_after_Hall+0.4mm.csv','\ufeff'+[['H','B',...F.map(q=>q.f+'_Lh_err%')],...SJ15A.e.map((r,i)=>[...SJ15A.pairs[i],...r])].map(r=>r.join(',')).join('\n'),'text/csv')}else if(a==='exp'){dl('smacv4_qa_backup_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(DB),'application/json')}
- else if(a==='rpsanchor'){const i=+d.i;if(ui.rpsAnchors.includes(i))ui.rpsAnchors=ui.rpsAnchors.filter(x=>x!==i);else ui.rpsAnchors.push(i);ui.rpsAnchors.sort((a,b)=>a-b)} else if(a==='rpsxl'){rpsExcel(ksModel())} else if(a==='rpscsv'){dl('SMCV4_RPM_K_Map.csv',rpsCsv(ksModel()),'text/csv')} else if(a==='rpscode'){dl('SMCV4_RPM_K_Lookup.txt',rpsCode(ksModel()),'text/plain');toast('สร้าง Firmware lookup แล้ว')} else if(a==='rpsadd'){ui.rpsRows.push({q:'',rpm:'',k:ksModel().k[Math.min(ui.rpsRows.length,19)],e:''})} else if(a==='rpsclear'){ui.rpsRows=[]} else if(a==='cwreset'){const m=ksModel(),w=ksWork(m),F=(w.mode==='user'?w.store.F:m.T.F).map(t=>({f:t.f,l:t.l})),bl=()=>[1,2,3,4].map(n=>({id:'No.'+n,e:F.map(()=> ''),skip:0}));if(w.ex){DB.cw[m.key]={F,tests:bl()}}else{w.store.F=F;w.store.tests=bl();w.store.est=0}save();toast('ล้างแล้ว — เริ่มกรอกผลทดสอบใหม่ได้เลย')} else if(a==='cwex'){if(DB.cw)delete DB.cw[ui.rpsModel];save();toast('โหลดตัวอย่างจริงแล้ว')} else if(a==='cwadd'){const w=ksWork(ksModel());if(w.store){w.store.tests.push({id:'No.'+(w.store.tests.length+1),e:w.store.F.map(()=> ''),skip:0});save()}} else if(a==='cwdel'){const w=ksWork(ksModel());if(w.store){w.store.tests.splice(+d.t,1);save()}} else if(a==='cwmclr'){if(DB.cwm)DB.cwm[ui.rpsModel]=null;save();toast('ล้างช่องที่กรอกแล้ว')} else if(a==='cwmfill'){const w=ksWork(ksModel()),A=ksMan(ui.rpsModel);if(w.cal){w.cal.cc.forEach((c,i)=>{A[i].e=+c.toFixed(2);A[i].kn=''});save();toast('เติม Error กลางจากใบงานแล้ว')}} else if(a==='cwmcsv'){const m=ksModel(),w=ksWork(m),A=ksMan(m.key);dl('Calibration_'+m.key+'_K1-K20.csv','\ufeffK,RPM,Flow,K เดิม,Error %,K ใหม่,ปรับ %\n'+w.old.map((k,i)=>{const kn=ksManNew(k,A[i]);return ['K'+(i+1),'"'+rpsRange(i)+'"',Number.isFinite(m.q[i])?m.q[i]:'',k,A[i].e,kn==null?'':kn,kn==null?'':((kn/k-1)*100).toFixed(3)].join(',')}).join('\n'),'text/csv')} else if(a==='rdadd'){const _k=ui.rpsModel||'SJ15';ksRd(_k).push({f:'',r:[]});if(DB.rpmDummy)DB.rpmDummy[_k]=0;if(DB.rpmdUser)delete DB.rpmdUser[_k];save()} else if(a==='rddel'){const _k=ui.rpsModel||'SJ15',_a=ksRd(_k);_a.splice(+d.i,1);if(DB.rpmDummy)DB.rpmDummy[_k]=0;if(!_a.length){DB.rpmdUser=DB.rpmdUser||{};DB.rpmdUser[_k]=1}save()} else if(a==='rdreset'){DB.rpmd[ui.rpsModel||'SJ15']=null;if(DB.rpmdUser)delete DB.rpmdUser[ui.rpsModel||'SJ15'];save();toast('รีเซ็ตข้อมูลวัด RPM แล้ว')} else if(a==='repmode'){ui.repMode=d.v} else if(a==='repr'){ui.repR=+d.v} else if(a==='repm'){ui.repM=+d.v} else if(a==='repxl'){rpXlsx()} else if(a==='repcopym'){const m=ksModel('MJ15');const C=rpCalc(m.q),t=C.M[+d.v].kn.join(', ');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('คัดลอก K '+REP.ids[+d.v]+' แล้ว'),()=>toast('คัดลอกไม่ได้'))} else if(a==='repcopy'){const m=ksModel('MJ15');const t=rpCalc(m.q).kn.join(', ');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('คัดลอก K ใหม่แล้ว'),()=>toast('คัดลอกไม่ได้ — เลือกจากกล่องโค้ดแทน'))} else if(a==='trkform'){ui.trkForm=!ui.trkForm;ui.trkEdit=null;ui.trkDraft=trkBlank()} else if(a==='trkedit'){const r=(DB.trk||[]).find(x=>x.rid===d.id);if(r){ui.trkDraft=JSON.parse(JSON.stringify(r));ui.trkEdit=r.rid;ui.trkForm=1}} else if(a==='trksave'){if(!trkSave())return} else if(a==='trkdel'){if(!confirm('ลบรายการนี้?'))return;DB.trk=DB.trk.filter(x=>x.rid!==d.id);logEv('ลบมิเตอร์ '+d.id);save();trkQueue([d.id],1)} else if(a==='trkpv'){ui.pv.on=1;tv5PvRender();return} else if(a==='trkpvx'){ui.pv.on=0;tv5PvRender();return} else if(a==='trkpvset'){const[k,v]=d.v.split(':');ui.pv[k]=k==='k'?+v:v;tv5PvRender();return} else if(a==='trkprint'){tv5PvRender();setTimeout(()=>window.print(),150);return} else if(a==='trkpdf'){tv5Pdf();return} else if(a==='trkimg'){tv5Img();return} else if(a==='trkpdfq'){ui.pv.on=1;tv5PvRender();setTimeout(tv5Pdf,300);return} else if(a==='trkimgq'){ui.pv.on=1;tv5PvRender();setTimeout(tv5Img,300);return} else if(a==='trkxlr'){tv5Xlsx();return} else if(a==='trkcsvr'){tv5Csv();return} else if(a==='trkcopy'){tv5Copy();return} else if(a==='trkjson'){dl('SMCV4_Meter_Tracker_backup_'+trkToday()+'.json',JSON.stringify(DB.trk||[]),'application/json');toast('สำรอง JSON แล้ว');return} else if(a==='trkwipe'){trkWipe()} else if(a==='trkreload'){trkReload();return} else if(a==='trkverify'){trkVerify();return} else if(a==='trkflush'){trkFlush(1);return} else if(a==='trkauto'){DB.trkCfg.auto=DB.trkCfg.auto===0?1:0;save();if(DB.trkCfg.auto!==0)trkFlush(1);render();return} else if(a==='trksel'){ui.trkSel[d.id]=!ui.trkSel[d.id];trkRefresh();return} else if(a==='trkselall'){trkFilter().forEach(r=>ui.trkSel[r.rid]=true);trkRefresh();return} else if(a==='trkselnone'){ui.trkSel={};trkRefresh();return} else if(a==='trkbulk'){trkBulk();return} else if(a==='trkbulkdone'){trkBulk('done');return} else if(a==='trkship'){trkShipSave(d.id);return} else if(a==='trkshipnow'){trkShipSave(d.id,1);return} else if(a==='trkview'){ui.trkView=d.v} else if(a==='copygs'){navigator.clipboard.writeText(GS_CODE).then(()=>toast('คัดลอกโค้ด Apps Script VER 5 แล้ว'),()=>toast('คัดลอกไม่ได้'));return} else if(a==='trkopen'){ui.trkOpen=ui.trkOpen===d.id?null:d.id} else if(a==='trkimp'){trkImport()} else if(a==='trkpush'){trkPush();return} else if(a==='trktest'){trkTest();return} else if(a==='copyhead'){navigator.clipboard.writeText(TRK_HEAD.join('\t')).then(()=>toast('คัดลอกหัวตารางแล้ว — วางที่ช่อง A1 ของแถวที่แทรกใหม่'),()=>toast('คัดลอกไม่ได้'));return} else if(a==='trkpull'){trkPull();return} else if(a==='trkcsv'){trkCsv()} else if(a==='trkxl'){trkXlsx()} else if(a==='trkclr'){ui.trkQ=ui.trkSz=ui.trkMd=ui.trkRs=ui.trkD1=ui.trkD2=ui.trkRc=ui.trkSh='';ui.trkPend='0'} else if(a==='mscroll'){const el=document.getElementById(d.v);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return} else if(a==='mcopy'){const el=document.getElementById(d.v);(navigator.clipboard?navigator.clipboard.writeText(el.textContent):Promise.reject()).then(()=>toast('คัดลอกโค้ดแล้ว'),()=>toast('คัดลอกไม่ได้ — เลือกข้อความเอง'));return} else if(a==='cwxl'){ksSheetXlsx(ksModel())} else if(a==='ksadd'){const u=ksModel().u;if(u){u.tests.push({id:'No.'+(u.tests.length+1),e:u.F.map(()=> '')});save()}} else if(a==='ksreset'){if(DB.ks)delete DB.ks[ui.rpsModel];save();toast('คืนค่าเริ่มต้นแล้ว')} else if(a==='ksm'){ui.ksMeter=+d.v} else if(a==='ksmode'){ui.ksMode=d.v} else if(a==='kst'){const o=ui.ksOff=ui.ksOff||[],i=o.indexOf(d.n);if(i<0)o.push(d.n);else o.splice(i,1)} else if(a==='ksg'){const i=+d.i;ui.rpsRPM=i?Math.round((RPM_MAP[i-1].max+(RPM_MAP[i].max===Infinity?RPM_MAP[i-1].max*1.1:RPM_MAP[i].max))/2*10)/10:5}
+ else if(a==='rpsanchor'){const i=+d.i;if(ui.rpsAnchors.includes(i))ui.rpsAnchors=ui.rpsAnchors.filter(x=>x!==i);else ui.rpsAnchors.push(i);ui.rpsAnchors.sort((a,b)=>a-b)} else if(a==='rpsxl'){rpsExcel(ksModel())} else if(a==='rpscsv'){dl('SMCV4_RPM_K_Map.csv',rpsCsv(ksModel()),'text/csv')} else if(a==='rpscode'){dl('SMCV4_RPM_K_Lookup.txt',rpsCode(ksModel()),'text/plain');toast('สร้าง Firmware lookup แล้ว')} else if(a==='rpsadd'){ui.rpsRows.push({q:'',rpm:'',k:ksModel().k[Math.min(ui.rpsRows.length,19)],e:''})} else if(a==='rpsclear'){ui.rpsRows=[]} else if(a==='cwreset'){const m=ksModel(),w=ksWork(m),F=(w.mode==='user'?w.store.F:m.T.F).map(t=>({f:t.f,l:t.l})),bl=()=>[1,2,3,4].map(n=>({id:'No.'+n,e:F.map(()=> ''),skip:0}));if(w.ex){DB.cw[m.key]={F,tests:bl()}}else{w.store.F=F;w.store.tests=bl();w.store.est=0}save();toast('ล้างแล้ว — เริ่มกรอกผลทดสอบใหม่ได้เลย')} else if(a==='cwex'){if(DB.cw)delete DB.cw[ui.rpsModel];save();toast('โหลดตัวอย่างจริงแล้ว')} else if(a==='cwadd'){const w=ksWork(ksModel());if(w.store){w.store.tests.push({id:'No.'+(w.store.tests.length+1),e:w.store.F.map(()=> ''),skip:0});save()}} else if(a==='cwdel'){const w=ksWork(ksModel());if(w.store){w.store.tests.splice(+d.t,1);save()}} else if(a==='cwmclr'){if(DB.cwm)DB.cwm[ui.rpsModel]=null;save();toast('ล้างช่องที่กรอกแล้ว')} else if(a==='cwmfill'){const w=ksWork(ksModel()),A=ksMan(ui.rpsModel);if(w.cal){w.cal.cc.forEach((c,i)=>{A[i].e=+c.toFixed(2);A[i].kn=''});save();toast('เติม Error กลางจากใบงานแล้ว')}} else if(a==='cwmcsv'){const m=ksModel(),w=ksWork(m),A=ksMan(m.key);dl('Calibration_'+m.key+'_K1-K20.csv','\ufeffK,RPM,Flow,K เดิม,Error %,K ใหม่,ปรับ %\n'+w.old.map((k,i)=>{const kn=ksManNew(k,A[i]);return ['K'+(i+1),'"'+rpsRange(i)+'"',Number.isFinite(m.q[i])?m.q[i]:'',k,A[i].e,kn==null?'':kn,kn==null?'':((kn/k-1)*100).toFixed(3)].join(',')}).join('\n'),'text/csv')} else if(a==='rdadd'){const _k=ui.rpsModel||'SJ15';ksRd(_k).push({f:'',r:[]});if(DB.rpmDummy)DB.rpmDummy[_k]=0;if(DB.rpmdUser)delete DB.rpmdUser[_k];save()} else if(a==='rddel'){const _k=ui.rpsModel||'SJ15',_a=ksRd(_k);_a.splice(+d.i,1);if(DB.rpmDummy)DB.rpmDummy[_k]=0;if(!_a.length){DB.rpmdUser=DB.rpmdUser||{};DB.rpmdUser[_k]=1}save()} else if(a==='rdreset'){DB.rpmd[ui.rpsModel||'SJ15']=null;if(DB.rpmdUser)delete DB.rpmdUser[ui.rpsModel||'SJ15'];save();toast('รีเซ็ตข้อมูลวัด RPM แล้ว')} else if(a==='repmode'){ui.repMode=d.v} else if(a==='repr'){ui.repR=+d.v} else if(a==='repm'){ui.repM=+d.v} else if(a==='repxl'){rpXlsx()} else if(a==='repcopym'){const m=ksModel('MJ15');const C=rpCalc(m.q),t=C.M[+d.v].kn.join(', ');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('คัดลอก K '+REP.ids[+d.v]+' แล้ว'),()=>toast('คัดลอกไม่ได้'))} else if(a==='repcopy'){const m=ksModel('MJ15');const t=rpCalc(m.q).kn.join(', ');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('คัดลอก K ใหม่แล้ว'),()=>toast('คัดลอกไม่ได้ — เลือกจากกล่องโค้ดแทน'))} else if(a==='trkform'){ui.trkForm=!ui.trkForm;ui.trkEdit=null;ui.trkDraft=trkBlank()} else if(a==='trkedit'){const r=(DB.trk||[]).find(x=>x.rid===d.id);if(r){ui.trkDraft=JSON.parse(JSON.stringify(r));ui.trkEdit=r.rid;ui.trkForm=1}} else if(a==='trksave'){if(!trkSave())return} else if(a==='trkdel'){if(!confirm('ซ่อนรายการนี้ออกจากหน้าจอ?\n(ไม่ลบจริง — ข้อมูลและประวัติยังเก็บใน Google Sheet ตลอด ดู/กู้คืนได้ที่ปุ่ม “🗂 ที่ซ่อนไว้”)'))return;DB.trk=DB.trk.filter(x=>x.rid!==d.id);logEv('ซ่อนมิเตอร์ '+d.id);save();trkQueue([d.id],1)} else if(a==='trkpv'){ui.pv.on=1;tv5PvRender();return} else if(a==='trkpvx'){ui.pv.on=0;tv5PvRender();return} else if(a==='trkpvset'){const[k,v]=d.v.split(':');ui.pv[k]=k==='k'?+v:v;tv5PvRender();return} else if(a==='trkprint'){tv5PvRender();setTimeout(()=>window.print(),150);return} else if(a==='trkpdf'){tv5Pdf();return} else if(a==='trkimg'){tv5Img();return} else if(a==='trkpdfq'){ui.pv.on=1;tv5PvRender();setTimeout(tv5Pdf,300);return} else if(a==='trkimgq'){ui.pv.on=1;tv5PvRender();setTimeout(tv5Img,300);return} else if(a==='trkxlr'){tv5Xlsx();return} else if(a==='trkcsvr'){tv5Csv();return} else if(a==='trkcopy'){tv5Copy();return} else if(a==='trkjson'){dl('SMCV4_Meter_Tracker_backup_'+trkToday()+'.json',JSON.stringify(DB.trk||[]),'application/json');toast('สำรอง JSON แล้ว');return} else if(a==='trkwipe'){trkWipe()} else if(a==='trkreload'){trkReload();return} else if(a==='trkremote'){trkRemote();return} else if(a==='trkvoidlist'){trkVoidList();return} else if(a==='trkrestore'){trkRestore(d.id);return} else if(a==='trklog'){trkLogView(d.id);return} else if(a==='trkstats'){trkStats();return} else if(a==='trkpullfull'){trkPull(true);return} else if(a==='trkverify'){trkVerify();return} else if(a==='trkflush'){trkFlush(1);return} else if(a==='trkauto'){DB.trkCfg.auto=DB.trkCfg.auto===0?1:0;save();if(DB.trkCfg.auto!==0)trkFlush(1);render();return} else if(a==='trksel'){ui.trkSel[d.id]=!ui.trkSel[d.id];trkRefresh();return} else if(a==='trkselall'){trkFilter().forEach(r=>ui.trkSel[r.rid]=true);trkRefresh();return} else if(a==='trkselnone'){ui.trkSel={};trkRefresh();return} else if(a==='trkbulk'){trkBulk();return} else if(a==='trkbulkdone'){trkBulk('done');return} else if(a==='trkship'){trkShipSave(d.id);return} else if(a==='trkshipnow'){trkShipSave(d.id,1);return} else if(a==='trkview'){ui.trkView=d.v} else if(a==='copygs'){navigator.clipboard.writeText(GS_CODE).then(()=>toast('คัดลอกโค้ด Apps Script VER 6 แล้ว'),()=>toast('คัดลอกไม่ได้'));return} else if(a==='trkopen'){ui.trkOpen=ui.trkOpen===d.id?null:d.id} else if(a==='trkimp'){trkImport()} else if(a==='trkpush'){trkPush();return} else if(a==='trktest'){trkTest();return} else if(a==='copyhead'){navigator.clipboard.writeText(TRK_HEAD.join('\t')).then(()=>toast('คัดลอกหัวตารางแล้ว — วางที่ช่อง A1 ของแถวที่แทรกใหม่'),()=>toast('คัดลอกไม่ได้'));return} else if(a==='trkpull'){trkPull();return} else if(a==='trkcsv'){trkCsv()} else if(a==='trkxl'){trkXlsx()} else if(a==='trkclr'){ui.trkQ=ui.trkSz=ui.trkMd=ui.trkRs=ui.trkD1=ui.trkD2=ui.trkRc=ui.trkSh='';ui.trkPend='0'} else if(a==='mscroll'){const el=document.getElementById(d.v);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return} else if(a==='mcopy'){const el=document.getElementById(d.v);(navigator.clipboard?navigator.clipboard.writeText(el.textContent):Promise.reject()).then(()=>toast('คัดลอกโค้ดแล้ว'),()=>toast('คัดลอกไม่ได้ — เลือกข้อความเอง'));return} else if(a==='cwxl'){ksSheetXlsx(ksModel())} else if(a==='ksadd'){const u=ksModel().u;if(u){u.tests.push({id:'No.'+(u.tests.length+1),e:u.F.map(()=> '')});save()}} else if(a==='ksreset'){if(DB.ks)delete DB.ks[ui.rpsModel];save();toast('คืนค่าเริ่มต้นแล้ว')} else if(a==='ksm'){ui.ksMeter=+d.v} else if(a==='ksmode'){ui.ksMode=d.v} else if(a==='kst'){const o=ui.ksOff=ui.ksOff||[],i=o.indexOf(d.n);if(i<0)o.push(d.n);else o.splice(i,1)} else if(a==='ksg'){const i=+d.i;ui.rpsRPM=i?Math.round((RPM_MAP[i-1].max+(RPM_MAP[i].max===Infinity?RPM_MAP[i-1].max*1.1:RPM_MAP[i].max))/2*10)/10:5}
  else if(a==='csv'){const b=curB(),h=['No','Meter','Init','Final','Vol','Test','Err%','Status',...b.ms[0].r[0].k.map((_,i)=>'K'+(i+1))];dl(b.id+'.csv','\ufeff'+[h,...b.ms.map(m=>[m.no,m.meter,m.init,m.fin,m.vol,m.test,m.err,m.st,...m.r[0].k])].map(r=>r.join(',')).join('\n'),'text/csv')}
  render()});
 document.addEventListener('change',e=>{const r=e.target.dataset.rps;if(r){if(r==='model'){ui.rpsModel=e.target.value;const rm=RPS_MODELS[ui.rpsModel];if(rm){ui.m=rm.model||'SJ';ui.s=rm.size||15;if(ui.tab==='mj'&&!(ui.m==='MJ'&&ui.s===15))ui.tab='rpmstudio';}}if(r==='live'||r==='sl')ui.rpsRPM=+e.target.value;if(r==='q3')ui.rpsQ3=+e.target.value;if(r==='rr')ui.rpsR=+e.target.value;if(['q','rpm','e'].includes(r)){const i=+e.target.dataset.i;if(!ui.rpsRows[i])ui.rpsRows[i]={};ui.rpsRows[i][r]=e.target.value}if(r==='k'){ui.rpsCustomK[+e.target.dataset.i]=+e.target.value}if(r==='qcustom'){ui.rpsCustomQ[+e.target.dataset.i]=+e.target.value}render();return}if(e.target.id==='bs'){ui.bid=e.target.value;render()}if(e.target.id==='ms'){ui.mn=+e.target.value;render()}});
