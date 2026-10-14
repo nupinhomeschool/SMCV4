@@ -101,6 +101,7 @@ jobs:
 
           import android.annotation.SuppressLint
           import android.content.ContentValues
+          import android.graphics.Color
           import android.graphics.Typeface
           import android.nfc.NfcAdapter
           import android.nfc.Tag
@@ -158,6 +159,7 @@ jobs:
               private var nfc: NfcAdapter? = null
               private var pendingDump: String? = null     // dump ล่าสุด เผื่อหน้าเว็บยังโหลดไม่เสร็จ
               private var pageLoaded = false
+              private var undelivered = false             // มี dump ใหม่ที่ยังไม่ถูกประมวลผลในเว็บ
 
               @SuppressLint("SetJavaScriptEnabled")
               override fun onCreate(savedInstanceState: Bundle?) {
@@ -186,18 +188,17 @@ jobs:
                       setTextIsSelectable(true)
                   }
                   panel.addView(tvHex)
-                  dumpPanel = ScrollView(this).apply { addView(panel) }
+                  dumpPanel = ScrollView(this).apply { addView(panel); setBackgroundColor(Color.WHITE) }
 
                   // ---------- WebView ----------
                   webView = WebView(this).apply {
-                      visibility = View.GONE
                       settings.javaScriptEnabled = true
                       settings.domStorageEnabled = true
                       settings.allowFileAccess = true
                       webViewClient = object : WebViewClient() {
                           override fun onPageFinished(view: WebView?, url: String?) {
                               pageLoaded = true
-                              pendingDump?.let { push(it) }
+                              if (undelivered) pendingDump?.let { push(it) }
                           }
                       }
                       loadUrl(WEB_APP_URL)
@@ -206,14 +207,23 @@ jobs:
                   // ---------- แถบสลับหน้า ----------
                   val btnDump = Button(this).apply { text = "Dump"; setOnClickListener { showWeb(false) } }
                   val btnWeb = Button(this).apply { text = "Web App"; setOnClickListener { showWeb(true) } }
+                  val btnSend = Button(this).apply {
+                      text = "ส่งซ้ำ"
+                      setOnClickListener {
+                          val j = pendingDump
+                          if (j == null) toast("ยังไม่มีข้อมูล ให้แตะมิเตอร์ก่อน")
+                          else { showWeb(true); push(j) }
+                      }
+                  }
                   val bar = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       addView(btnDump, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                       addView(btnWeb, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                      addView(btnSend, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                   }
                   val frame = FrameLayout(this).apply {
-                      addView(dumpPanel, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-                      addView(webView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+                      addView(webView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))   // เว็บอยู่ข้างล่าง ไม่ถูกซ่อน
+                      addView(dumpPanel, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) // หน้า Dump ซ้อนทับด้านบน
                   }
                   setContentView(LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
@@ -230,6 +240,7 @@ jobs:
 
               override fun onResume() {
                   super.onResume()
+                  webView.onResume()
                   nfc?.enableReaderMode(this, this, FLAGS, null)
               }
 
@@ -240,7 +251,7 @@ jobs:
 
               @Deprecated("Deprecated in Java")
               override fun onBackPressed() {
-                  if (webView.visibility == View.VISIBLE && webView.canGoBack()) webView.goBack()
+                  if (dumpPanel.visibility == View.GONE && webView.canGoBack()) webView.goBack()
                   else super.onBackPressed()
               }
 
@@ -273,8 +284,9 @@ jobs:
                                   (if (res.bad.isNotEmpty()) "  •  อ่านไม่ได้ ${res.bad.size} blocks" else "")
                           toast(saveMsg)
                           pendingDump = json
-                          if (pageLoaded) push(json)
-                          if (send) showWeb(true)
+                          undelivered = true
+                          if (send) showWeb(true)          // showWeb จะส่งเข้าเว็บให้เอง
+                          else if (pageLoaded) push(json)
                       }
                   } catch (e: Exception) {
                       runOnUiThread { tvStatus.text = "อ่านไม่สำเร็จ: ${e.message}"; toast("อ่านไม่สำเร็จ: ${e.message} (ลองแตะใหม่ ค้างไว้จนเสร็จ)") }
@@ -410,13 +422,15 @@ jobs:
                   webView.evaluateJavascript(SHIM + json + ")") { r ->
                       val res = (r ?: "").trim('"')
                       tvStatus.text = tvStatus.text.toString() + "  •  ส่งเข้า Web App: " + res
+                      if (res.startsWith("OK")) undelivered = false
                       toast(if (res.startsWith("OK")) "ส่งเข้า Web App แล้ว" else "ส่งเข้า Web App ไม่สำเร็จ: $res")
                   }
               }
 
               private fun showWeb(web: Boolean) {
-                  webView.visibility = if (web) View.VISIBLE else View.GONE
                   dumpPanel.visibility = if (web) View.GONE else View.VISIBLE
+                  // ทุกครั้งที่เปิดหน้า Web App ถ้ามีข้อมูลใหม่ที่ยังไม่ได้ประมวลผล ให้ส่งเข้าเว็บทันที
+                  if (web && undelivered && pageLoaded) pendingDump?.let { push(it) }
               }
 
               private fun row(parent: LinearLayout, label: String, def: String, type: Int): EditText {
