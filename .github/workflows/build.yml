@@ -4,7 +4,7 @@ on:
   push:
 
 env:
-  # <<< แก้ตรงนี้เป็น URL ของ SMCv4 Web App (ต้องขึ้นต้น https://) >>>
+  # URL ของ Web App (ต้องขึ้นต้น https://) ถ้าหน้าที่ใช้คือ MeterReaderNFC.html ให้ต่อท้ายด้วยชื่อไฟล์
   WEB_APP_URL: "https://nupinhomeschool.github.io/SMCV4/"
 
 jobs:
@@ -131,6 +131,18 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ  หรือใช้ไฟล์ในแอป: "file:///android_asset/index.html"
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
+                  // ส่งข้อมูลเข้า Web App: 1) window.onNfcDump  2) ฟังก์ชัน load(buffer,name) ของหน้าเว็บ
+                  // 3) ป้อนไฟล์ nfc.bin เข้า input[type=file]   คืนค่าเป็นข้อความผลลัพธ์ให้แอปแสดง
+                  private const val SHIM = "(function(d){try{" +
+                      "if(window.onNfcDump){window.onNfcDump(d);return 'OK:onNfcDump';}" +
+                      "var h=d.hex,u=new Uint8Array(h.length/2);for(var i=0;i<u.length;i++)u[i]=parseInt(h.substr(i*2,2),16);" +
+                      "if(typeof load==='function'){load(u.buffer,'nfc.bin');return 'OK:load';}" +
+                      "var inp=document.querySelector('input[type=file]');" +
+                      "if(!inp)return 'ERR:ไม่พบช่องเลือกไฟล์';" +
+                      "var f=new File([u],'nfc.bin',{type:'application/octet-stream'});" +
+                      "var dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;" +
+                      "inp.dispatchEvent(new Event('change',{bubbles:true}));return 'OK:input';" +
+                      "}catch(e){return 'ERR:'+e.message;}})("
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
               }
@@ -159,6 +171,7 @@ jobs:
                   etFile = row(panel, "Destination file:", "data4.bin", InputType.TYPE_CLASS_TEXT)
                   cbSend = CheckBox(this).apply {
                       text = "ส่งเข้า Web App อัตโนมัติหลังอ่านเสร็จ"
+                      isChecked = true
                       setPadding((16 * dp).toInt(), 0, 0, 0)
                   }
                   panel.addView(cbSend)
@@ -166,7 +179,6 @@ jobs:
                       text = "แตะโทรศัพท์ที่มิเตอร์ SMCV4 เพื่ออ่าน..."
                       setPadding((16 * dp).toInt(), (12 * dp).toInt(), (16 * dp).toInt(), (8 * dp).toInt())
                   }
-                  panel.addView(tvStatus)
                   tvHex = TextView(this).apply {
                       typeface = Typeface.MONOSPACE
                       textSize = 12f
@@ -206,9 +218,11 @@ jobs:
                   setContentView(LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
                       addView(bar, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                      addView(tvStatus, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
                       addView(frame, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
                   })
 
+                  showWeb(true)       // เริ่มที่หน้า Web App แตะมิเตอร์แล้วข้อมูลเข้าเว็บทันที
                   nfc = NfcAdapter.getDefaultAdapter(this)
                   if (nfc == null) toast("เครื่องนี้ไม่มี NFC")
                   else if (nfc?.isEnabled == false) toast("กรุณาเปิด NFC ในการตั้งค่า")
@@ -263,7 +277,7 @@ jobs:
                           if (send) showWeb(true)
                       }
                   } catch (e: Exception) {
-                      runOnUiThread { tvStatus.text = "อ่านไม่สำเร็จ: ${e.message}" }
+                      runOnUiThread { tvStatus.text = "อ่านไม่สำเร็จ: ${e.message}"; toast("อ่านไม่สำเร็จ: ${e.message} (ลองแตะใหม่ ค้างไว้จนเสร็จ)") }
                   }
               }
 
@@ -298,7 +312,7 @@ jobs:
                           }
                           b += cnt
                           val done = b - first
-                          runOnUiThread { tvStatus.text = "กำลังอ่าน... $done/${last - first + 1} blocks" }
+                          runOnUiThread { tvStatus.text = "กำลังอ่าน... $done/${last - first + 1} blocks  (อย่าเอาโทรศัพท์ออกจากมิเตอร์)" }
                       }
                       val off = s - first * bs
                       return DumpResult(tag.id.reversedArray().toHex(), s, buf.toByteArray().copyOfRange(off, off + n), bad)
@@ -393,7 +407,11 @@ jobs:
               }
 
               private fun push(json: String) {
-                  webView.evaluateJavascript("window.onNfcDump && window.onNfcDump($json)", null)
+                  webView.evaluateJavascript(SHIM + json + ")") { r ->
+                      val res = (r ?: "").trim('"')
+                      tvStatus.text = tvStatus.text.toString() + "  •  ส่งเข้า Web App: " + res
+                      toast(if (res.startsWith("OK")) "ส่งเข้า Web App แล้ว" else "ส่งเข้า Web App ไม่สำเร็จ: $res")
+                  }
               }
 
               private fun showWeb(web: Boolean) {
