@@ -137,12 +137,17 @@ jobs:
                   private const val SHIM = "(function(d){try{" +
                       "if(window.onNfcDump){window.onNfcDump(d);return 'OK:onNfcDump';}" +
                       "var h=d.hex,u=new Uint8Array(h.length/2);for(var i=0;i<u.length;i++)u[i]=parseInt(h.substr(i*2,2),16);" +
-                      "if(typeof load==='function'){load(u.buffer,'nfc.bin');return 'OK:load';}" +
-                      "var inp=document.querySelector('input[type=file]');" +
-                      "if(!inp)return 'ERR:ไม่พบช่องเลือกไฟล์';" +
-                      "var f=new File([u],'nfc.bin',{type:'application/octet-stream'});" +
-                      "var dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;" +
-                      "inp.dispatchEvent(new Event('change',{bubbles:true}));return 'OK:input';" +
+                      "function go(w,depth){try{" +
+                      "if(typeof w.load==='function'){w.load(u.buffer,'nfc.bin');return 'OK:load';}" +
+                      "var inp=w.document.querySelector('input[type=file]');" +
+                      "if(inp){var f=new w.File([u],'nfc.bin',{type:'application/octet-stream'});" +
+                      "var dt=new w.DataTransfer();dt.items.add(f);inp.files=dt.files;" +
+                      "inp.dispatchEvent(new w.Event('change',{bubbles:true}));return 'OK:input';}" +
+                      "if(depth<3){var fr=w.document.querySelectorAll('iframe');" +
+                      "for(var k=0;k<fr.length;k++){var r=go(fr[k].contentWindow,depth+1);if(r&&r.indexOf('OK')==0)return r;}}" +
+                      "}catch(e){return 'ERR:'+e.message;}return null;}" +
+                      "var res=go(window,0);" +
+                      "return res||('ERR:ไม่พบช่องรับข้อมูลในหน้า '+location.pathname);" +
                       "}catch(e){return 'ERR:'+e.message;}})("
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
@@ -178,7 +183,7 @@ jobs:
                   }
                   panel.addView(cbSend)
                   tvStatus = TextView(this).apply {
-                      text = "แตะโทรศัพท์ที่มิเตอร์ SMCV4 เพื่ออ่าน..."
+                      text = "v4 • แตะโทรศัพท์ที่มิเตอร์ SMCV4 เพื่ออ่าน..."
                       setPadding((16 * dp).toInt(), (12 * dp).toInt(), (16 * dp).toInt(), (8 * dp).toInt())
                   }
                   tvHex = TextView(this).apply {
@@ -215,11 +220,20 @@ jobs:
                           else { showWeb(true); push(j) }
                       }
                   }
+                  val btnTest = Button(this).apply {
+                      text = "ทดสอบ"
+                      setOnClickListener {
+                          showWeb(true)
+                          if (pageLoaded) push(testDumpJson()) else toast("หน้าเว็บยังโหลดไม่เสร็จ")
+                      }
+                  }
                   val bar = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       addView(btnDump, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                       addView(btnWeb, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                       addView(btnSend, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                      addView(btnTest, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                      for (i in 0 until childCount) (getChildAt(i) as Button).apply { textSize = 12f; isAllCaps = false }
                   }
                   val frame = FrameLayout(this).apply {
                       addView(webView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))   // เว็บอยู่ข้างล่าง ไม่ถูกซ่อน
@@ -280,7 +294,7 @@ jobs:
 
                       runOnUiThread {
                           tvHex.text = formatDump(res.start, res.data)
-                          tvStatus.text = "UID ${res.uid}  •  ${res.data.size} bytes" +
+                          tvStatus.text = "v4 • UID ${res.uid}  •  ${res.data.size} bytes" +
                                   (if (res.bad.isNotEmpty()) "  •  อ่านไม่ได้ ${res.bad.size} blocks" else "")
                           toast(saveMsg)
                           pendingDump = json
@@ -425,6 +439,17 @@ jobs:
                       if (res.startsWith("OK")) undelivered = false
                       toast(if (res.startsWith("OK")) "ส่งเข้า Web App แล้ว" else "ส่งเข้า Web App ไม่สำเร็จ: $res")
                   }
+              }
+
+              /** ข้อมูลทดสอบ (ตัวอย่าง 3.31 V จากเว็บ) ใช้เช็กว่าท่อส่งข้อมูลเข้าเว็บทำงานไหม โดยไม่ต้องใช้มิเตอร์ */
+              private fun testDumpJson(): String {
+                  val d = ByteArray(8192)
+                  "69 10 00 04".split(" ").forEachIndexed { i, h -> d[72 + i] = h.toInt(16).toByte() }
+                  ("00 00 00 00 19 85 B5 B5 B5 B5 B5 B5 00 00 00 17 06 16 04 20 25 11 FF 76")
+                      .split(" ").forEachIndexed { i, h -> d[188 + i] = h.toInt(16).toByte() }
+                  return JSONObject().put("ok", true).put("uid", "TEST").put("start", 0)
+                      .put("length", d.size).put("hex", d.toHex())
+                      .put("unreadableBlocks", JSONArray()).toString()
               }
 
               private fun showWeb(web: Boolean) {
