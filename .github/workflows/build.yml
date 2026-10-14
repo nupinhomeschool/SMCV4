@@ -80,7 +80,7 @@ jobs:
               <uses-feature android:name="android.hardware.nfc" android:required="true" />
 
               <application
-                  android:label="SMCV4 NFC Reader"
+                  android:label="SMCV4 Reader"
                   android:theme="@style/Theme.AppCompat.Light.NoActionBar"
                   android:usesCleartextTraffic="false">
                   <activity
@@ -147,6 +147,7 @@ jobs:
               private lateinit var tvStatus: TextView
               private lateinit var tvHex: TextView
               private lateinit var dumpPanel: View
+              private lateinit var homePanel: View
               private lateinit var webView: WebView
               private lateinit var loadBar: ProgressBar
               private lateinit var nfcProgress: ProgressBar
@@ -349,9 +350,51 @@ jobs:
                       }
                   }
           
+                  // Native home screen: shown first so the custom navy/teal UI is actually visible.
+                  val homeContents = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      gravity = Gravity.CENTER
+                      setPadding(dp(24), dp(24), dp(24), dp(24))
+                      background = gradient(0xFF14213E.toInt(), 0xFF0C1428.toInt(), 20)
+                  }
+                  homeContents.addView(TextView(this).apply {
+                      text = "◉"
+                      textSize = 64f
+                      gravity = Gravity.CENTER
+                      setTextColor(TEAL)
+                      typeface = Typeface.DEFAULT_BOLD
+                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  homeContents.addView(TextView(this).apply {
+                      text = "พร้อมอ่านมิเตอร์ SMCV4"
+                      textSize = 22f
+                      gravity = Gravity.CENTER
+                      typeface = Typeface.DEFAULT_BOLD
+                      setTextColor(WHITE)
+                      setPadding(0, dp(8), 0, dp(8))
+                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  homeContents.addView(TextView(this).apply {
+                      text = "เปิด NFC แล้วนำด้านหลังโทรศัพท์แตะที่มิเตอร์\nระบบจะอ่านหน่วยความจำและส่งข้อมูลเข้า Web App อัตโนมัติ\nไม่สร้างไฟล์ data4.bin ในโทรศัพท์"
+                      textSize = 14f
+                      gravity = Gravity.CENTER
+                      setLineSpacing(dp(5).toFloat(), 1.0f)
+                      setTextColor(MUTED)
+                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  homeContents.addView(TextView(this).apply {
+                      text = "●  NFC-V / ISO15693     •     ST25DV64KC"
+                      textSize = 12f
+                      gravity = Gravity.CENTER
+                      setTextColor(TEAL)
+                      setPadding(0, dp(20), 0, 0)
+                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  homePanel = ScrollView(this).apply {
+                      addView(homeContents)
+                      background = rounded(NAVY, 18)
+                  }
+
                   val frame = FrameLayout(this).apply {
                       addView(webView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
                       addView(dumpPanel, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+                      addView(homePanel, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
                       addView(loadBar, FrameLayout.LayoutParams(MATCH_PARENT, dp(4), Gravity.TOP))
                   }
           
@@ -367,7 +410,7 @@ jobs:
                           if (j == null) toast("ยังไม่มีข้อมูล กรุณาแตะมิเตอร์ก่อน")
                           else {
                               showWeb(true)
-                              if (pageLoaded) push(j) else toast("กำลังโหลด Web App")
+                              if (!pageLoaded) toast("กำลังโหลด Web App • ระบบจะส่งข้อมูลเมื่อพร้อม")
                           }
                       }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
                       addView(actionButton("ทดสอบ", 0xFF344361.toInt()) {
@@ -384,7 +427,7 @@ jobs:
                   root.addView(frame, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
                   setContentView(root)
           
-                  showWeb(true)
+                  showHome()
                   webView.loadUrl(WEB_APP_URL)
                   nfc = NfcAdapter.getDefaultAdapter(this)
                   if (nfc == null) {
@@ -409,8 +452,12 @@ jobs:
           
               @Deprecated("Deprecated in Java")
               override fun onBackPressed() {
-                  if (dumpPanel.visibility == View.GONE && webView.canGoBack()) webView.goBack()
-                  else super.onBackPressed()
+                  when {
+                      dumpPanel.visibility == View.VISIBLE -> showHome()
+                      webView.visibility == View.VISIBLE && webView.canGoBack() -> webView.goBack()
+                      webView.visibility == View.VISIBLE -> showHome()
+                      else -> super.onBackPressed()
+                  }
               }
           
               override fun onTagDiscovered(tag: Tag) {
@@ -457,8 +504,8 @@ jobs:
                           tvStatus.setTextColor(if (res.bad.isEmpty()) TEAL else 0xFFFFC46B.toInt())
                           pendingDump = json
                           undelivered = true
-                          showWeb(true)
-                          if (pageLoaded) push(json) else tvProgressDetail.text = "อ่านครบแล้ว • รอ Web App โหลดเพื่อส่งข้อมูล"
+                          showWeb(true) // ส่งข้อมูลหนึ่งครั้งเมื่อ Web App พร้อม
+                          if (!pageLoaded) tvProgressDetail.text = "อ่านครบแล้ว • รอ Web App โหลดเพื่อส่งข้อมูล"
                       }
                   } catch (e: Exception) {
                       runOnUiThread {
@@ -621,8 +668,17 @@ jobs:
                       .put("unreadableBlocks", JSONArray()).toString()
               }
           
+              private fun showHome() {
+                  homePanel.visibility = View.VISIBLE
+                  dumpPanel.visibility = View.GONE
+                  webView.visibility = View.GONE
+                  loadBar.visibility = View.GONE
+              }
+
               private fun showWeb(web: Boolean) {
+                  homePanel.visibility = View.GONE
                   dumpPanel.visibility = if (web) View.GONE else View.VISIBLE
+                  webView.visibility = if (web) View.VISIBLE else View.GONE
                   if (web && undelivered && pageLoaded) pendingDump?.let { push(it) }
               }
           
