@@ -54,7 +54,7 @@ jobs:
 
               defaultConfig {
                   applicationId = "com.example.smcv4reader"
-                  minSdk = 29
+                  minSdk = 29          // ใช้ MediaStore Downloads ไม่ต้องขอ permission เก็บไฟล์
                   targetSdk = 34
                   versionCode = 1
                   versionName = "1.0"
@@ -64,10 +64,6 @@ jobs:
                   targetCompatibility = JavaVersion.VERSION_17
               }
               kotlinOptions { jvmTarget = "17" }
-          }
-
-          dependencies {
-              implementation("androidx.appcompat:appcompat:1.6.1")
           }
           EOF_FILE
           mkdir -p 'app/src/main'
@@ -81,7 +77,7 @@ jobs:
 
               <application
                   android:label="SMCV4 Reader"
-                  android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+                  android:theme="@android:style/Theme.Material.Light.NoActionBar"
                   android:usesCleartextTraffic="false">
                   <activity
                       android:name=".MainActivity"
@@ -98,470 +94,443 @@ jobs:
           mkdir -p 'app/src/main/java/com/example/smcv4reader'
           cat > 'app/src/main/java/com/example/smcv4reader/MainActivity.kt' << 'EOF_FILE'
           package com.example.smcv4reader
-          
+
           import android.annotation.SuppressLint
+          import android.app.Activity
+          import android.app.AlertDialog
+          import android.content.ContentValues
+          import android.content.Context
           import android.content.Intent
           import android.content.res.ColorStateList
           import android.graphics.Color
           import android.graphics.Typeface
+          import android.graphics.drawable.ClipDrawable
+          import android.graphics.drawable.Drawable
           import android.graphics.drawable.GradientDrawable
+          import android.graphics.drawable.LayerDrawable
           import android.net.Uri
           import android.nfc.NfcAdapter
           import android.nfc.Tag
           import android.nfc.tech.NfcV
           import android.os.Bundle
+          import android.os.Handler
+          import android.os.Looper
+          import android.provider.MediaStore
           import android.text.InputType
+          import android.util.Base64
           import android.view.Gravity
           import android.view.View
           import android.view.ViewGroup.LayoutParams.MATCH_PARENT
           import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
           import android.webkit.JavascriptInterface
+          import android.webkit.MimeTypeMap
           import android.webkit.ValueCallback
           import android.webkit.WebChromeClient
           import android.webkit.WebView
           import android.webkit.WebViewClient
-          import android.widget.*
-          import androidx.activity.result.contract.ActivityResultContracts
-          import androidx.appcompat.app.AppCompatActivity
+          import android.widget.Button
+          import android.widget.CheckBox
+          import android.widget.EditText
+          import android.widget.FrameLayout
+          import android.widget.LinearLayout
+          import android.widget.ProgressBar
+          import android.widget.ScrollView
+          import android.widget.TextView
+          import android.widget.Toast
           import org.json.JSONArray
           import org.json.JSONObject
           import java.io.ByteArrayOutputStream
-          import java.util.concurrent.Callable
-          import java.util.concurrent.FutureTask
-          
-          class MainActivity : AppCompatActivity(), NfcAdapter.ReaderCallback {
-          
+          import java.text.SimpleDateFormat
+          import java.util.Date
+          import java.util.Locale
+
+          /**
+           * หน้า 1 (อ่าน NFC): แตะมิเตอร์ -> แถบ % + จำนวน block -> ส่งข้อมูลเข้า Web App อัตโนมัติ
+           * หน้า 2 (Web App) : SMCv4 Web App เต็มจอ มีปุ่ม "อ่าน NFC ใหม่" กลับมาหน้าแรก
+           */
+          class MainActivity : Activity(), NfcAdapter.ReaderCallback {
+
               companion object {
+                  // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
+                  private const val VERSION = "v8"
+                  private const val REQ_FILE = 4711
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
-                  private const val NAVY = 0xFF101B36.toInt()
-                  private const val PANEL = 0xFF192746.toInt()
-                  private const val TEAL = 0xFF20D6C7.toInt()
-                  private const val WHITE = 0xFFF5F8FF.toInt()
-                  private const val MUTED = 0xFFB7C4DC.toInt()
               }
-          
-              private lateinit var etStart: EditText
-              private lateinit var etLen: EditText
-              private lateinit var tvStatus: TextView
-              private lateinit var tvHex: TextView
-              private lateinit var dumpPanel: View
-              private lateinit var homePanel: View
+
+              // ---- โทนสี: น้ำเงินเข้ม + เทอร์ควอยซ์ ----
+              private val cNavy = Color.parseColor("#071A3A")
+              private val cNavy2 = Color.parseColor("#0B2C57")
+              private val cCard = Color.parseColor("#0F2B52")
+              private val cStroke = Color.parseColor("#1F4E7F")
+              private val cTeal = Color.parseColor("#2DD4BF")
+              private val cTeal2 = Color.parseColor("#0E9AA7")
+              private val cMuted = Color.parseColor("#9DB4D0")
+              private val cGreen = Color.parseColor("#34D399")
+              private val cGreen2 = Color.parseColor("#059669")
+              private val cRed = Color.parseColor("#F87171")
+              private val cRed2 = Color.parseColor("#B91C1C")
+              private val cAmber = Color.parseColor("#FBBF24")
+
+              private lateinit var readerScreen: View
               private lateinit var webView: WebView
               private lateinit var loadBar: ProgressBar
-              private lateinit var nfcProgress: ProgressBar
-              private lateinit var tvPercent: TextView
-              private lateinit var tvProgressDetail: TextView
-              private lateinit var tvUid: TextView
-          
+              private lateinit var tvNfc: TextView
+              private lateinit var rdState: TextView
+              private lateinit var rdPercent: TextView
+              private lateinit var rdBar: ProgressBar
+              private lateinit var rdDetail: TextView
+              private lateinit var rdHint: TextView
+              private lateinit var valUid: TextView
+              private lateinit var valSize: TextView
+              private lateinit var valSend: TextView
+              private lateinit var tvWebState: TextView
+              private lateinit var cbSave: CheckBox
+
               private var nfc: NfcAdapter? = null
               private var pendingDump: String? = null
               private var pageLoaded = false
-              private var fileCallback: ValueCallback<Array<Uri>>? = null
               private var undelivered = false
+              @Volatile private var reading = false
+              private var token = 0
+              private val handler = Handler(Looper.getMainLooper())
+              private var fileCallback: ValueCallback<Array<Uri>>? = null
+
+              private val prefs by lazy { getSharedPreferences("cfg", Context.MODE_PRIVATE) }
               private val feedJs: String by lazy { assets.open("feed.js").bufferedReader().readText() }
               private val openNfcJs: String by lazy { assets.open("opennfc.js").bufferedReader().readText() }
-          
-              private val chooser = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-                  fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(r.resultCode, r.data))
-                  fileCallback = null
-              }
-          
+
+              /** หน้าเว็บเรียกกลับมารายงานผล / ขอบันทึกไฟล์ที่ดาวน์โหลด */
               inner class Bridge {
                   @JavascriptInterface
                   fun report(msg: String) {
                       runOnUiThread {
-                          tvStatus.text = msg
-                          undelivered = msg.startsWith("ERR")
-                          if (msg.startsWith("OK")) {
-                              tvStatus.setTextColor(TEAL)
-                              tvProgressDetail.text = "ข้อมูลถูกส่งไปยัง Web App แล้ว"
-                          } else if (msg.startsWith("ERR")) {
-                              tvStatus.setTextColor(0xFFFF8A8A.toInt())
-                              tvProgressDetail.text = "ส่งไม่สำเร็จ แตะ “ส่งซ้ำ” เพื่อลองอีกครั้ง"
-                          }
+                          val bad = msg.startsWith("ERR")
+                          undelivered = bad
+                          setSendStatus(if (bad) "✗ $msg" else "✓ เว็บประมวลผลข้อมูลแล้ว", !bad)
                           toast(msg)
                       }
                   }
+
+                  @JavascriptInterface
+                  fun saveFile(mime: String, b64: String) {
+                      try {
+                          val bytes = Base64.decode(b64, Base64.DEFAULT)
+                          val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) ?: "bin"
+                          val name = "SMCV4_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + "." + ext
+                          saveToDownloads(name, bytes, mime)
+                          runOnUiThread { toast("บันทึกไฟล์ $name ลงโฟลเดอร์ Download แล้ว") }
+                      } catch (e: Exception) {
+                          runOnUiThread { toast("บันทึกไฟล์ไม่สำเร็จ: ${e.message}") }
+                      }
+                  }
               }
-          
+
+              // =====================================================================  สร้างหน้าจอ
+
               @SuppressLint("SetJavaScriptEnabled")
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  window.statusBarColor = NAVY
-                  window.navigationBarColor = NAVY
-                  window.decorView.systemUiVisibility = 0
-          
-                  val root = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      setBackgroundColor(NAVY)
-                  }
-          
-                  // Header
-                  val header = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      gravity = Gravity.CENTER_VERTICAL
-                      setPadding(dp(20), dp(18), dp(20), dp(18))
-                      background = gradient(0xFF213B69.toInt(), 0xFF14213E.toInt(), 22)
-                  }
-                  header.addView(TextView(this).apply {
-                      text = "SMCV4  •  NFC READER"
-                      textSize = 22f
-                      typeface = Typeface.DEFAULT_BOLD
-                      setTextColor(Color.WHITE)
+                  window.statusBarColor = cNavy
+
+                  val webScreen = buildWebScreen()
+                  readerScreen = buildReaderScreen()
+                  setContentView(FrameLayout(this).apply {
+                      addView(webScreen, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))      // เว็บอยู่ข้างล่าง ไม่ถูกซ่อน
+                      addView(readerScreen, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))   // หน้าอ่าน NFC ซ้อนด้านบน
                   })
-                  header.addView(TextView(this).apply {
-                      text = "อ่านข้อมูลมิเตอร์ แล้วส่งตรงเข้า Web App"
-                      textSize = 13f
-                      setTextColor(0xFFD4E4FF.toInt())
-                      setPadding(0, dp(5), 0, 0)
-                  })
-                  root.addView(header, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-          
-                  // NFC progress card
-                  val progressCard = LinearLayout(this).apply {
+
+                  nfc = NfcAdapter.getDefaultAdapter(this)
+                  uiIdle()
+              }
+
+              private fun buildReaderScreen(): View {
+                  tvNfc = label("", 12f, Color.WHITE, true)
+                  tvNfc.setPadding(dp(12), dp(6), dp(12), dp(6))
+
+                  val titleCol = LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
-                      setPadding(dp(16), dp(14), dp(16), dp(14))
-                      background = rounded(PANEL, 18)
+                      addView(label("SMCV4 Reader", 24f, Color.WHITE, true))
+                      addView(label("อ่านมิเตอร์น้ำผ่าน NFC (ST25DV)", 12f, cMuted))
                   }
-                  val progressHeading = LinearLayout(this).apply {
+                  val head = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       gravity = Gravity.CENTER_VERTICAL
+                      addView(titleCol, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                      addView(tvNfc, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
                   }
-                  progressHeading.addView(TextView(this).apply {
-                      text = "สถานะการอ่าน NFC"
-                      textSize = 15f
-                      typeface = Typeface.DEFAULT_BOLD
-                      setTextColor(WHITE)
-                  }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-                  tvPercent = TextView(this).apply {
-                      text = "0%"
-                      textSize = 25f
-                      typeface = Typeface.DEFAULT_BOLD
-                      setTextColor(TEAL)
-                  }
-                  progressHeading.addView(tvPercent)
-                  progressCard.addView(progressHeading)
-          
-                  nfcProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-                      max = 100
-                      progress = 0
-                      progressTintList = ColorStateList.valueOf(TEAL)
-                      progressBackgroundTintList = ColorStateList.valueOf(0xFF344361.toInt())
-                      progressDrawable?.setTint(TEAL)
-                  }
-                  progressCard.addView(nfcProgress, LinearLayout.LayoutParams(MATCH_PARENT, dp(10)).apply {
-                      topMargin = dp(10)
-                      bottomMargin = dp(7)
-                  })
-          
-                  tvProgressDetail = TextView(this).apply {
-                      text = "พร้อมใช้งาน • แตะโทรศัพท์ค้างไว้ที่มิเตอร์"
-                      textSize = 12f
-                      setTextColor(MUTED)
-                  }
-                  progressCard.addView(tvProgressDetail)
-                  tvUid = TextView(this).apply {
-                      text = "UID: —"
-                      textSize = 12f
-                      setTextColor(0xFF9FB3D9.toInt())
-                      setPadding(0, dp(4), 0, 0)
-                  }
-                  progressCard.addView(tvUid)
-                  root.addView(progressCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                      setMargins(dp(12), dp(12), dp(12), dp(8))
-                  })
-          
-                  tvStatus = TextView(this).apply {
-                      text = "พร้อมอ่านข้อมูลจาก ST25DV64KC"
-                      textSize = 13f
-                      setTextColor(WHITE)
-                      setPadding(dp(16), dp(5), dp(16), dp(8))
-                  }
-                  root.addView(tvStatus, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-          
-                  // Dump controls: retained for custom address/length, but no file name or file saving.
-                  val dumpContents = LinearLayout(this).apply {
+
+                  // ---- การ์ดความคืบหน้า ----
+                  rdState = label("พร้อมอ่าน", 15f, cTeal, true)
+                  rdState.gravity = Gravity.CENTER
+                  rdPercent = label("0%", 58f, Color.WHITE, true)
+                  rdPercent.gravity = Gravity.CENTER
+                  rdBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal)
+                  rdBar.max = 100
+                  rdBar.progressDrawable = makeBar(cTeal, cTeal2)
+                  rdDetail = label("อ่านแล้ว 0 / 0 blocks", 13f, cMuted)
+                  rdDetail.gravity = Gravity.CENTER
+                  rdHint = label("แตะโทรศัพท์ที่มิเตอร์ SMCV4 แล้วถือให้นิ่งจนครบ 100%", 12f, cMuted)
+                  rdHint.gravity = Gravity.CENTER
+                  val progCard = LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
-                      setPadding(dp(12), dp(8), dp(12), dp(8))
-                      setBackgroundColor(0xFF111D35.toInt())
+                      gravity = Gravity.CENTER_HORIZONTAL
+                      setPadding(dp(20), dp(18), dp(20), dp(18))
+                      background = rounded(cCard, 22, cStroke, 1)
+                      addView(rdState, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                      addView(rdPercent, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                      addView(rdBar, LinearLayout.LayoutParams(MATCH_PARENT, dp(16)).apply { topMargin = dp(4) })
+                      addView(rdDetail, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
+                      addView(rdHint, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
                   }
-                  etStart = row(dumpContents, "Start address", "0", InputType.TYPE_CLASS_NUMBER)
-                  etLen = row(dumpContents, "จำนวน bytes", "8192", InputType.TYPE_CLASS_NUMBER)
-                  tvHex = TextView(this).apply {
-                      typeface = Typeface.MONOSPACE
-                      textSize = 11f
-                      setTextColor(WHITE)
-                      setPadding(dp(12), dp(8), dp(12), dp(8))
-                      setTextIsSelectable(true)
+
+                  // ---- การ์ดข้อมูล ----
+                  valUid = label("—", 13f, Color.WHITE, true)
+                  valUid.gravity = Gravity.END
+                  valSize = label("—", 13f, Color.WHITE, true)
+                  valSize.gravity = Gravity.END
+                  valSend = label("ยังไม่ได้ส่ง", 13f, cMuted, true)
+                  valSend.gravity = Gravity.END
+                  val infoCard = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      setPadding(dp(18), dp(10), dp(18), dp(10))
+                      background = rounded(cCard, 18, cStroke, 1)
+                      addView(infoRow("UID", valUid))
+                      addView(infoRow("ข้อมูลที่อ่าน", valSize))
+                      addView(infoRow("ส่งเข้า Web App", valSend))
                   }
-                  dumpContents.addView(tvHex)
-                  dumpPanel = ScrollView(this).apply {
-                      addView(dumpContents)
-                      visibility = View.GONE
-                      background = rounded(0xFF111D35.toInt(), 16)
+
+                  // ---- ตัวเลือกบันทึกไฟล์ ----
+                  cbSave = CheckBox(this)
+                  cbSave.setTextColor(Color.WHITE)
+                  cbSave.textSize = 13f
+                  cbSave.buttonTintList = ColorStateList.valueOf(cTeal)
+                  cbSave.isChecked = prefs.getBoolean("save", false)
+                  cbSave.setOnCheckedChangeListener { _, c -> prefs.edit().putBoolean("save", c).apply() }
+                  refreshSaveLabel()
+
+                  // ---- ปุ่ม ----
+                  val row1 = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      addView(pill("Web App", true) { openWebScreen() },
+                          LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
+                      addView(pill("ตั้งค่าอ่าน", false) { showSettings() },
+                          LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                   }
-          
-                  // WebView
-                  loadBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-                      max = 100
-                      progressTintList = ColorStateList.valueOf(TEAL)
-                      progressBackgroundTintList = ColorStateList.valueOf(0xFF344361.toInt())
-                      visibility = View.GONE
+                  val row2 = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      addView(pill("ส่งซ้ำ", false) { resend() },
+                          LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
+                      addView(pill("ทดสอบ", false) { runTest() },
+                          LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                   }
+
+                  val content = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      setPadding(dp(18), dp(16), dp(18), dp(20))
+                      addView(head, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                      addView(progCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(20) })
+                      addView(infoCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(14) })
+                      addView(cbSave, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                      addView(row1, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                      addView(row2, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+                      addView(label("$VERSION  •  ST25DV / ISO15693", 11f, cMuted).apply { gravity = Gravity.CENTER },
+                          LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
+                  }
+                  return ScrollView(this).apply {
+                      isFillViewport = true
+                      background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(cNavy, cNavy2))
+                      isClickable = true
+                      addView(content, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  }
+              }
+
+              @SuppressLint("SetJavaScriptEnabled")
+              private fun buildWebScreen(): View {
+                  val back = pill("←  อ่าน NFC ใหม่", true) { showReaderScreen() }
+                  back.textSize = 13f
+                  back.setPadding(dp(14), dp(8), dp(14), dp(8))
+                  tvWebState = label("", 11f, cMuted)
+                  val bar = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      gravity = Gravity.CENTER_VERTICAL
+                      setPadding(dp(10), dp(8), dp(10), dp(8))
+                      background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(cNavy, cNavy2))
+                      addView(back, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+                      addView(tvWebState, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(10) })
+                  }
+
                   webView = WebView(this).apply {
-                      setBackgroundColor(Color.WHITE)
                       settings.javaScriptEnabled = true
                       settings.domStorageEnabled = true
-                      settings.allowFileAccess = true
                       addJavascriptInterface(Bridge(), "NfcBridge")
+                      setDownloadListener { url, _, _, mime, _ -> this@MainActivity.handleDownload(url, mime) }
                       webViewClient = object : WebViewClient() {
                           override fun onPageFinished(view: WebView?, url: String?) {
                               pageLoaded = true
-                              view?.evaluateJavascript("($openNfcJs)()", null)
+                              view?.evaluateJavascript("($openNfcJs)()", null)       // เปิดแท็บ Tool NFC ให้อัตโนมัติ
                               if (undelivered) pendingDump?.let { push(it) }
                           }
                       }
                       webChromeClient = object : WebChromeClient() {
                           override fun onProgressChanged(view: WebView?, p: Int) {
-                              loadBar.progress = p
-                              loadBar.visibility = if (p < 100) View.VISIBLE else View.GONE
+                              this@MainActivity.loadBar.progress = p
+                              this@MainActivity.loadBar.visibility = if (p < 100) View.VISIBLE else View.GONE
                           }
-          
+
+                          // ทำให้ปุ่มเลือกไฟล์ (เช่น .bin) ในหน้าเว็บใช้งานได้
                           override fun onShowFileChooser(
-                              wv: WebView?,
-                              cb: ValueCallback<Array<Uri>>?,
-                              params: WebChromeClient.FileChooserParams?
+                              wv: WebView?, cb: ValueCallback<Array<Uri>>?, params: WebChromeClient.FileChooserParams?
                           ): Boolean {
-                              fileCallback?.onReceiveValue(null)
-                              fileCallback = cb
+                              this@MainActivity.fileCallback?.onReceiveValue(null)
+                              this@MainActivity.fileCallback = cb
+                              val i = Intent(Intent.ACTION_GET_CONTENT)
+                              i.addCategory(Intent.CATEGORY_OPENABLE)
+                              i.type = "*/*"
+                              if (params?.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE)
+                                  i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                               return try {
-                                  val i = params!!.createIntent()
-                                  i.type = "*/*"
-                                  i.removeExtra(Intent.EXTRA_MIME_TYPES)
-                                  chooser.launch(i)
+                                  this@MainActivity.startActivityForResult(Intent.createChooser(i, "เลือกไฟล์"), REQ_FILE)
                                   true
-                              } catch (_: Exception) {
-                                  fileCallback = null
+                              } catch (e: Exception) {
+                                  this@MainActivity.fileCallback = null
+                                  cb?.onReceiveValue(null)
                                   false
                               }
                           }
                       }
+                      loadUrl(WEB_APP_URL)
                   }
-          
-                  // Native home screen: shown first so the custom navy/teal UI is actually visible.
-                  val homeContents = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      gravity = Gravity.CENTER
-                      setPadding(dp(24), dp(24), dp(24), dp(24))
-                      background = gradient(0xFF14213E.toInt(), 0xFF0C1428.toInt(), 20)
-                  }
-                  homeContents.addView(TextView(this).apply {
-                      text = "◉"
-                      textSize = 64f
-                      gravity = Gravity.CENTER
-                      setTextColor(TEAL)
-                      typeface = Typeface.DEFAULT_BOLD
-                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-                  homeContents.addView(TextView(this).apply {
-                      text = "พร้อมอ่านมิเตอร์ SMCV4"
-                      textSize = 22f
-                      gravity = Gravity.CENTER
-                      typeface = Typeface.DEFAULT_BOLD
-                      setTextColor(WHITE)
-                      setPadding(0, dp(8), 0, dp(8))
-                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-                  homeContents.addView(TextView(this).apply {
-                      text = "เปิด NFC แล้วนำด้านหลังโทรศัพท์แตะที่มิเตอร์\nระบบจะอ่านหน่วยความจำและส่งข้อมูลเข้า Web App อัตโนมัติ\nไม่สร้างไฟล์ data4.bin ในโทรศัพท์"
-                      textSize = 14f
-                      gravity = Gravity.CENTER
-                      setLineSpacing(dp(5).toFloat(), 1.0f)
-                      setTextColor(MUTED)
-                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-                  homeContents.addView(TextView(this).apply {
-                      text = "●  NFC-V / ISO15693     •     ST25DV64KC"
-                      textSize = 12f
-                      gravity = Gravity.CENTER
-                      setTextColor(TEAL)
-                      setPadding(0, dp(20), 0, 0)
-                  }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-                  homePanel = ScrollView(this).apply {
-                      addView(homeContents)
-                      background = rounded(NAVY, 18)
-                  }
+                  loadBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal)
+                  loadBar.max = 100
+                  loadBar.progressDrawable = makeBar(cTeal, cTeal2)
 
                   val frame = FrameLayout(this).apply {
                       addView(webView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-                      addView(dumpPanel, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-                      addView(homePanel, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-                      addView(loadBar, FrameLayout.LayoutParams(MATCH_PARENT, dp(4), Gravity.TOP))
+                      addView(loadBar, FrameLayout.LayoutParams(MATCH_PARENT, dp(4)))
                   }
-          
-                  val actions = LinearLayout(this).apply {
-                      orientation = LinearLayout.HORIZONTAL
-                      setPadding(dp(8), dp(4), dp(8), dp(8))
-                      addView(actionButton("Web App", TEAL) { showWeb(true) },
-                          LinearLayout.LayoutParams(0, dp(46), 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
-                      addView(actionButton("ตั้งค่าอ่าน", 0xFF344361.toInt()) { showWeb(false) },
-                          LinearLayout.LayoutParams(0, dp(46), 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
-                      addView(actionButton("ส่งซ้ำ", 0xFF4D63A8.toInt()) {
-                          val j = pendingDump
-                          if (j == null) toast("ยังไม่มีข้อมูล กรุณาแตะมิเตอร์ก่อน")
-                          else {
-                              showWeb(true)
-                              if (!pageLoaded) toast("กำลังโหลด Web App • ระบบจะส่งข้อมูลเมื่อพร้อม")
-                          }
-                      }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
-                      addView(actionButton("ทดสอบ", 0xFF344361.toInt()) {
-                          showWeb(true)
-                          if (pageLoaded) {
-                              pendingDump = testDumpJson()
-                              undelivered = true
-                              push(pendingDump!!)
-                          } else toast("หน้าเว็บยังโหลดไม่เสร็จ")
-                      }, LinearLayout.LayoutParams(0, dp(46), 1f).apply { setMargins(dp(3), 0, dp(3), 0) })
-                  }
-          
-                  root.addView(actions)
-                  root.addView(frame, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
-                  setContentView(root)
-          
-                  showHome()
-                  webView.loadUrl(WEB_APP_URL)
-                  nfc = NfcAdapter.getDefaultAdapter(this)
-                  if (nfc == null) {
-                      tvStatus.text = "เครื่องนี้ไม่มี NFC"
-                      tvStatus.setTextColor(0xFFFF8A8A.toInt())
-                  } else if (nfc?.isEnabled == false) {
-                      tvStatus.text = "กรุณาเปิด NFC ในการตั้งค่าโทรศัพท์"
+                  return LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      addView(bar, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                      addView(frame, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
                   }
               }
-          
+
+              override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+                  if (requestCode == REQ_FILE) {
+                      fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+                      fileCallback = null
+                  } else {
+                      super.onActivityResult(requestCode, resultCode, data)
+                  }
+              }
+
               override fun onResume() {
                   super.onResume()
-                  if (::webView.isInitialized) webView.onResume()
+                  webView.onResume()
+                  refreshNfcChip()
                   nfc?.enableReaderMode(this, this, FLAGS, null)
               }
-          
+
               override fun onPause() {
                   super.onPause()
                   nfc?.disableReaderMode(this)
-                  if (::webView.isInitialized) webView.onPause()
               }
-          
+
               @Deprecated("Deprecated in Java")
               override fun onBackPressed() {
-                  when {
-                      dumpPanel.visibility == View.VISIBLE -> showHome()
-                      webView.visibility == View.VISIBLE && webView.canGoBack() -> webView.goBack()
-                      webView.visibility == View.VISIBLE -> showHome()
-                      else -> super.onBackPressed()
+                  if (readerScreen.visibility == View.GONE) {
+                      if (webView.canGoBack()) webView.goBack() else showReaderScreen()
+                  } else {
+                      super.onBackPressed()
                   }
               }
-          
+
+              // =====================================================================  NFC (background thread)
+
               override fun onTagDiscovered(tag: Tag) {
-                  val start = ui { etStart.text.toString().toIntOrNull() ?: 0 }
-                  val len = ui { etLen.text.toString().toIntOrNull() ?: 8192 }
-          
-                  runOnUiThread {
-                      nfcProgress.progress = 0
-                      tvPercent.text = "0%"
-                      tvUid.text = "UID: กำลังอ่าน..."
-                      tvProgressDetail.text = "กำลังอ่านหน่วยความจำ กรุณาค้างโทรศัพท์ไว้"
-                      tvStatus.text = "เริ่มอ่าน NFC..."
-                      tvStatus.setTextColor(WHITE)
-                  }
-          
+                  if (reading) return
+                  reading = true
+                  val start = cfgInt("start", 0)
+                  val len = cfgInt("len", 8192)
+                  runOnUiThread { showReaderScreen(); uiReading() }
                   try {
-                      val res = readRange(tag, start, len) { done, total ->
-                          val percent = if (total <= 0) 0 else ((done * 100f) / total).toInt().coerceIn(0, 100)
-                          runOnUiThread {
-                              nfcProgress.progress = percent
-                              tvPercent.text = "$percent%"
-                              tvProgressDetail.text = "อ่านแล้ว $done / $total blocks"
-                              tvStatus.text = "กำลังอ่านข้อมูล NFC • กรุณาอย่าเอาโทรศัพท์ออก"
-                          }
-                      }
-          
+                      val res = readRange(tag, start, len) { done, total -> runOnUiThread { uiProgress(done, total) } }
                       val json = JSONObject()
                           .put("ok", true)
                           .put("uid", res.uid)
-                          .put("start", res.start)
-                          .put("length", res.data.size)
-                          .put("hex", res.data.toHex())
+                          .put("start", 0)
+                          .put("length", res.full.size)
+                          .put("hex", res.full.toHex())          // เติม 00 ให้ครบ address ตรงกับแอป ST25
                           .put("unreadableBlocks", JSONArray(res.bad))
                           .toString()
-          
                       runOnUiThread {
-                          nfcProgress.progress = 100
-                          tvPercent.text = "100%"
-                          tvUid.text = "UID: ${res.uid}"
-                          tvProgressDetail.text = "อ่านเสร็จ ${res.data.size} bytes • กำลังส่งข้อมูลเข้า Web App"
-                          tvHex.text = formatDump(res.start, res.data)
-                          tvStatus.text = if (res.bad.isEmpty()) "อ่าน NFC สำเร็จ กำลังส่งข้อมูล..." else
-                              "อ่านเสร็จ แต่มี ${res.bad.size} blocks ที่อ่านไม่ได้"
-                          tvStatus.setTextColor(if (res.bad.isEmpty()) TEAL else 0xFFFFC46B.toInt())
                           pendingDump = json
                           undelivered = true
-                          showWeb(true) // ส่งข้อมูลหนึ่งครั้งเมื่อ Web App พร้อม
-                          if (!pageLoaded) tvProgressDetail.text = "อ่านครบแล้ว • รอ Web App โหลดเพื่อส่งข้อมูล"
+                          valUid.text = res.uid
+                          valSize.text = "${res.range.size} bytes (Addr ${res.start}–${res.start + res.range.size - 1})"
+                          uiDone(res.bad.size)
+                          if (pageLoaded) push(json) else setSendStatus("รอหน้าเว็บโหลดเสร็จ...", true)
+                          if (cbSave.isChecked) saveDump(res.range)       // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
+                          val t = token
+                          handler.postDelayed({ if (t == token && !reading) openWebScreen() }, 1000)
                       }
                   } catch (e: Exception) {
-                      runOnUiThread {
-                          tvStatus.text = "อ่านไม่สำเร็จ: ${e.message ?: "ไม่ทราบสาเหตุ"}"
-                          tvStatus.setTextColor(0xFFFF8A8A.toInt())
-                          tvProgressDetail.text = "ลองแตะมิเตอร์อีกครั้ง และค้างไว้จนแถบครบ 100%"
-                          toast("อ่านไม่สำเร็จ กรุณาลองแตะใหม่")
-                      }
+                      val msg = e.message ?: e.toString()
+                      runOnUiThread { uiError(msg) }
+                  } finally {
+                      reading = false
                   }
               }
-          
+
               private class MemInfo(val blockCount: Int, val blockSize: Int, val extended: Boolean)
-              private class DumpResult(val uid: String, val start: Int, val data: ByteArray, val bad: List<Int>)
-          
+              private class DumpResult(
+                  val uid: String, val start: Int, val range: ByteArray, val full: ByteArray, val bad: List<Int>
+              )
+
               private fun readRange(tag: Tag, start: Int, len: Int, onProgress: (Int, Int) -> Unit): DumpResult {
-                  val v = NfcV.get(tag) ?: error("แท็กไม่ใช่ NFC-V (ISO15693)")
+                  val v = NfcV.get(tag)
+                      ?: error("แท็กไม่ใช่ NFC-V (ISO15693): " + tag.techList.joinToString())
                   v.connect()
                   try {
                       val info = readMemoryInfo(v)
                       val bs = info.blockSize
                       val totalBytes = info.blockCount * bs
-                      require(totalBytes > 0) { "ไม่พบขนาดหน่วยความจำ" }
                       val s = start.coerceIn(0, totalBytes - 1)
                       val n = len.coerceIn(1, totalBytes - s)
                       val first = s / bs
                       val last = (s + n - 1) / bs
-                      val totalBlocks = last - first + 1
+                      val count = last - first + 1
+                      val chunk = ((v.maxTransceiveLength - 2) / bs).coerceIn(1, 32)
+
                       val buf = ByteArrayOutputStream()
                       val bad = ArrayList<Int>()
                       var b = first
                       while (b <= last) {
-                          val cnt = minOf(32, last - b + 1)
+                          val cnt = minOf(chunk, last - b + 1)
                           val d = readBlocks(v, b, cnt, bs, info.extended)
                           if (d != null) buf.write(d)
-                          else {
-                              for (i in 0 until cnt) {
-                                  val one = readBlocks(v, b + i, 1, bs, info.extended)
-                                  if (one != null) buf.write(one)
-                                  else {
-                                      bad.add(b + i)
-                                      buf.write(ByteArray(bs))
-                                  }
-                              }
+                          else for (i in 0 until cnt) {                      // ถ้าพลาด ลองอ่านทีละ block
+                              val one = readBlocks(v, b + i, 1, bs, info.extended)
+                              if (one != null) buf.write(one) else { bad.add(b + i); buf.write(ByteArray(bs)) }
                           }
                           b += cnt
-                          onProgress((b - first).coerceAtMost(totalBlocks), totalBlocks)
+                          onProgress(b - first, count)
                       }
+                      val all = buf.toByteArray()
                       val off = s - first * bs
-                      return DumpResult(tag.id.reversedArray().toHex(), s,
-                          buf.toByteArray().copyOfRange(off, off + n), bad)
+                      val range = all.copyOfRange(off, off + n)
+                      val full = ByteArray(totalBytes)
+                      System.arraycopy(range, 0, full, s, n)
+                      return DumpResult(tag.id.reversedArray().toHex(), s, range, full, bad)
                   } finally {
                       try { v.close() } catch (_: Exception) {}
                   }
               }
-          
+
               private fun readMemoryInfo(v: NfcV): MemInfo {
+                  // Extended Get System Info (ST25DV64K = 2048 blocks x 4 bytes = 8192 bytes)
                   try {
                       val r = v.transceive(byteArrayOf(0x02, 0x3B))
                       if (r.size > 12 && (r[0].toInt() and 1) == 0) {
@@ -587,14 +556,12 @@ jobs:
                               return MemInfo((r[i].toInt() and 0xFF) + 1, (r[i + 1].toInt() and 0x1F) + 1, false)
                       }
                   } catch (_: Exception) {}
-                  return MemInfo(2048, 4, true)
+                  return MemInfo(2048, 4, true)   // ค่าเริ่มต้น = ST25DV64K (8192 bytes)
               }
-          
+
               private fun readBlocks(v: NfcV, blk: Int, cnt: Int, bs: Int, ext: Boolean): ByteArray? {
-                  val lo = blk.toByte()
-                  val hi = (blk shr 8).toByte()
-                  val nl = (cnt - 1).toByte()
-                  val nh = ((cnt - 1) shr 8).toByte()
+                  val lo = blk.toByte(); val hi = (blk shr 8).toByte()
+                  val nl = (cnt - 1).toByte(); val nh = ((cnt - 1) shr 8).toByte()
                   val cmd = when {
                       cnt == 1 && ext -> byteArrayOf(0x02, 0x30, lo, hi)
                       cnt == 1 -> byteArrayOf(0x02, 0x20, lo)
@@ -604,137 +571,294 @@ jobs:
                   repeat(3) {
                       try {
                           val r = v.transceive(cmd)
-                          if (r.isNotEmpty() && (r[0].toInt() and 1) != 0) return null
+                          if (r.isNotEmpty() && (r[0].toInt() and 1) != 0) return null      // tag ตอบ error
                           if (r.size == 1 + cnt * bs) return r.copyOfRange(1, r.size)
-                      } catch (_: Exception) {}
+                      } catch (_: Exception) { /* ลองใหม่ */ }
                   }
                   return null
               }
-          
-              private fun formatDump(start: Int, d: ByteArray): String {
-                  val sb = StringBuilder()
-                  var i = 0
-                  while (i < d.size) {
-                      val end = minOf(i + 4, d.size)
-                      sb.append("Addr %5d: ".format(start + i))
-                      for (j in i until end) sb.append("%02X ".format(d[j]))
-                      repeat(4 - (end - i)) { sb.append("   ") }
-                      sb.append(" ")
-                      for (j in i until end) {
-                          val c = d[j].toInt() and 0xFF
-                          sb.append(if (c in 32..126) c.toChar() else ' ')
-                      }
-                      sb.append('\n')
-                      i = end
-                  }
-                  return sb.toString()
+
+              // =====================================================================  สถานะบนหน้าจอ (UI thread)
+
+              private fun setBar(c1: Int, c2: Int, pct: Int) {
+                  rdBar.progressDrawable = makeBar(c1, c2)
+                  rdBar.progress = pct
               }
-          
+
+              private fun uiIdle() {
+                  rdState.text = "พร้อมอ่าน"
+                  rdState.setTextColor(cTeal)
+                  rdPercent.text = "0%"
+                  rdPercent.setTextColor(Color.WHITE)
+                  setBar(cTeal, cTeal2, 0)
+                  rdDetail.text = "อ่านแล้ว 0 / 0 blocks"
+                  rdHint.text = "แตะโทรศัพท์ที่มิเตอร์ SMCV4 แล้วถือให้นิ่งจนครบ 100%"
+              }
+
+              private fun uiReading() {
+                  token++
+                  rdState.text = "กำลังอ่านมิเตอร์..."
+                  rdState.setTextColor(cTeal)
+                  rdPercent.text = "0%"
+                  rdPercent.setTextColor(Color.WHITE)
+                  setBar(cTeal, cTeal2, 0)
+                  rdDetail.text = "กำลังเชื่อมต่อชิป..."
+                  rdHint.text = "อย่าเอาโทรศัพท์ออกจากมิเตอร์จนกว่าจะครบ 100%"
+                  valSend.text = "ยังไม่ได้ส่ง"
+                  valSend.setTextColor(cMuted)
+                  valUid.text = "—"
+                  valSize.text = "—"
+                  tvWebState.text = ""
+              }
+
+              private fun uiProgress(done: Int, total: Int) {
+                  val pct = if (total > 0) done * 100 / total else 0
+                  rdPercent.text = "$pct%"
+                  rdBar.progress = pct
+                  rdDetail.text = "อ่านแล้ว $done / $total blocks"
+              }
+
+              private fun uiDone(bad: Int) {
+                  rdState.text = "อ่านสำเร็จ ✓"
+                  rdState.setTextColor(cGreen)
+                  rdPercent.text = "100%"
+                  rdPercent.setTextColor(cGreen)
+                  setBar(cGreen, cGreen2, 100)
+                  rdHint.text = if (bad > 0) "อ่านไม่ได้ $bad blocks (เติมเป็น 00) • กำลังส่งเข้า Web App..."
+                  else "กำลังส่งข้อมูลเข้า Web App เพื่อประมวลผล..."
+                  setSendStatus("กำลังส่ง...", true)
+              }
+
+              private fun uiError(msg: String) {
+                  rdState.text = "อ่านไม่สำเร็จ"
+                  rdState.setTextColor(cRed)
+                  rdPercent.text = "!"
+                  rdPercent.setTextColor(cRed)
+                  setBar(cRed, cRed2, 100)
+                  rdDetail.text = msg
+                  rdHint.text = "ลองแตะใหม่ และถือโทรศัพท์ให้นิ่งจนครบ 100%"
+                  setSendStatus("ไม่ได้ส่ง (อ่านไม่สำเร็จ)", false)
+              }
+
+              private fun setSendStatus(msg: String, ok: Boolean) {
+                  valSend.text = msg
+                  valSend.setTextColor(if (ok) cTeal else cRed)
+                  tvWebState.text = "UID ${valUid.text}  •  $msg"
+              }
+
+              private fun refreshNfcChip() {
+                  val a = nfc
+                  when {
+                      a == null -> { tvNfc.text = "ไม่มี NFC"; tvNfc.background = rounded(cRed2, 20) }
+                      !a.isEnabled -> { tvNfc.text = "NFC ปิดอยู่"; tvNfc.background = rounded(Color.parseColor("#92400E"), 20) }
+                      else -> { tvNfc.text = "●  NFC พร้อม"; tvNfc.background = rounded(cTeal2, 20) }
+                  }
+                  if (a != null && !a.isEnabled) toast("กรุณาเปิด NFC ในการตั้งค่าของมือถือ")
+              }
+
+              // =====================================================================  การนำทาง / ปุ่ม
+
+              private fun showReaderScreen() {
+                  readerScreen.visibility = View.VISIBLE
+              }
+
+              private fun openWebScreen() {
+                  readerScreen.visibility = View.GONE
+                  if (undelivered && pageLoaded) pendingDump?.let { push(it) }
+              }
+
+              private fun resend() {
+                  val j = pendingDump
+                  if (j == null) toast("ยังไม่มีข้อมูล ให้แตะมิเตอร์ก่อน")
+                  else if (!pageLoaded) toast("หน้าเว็บยังโหลดไม่เสร็จ")
+                  else { readerScreen.visibility = View.GONE; push(j) }
+              }
+
+              private fun runTest() {
+                  if (!pageLoaded) { toast("หน้าเว็บยังโหลดไม่เสร็จ"); return }
+                  readerScreen.visibility = View.GONE
+                  push(testDumpJson())
+              }
+
+              private fun showSettings() {
+                  val box = LinearLayout(this)
+                  box.orientation = LinearLayout.VERTICAL
+                  box.setPadding(dp(22), dp(10), dp(22), dp(0))
+                  fun field(name: String, value: String, numeric: Boolean): EditText {
+                      box.addView(label(name, 12f, Color.parseColor("#475569")).apply { setPadding(0, dp(10), 0, 0) })
+                      val e = EditText(this)
+                      e.setText(value)
+                      e.setSingleLine()
+                      e.inputType = if (numeric) InputType.TYPE_CLASS_NUMBER else InputType.TYPE_CLASS_TEXT
+                      box.addView(e)
+                      return e
+                  }
+                  val eStart = field("Start address", cfgInt("start", 0).toString(), true)
+                  val eLen = field("Number of Bytes", cfgInt("len", 8192).toString(), true)
+                  val eName = field("ชื่อไฟล์ที่บันทึก", cfgName(), false)
+                  AlertDialog.Builder(this)
+                      .setTitle("ตั้งค่าอ่าน")
+                      .setView(box)
+                      .setPositiveButton("บันทึก") { _, _ ->
+                          prefs.edit()
+                              .putInt("start", eStart.text.toString().toIntOrNull() ?: 0)
+                              .putInt("len", (eLen.text.toString().toIntOrNull() ?: 8192).coerceAtLeast(1))
+                              .putString("name", eName.text.toString().trim().ifEmpty { "data.bin" })
+                              .apply()
+                          refreshSaveLabel()
+                          toast("บันทึกการตั้งค่าแล้ว")
+                      }
+                      .setNegativeButton("ยกเลิก", null)
+                      .show()
+              }
+
+              // =====================================================================  บันทึกไฟล์ / ดาวน์โหลดจากเว็บ
+
+              private fun saveDump(data: ByteArray) {
+                  try {
+                      saveToDownloads(cfgName(), data, "application/octet-stream")
+                      toast("บันทึกไฟล์ ${cfgName()} ลงโฟลเดอร์ Download แล้ว")
+                  } catch (e: Exception) {
+                      toast("บันทึกไฟล์ไม่สำเร็จ: ${e.message}")
+                  }
+              }
+
+              private fun saveToDownloads(name: String, data: ByteArray, mime: String) {
+                  val values = ContentValues()
+                  values.put(MediaStore.Downloads.DISPLAY_NAME, name)
+                  values.put(MediaStore.Downloads.MIME_TYPE, mime)
+                  values.put(MediaStore.Downloads.IS_PENDING, 1)
+                  val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                      ?: error("สร้างไฟล์ไม่ได้")
+                  contentResolver.openOutputStream(uri)!!.use { it.write(data) }
+                  values.clear()
+                  values.put(MediaStore.Downloads.IS_PENDING, 0)
+                  contentResolver.update(uri, values, null, null)
+              }
+
+              /** ปุ่ม Export (เช่น Excel) ในเว็บสร้างลิงก์ blob: ต้องดึงข้อมูลออกมาบันทึกเอง */
+              private fun handleDownload(url: String, mime: String?) {
+                  val m = (mime ?: "").replace("'", "")
+                  if (url.startsWith("blob:")) {
+                      val u = url.replace("'", "")
+                      webView.evaluateJavascript(
+                          "(function(u,m){fetch(u).then(function(r){return r.blob();}).then(function(b){" +
+                              "var f=new FileReader();f.onload=function(){" +
+                              "NfcBridge.saveFile(m||b.type||'application/octet-stream',String(f.result).split(',')[1]);};" +
+                              "f.readAsDataURL(b);}).catch(function(e){NfcBridge.report('ERR: ดาวน์โหลดไม่สำเร็จ '+e.message);});})('$u','$m')",
+                          null
+                      )
+                  } else if (url.startsWith("data:")) {
+                      try {
+                          val comma = url.indexOf(',')
+                          val meta = url.substring(5, comma)
+                          val payload = url.substring(comma + 1)
+                          val bytes = if (meta.contains("base64")) Base64.decode(payload, Base64.DEFAULT)
+                          else Uri.decode(payload).toByteArray()
+                          val mm = meta.substringBefore(';').ifEmpty { "application/octet-stream" }
+                          val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mm) ?: "bin"
+                          val name = "SMCV4_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + "." + ext
+                          saveToDownloads(name, bytes, mm)
+                          toast("บันทึกไฟล์ $name ลงโฟลเดอร์ Download แล้ว")
+                      } catch (e: Exception) {
+                          toast("บันทึกไฟล์ไม่สำเร็จ: ${e.message}")
+                      }
+                  } else {
+                      toast("ไม่รองรับการดาวน์โหลดจากลิงก์นี้")
+                  }
+              }
+
+              // =====================================================================  ส่งข้อมูลเข้า Web App
+
               private fun push(json: String) {
-                  if (!pageLoaded) {
-                      undelivered = true
-                      tvProgressDetail.text = "ข้อมูลพร้อมแล้ว • รอ Web App โหลด"
-                      return
-                  }
-                  webView.evaluateJavascript("($feedJs)($json)") { raw ->
-                      val res = (raw ?: "").trim('"')
-                      if (res.startsWith("OK")) {
-                          tvStatus.text = "ส่งข้อมูลเข้า Web App แล้ว"
-                          tvStatus.setTextColor(TEAL)
-                          tvProgressDetail.text = "ส่งข้อมูลสำเร็จ • ตรวจสอบผลใน Web App"
-                          undelivered = false
-                      } else if (res.startsWith("WAIT")) {
-                          tvStatus.text = "กำลังเตรียมเครื่องมือ NFC ใน Web App"
-                          tvStatus.setTextColor(0xFFFFC46B.toInt())
-                          tvProgressDetail.text = "รอ Web App พร้อมรับข้อมูล"
-                          undelivered = true
-                      } else {
-                          tvStatus.text = "ส่งข้อมูลไม่สำเร็จ: $res"
-                          tvStatus.setTextColor(0xFFFF8A8A.toInt())
-                          tvProgressDetail.text = "แตะ “ส่งซ้ำ” เพื่อลองอีกครั้ง"
-                          undelivered = true
-                          toast("ส่งเข้า Web App ไม่สำเร็จ")
+                  webView.evaluateJavascript("($feedJs)($json)") { r ->
+                      val res = (r ?: "").trim('"')
+                      when {
+                          res.startsWith("OK") -> { undelivered = false; setSendStatus("✓ ส่งเข้า Web App แล้ว", true) }
+                          res.startsWith("WAIT") -> { undelivered = false; setSendStatus("กำลังเปิดเครื่องมือ NFC ในเว็บ...", true) }
+                          else -> { undelivered = true; setSendStatus("✗ $res", false); toast("ส่งเข้า Web App ไม่สำเร็จ: $res") }
                       }
                   }
               }
-          
+
+              /** ข้อมูลทดสอบ (ตัวอย่าง 3.31 V) ใช้เช็กว่าท่อส่งข้อมูลเข้าเว็บทำงานไหม โดยไม่ต้องใช้มิเตอร์ */
               private fun testDumpJson(): String {
                   val d = ByteArray(8192)
                   "69 10 00 04".split(" ").forEachIndexed { i, h -> d[72 + i] = h.toInt(16).toByte() }
-                  "00 00 00 00 19 85 B5 B5 B5 B5 B5 B5 00 00 00 17 06 16 04 20 25 11 FF 76"
+                  ("00 00 00 00 19 85 B5 B5 B5 B5 B5 B5 00 00 00 17 06 16 04 20 25 11 FF 76")
                       .split(" ").forEachIndexed { i, h -> d[188 + i] = h.toInt(16).toByte() }
                   return JSONObject().put("ok", true).put("uid", "TEST").put("start", 0)
                       .put("length", d.size).put("hex", d.toHex())
                       .put("unreadableBlocks", JSONArray()).toString()
               }
-          
-              private fun showHome() {
-                  homePanel.visibility = View.VISIBLE
-                  dumpPanel.visibility = View.GONE
-                  webView.visibility = View.GONE
-                  loadBar.visibility = View.GONE
+
+              // =====================================================================  helper ด้าน UI
+
+              private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+              private fun rounded(color: Int, radiusDp: Int, strokeColor: Int = 0, strokeDp: Int = 0): GradientDrawable {
+                  val g = GradientDrawable()
+                  g.cornerRadius = dp(radiusDp).toFloat()
+                  g.setColor(color)
+                  if (strokeDp > 0) g.setStroke(dp(strokeDp), strokeColor)
+                  return g
               }
 
-              private fun showWeb(web: Boolean) {
-                  homePanel.visibility = View.GONE
-                  dumpPanel.visibility = if (web) View.GONE else View.VISIBLE
-                  webView.visibility = if (web) View.VISIBLE else View.GONE
-                  if (web && undelivered && pageLoaded) pendingDump?.let { push(it) }
+              private fun label(t: String, sp: Float, color: Int, bold: Boolean = false): TextView {
+                  val tv = TextView(this)
+                  tv.text = t
+                  tv.textSize = sp
+                  tv.setTextColor(color)
+                  if (bold) tv.typeface = Typeface.DEFAULT_BOLD
+                  return tv
               }
-          
-              private fun row(parent: LinearLayout, label: String, def: String, type: Int): EditText {
-                  val r = LinearLayout(this).apply {
-                      orientation = LinearLayout.HORIZONTAL
-                      gravity = Gravity.CENTER_VERTICAL
-                      setPadding(dp(8), dp(6), dp(8), dp(2))
-                  }
-                  r.addView(TextView(this).apply {
-                      text = label
-                      textSize = 13f
-                      setTextColor(WHITE)
-                  }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-                  val et = EditText(this).apply {
-                      setText(def)
-                      inputType = type
-                      setSingleLine()
-                      textSize = 14f
-                      setTextColor(WHITE)
-                      setHintTextColor(MUTED)
-                  }
-                  r.addView(et, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-                  parent.addView(r)
-                  return et
+
+              private fun pill(text: String, filled: Boolean, onClick: () -> Unit): Button {
+                  val b = Button(this)
+                  b.text = text
+                  b.isAllCaps = false
+                  b.textSize = 14f
+                  b.typeface = Typeface.DEFAULT_BOLD
+                  b.setTextColor(if (filled) cNavy else cTeal)
+                  b.background = if (filled) rounded(cTeal, 14) else rounded(Color.TRANSPARENT, 14, cTeal, 2)
+                  b.minHeight = 0
+                  b.minimumHeight = 0
+                  b.setPadding(dp(12), dp(12), dp(12), dp(12))
+                  b.setOnClickListener { onClick() }
+                  return b
               }
-          
-              private fun actionButton(label: String, color: Int, action: () -> Unit): Button =
-                  Button(this).apply {
-                      text = label
-                      isAllCaps = false
-                      textSize = 12f
-                      typeface = Typeface.DEFAULT_BOLD
-                      setTextColor(if (color == TEAL) NAVY else Color.WHITE)
-                      background = rounded(color, 14)
-                      setOnClickListener { action() }
-                  }
-          
-              private fun rounded(color: Int, radiusDp: Int) = GradientDrawable().apply {
-                  setColor(color)
-                  cornerRadius = dp(radiusDp).toFloat()
+
+              private fun infoRow(name: String, value: TextView): View {
+                  val row = LinearLayout(this)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  row.setPadding(0, dp(7), 0, dp(7))
+                  row.addView(label(name, 13f, cMuted), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                  row.addView(value, LinearLayout.LayoutParams(0, WRAP_CONTENT, 2f))
+                  return row
               }
-          
-              private fun gradient(a: Int, b: Int, radiusDp: Int) = GradientDrawable(
-                  GradientDrawable.Orientation.TL_BR, intArrayOf(a, b)
-              ).apply { cornerRadius = dp(radiusDp).toFloat() }
-          
-              private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+              private fun makeBar(c1: Int, c2: Int): LayerDrawable {
+                  val bg = GradientDrawable()
+                  bg.cornerRadius = 100f
+                  bg.setColor(Color.parseColor("#163A66"))
+                  val fg = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(c1, c2))
+                  fg.cornerRadius = 100f
+                  val clip = ClipDrawable(fg, Gravity.START, ClipDrawable.HORIZONTAL)
+                  val layers = LayerDrawable(arrayOf<Drawable>(bg, clip))
+                  layers.setId(0, android.R.id.background)
+                  layers.setId(1, android.R.id.progress)
+                  return layers
+              }
+
+              private fun refreshSaveLabel() {
+                  cbSave.text = "บันทึกไฟล์ ${cfgName()} ลงมือถือ (โฟลเดอร์ Download)"
+              }
+
+              private fun cfgInt(k: String, d: Int): Int = prefs.getInt(k, d)
+              private fun cfgName(): String = prefs.getString("name", "data.bin") ?: "data.bin"
+
               private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
-          
-              private fun <T> ui(block: () -> T): T {
-                  val t = FutureTask(Callable { block() })
-                  runOnUiThread(t)
-                  return t.get()
-              }
-          
+
               private fun ByteArray.toHex() = joinToString("") { "%02X".format(it) }
           }
           EOF_FILE
