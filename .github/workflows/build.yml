@@ -102,6 +102,7 @@ jobs:
           import android.content.Context
           import android.content.Intent
           import android.content.res.ColorStateList
+          import android.graphics.BitmapFactory
           import android.graphics.Color
           import android.graphics.Typeface
           import android.graphics.drawable.ClipDrawable
@@ -115,6 +116,7 @@ jobs:
           import android.os.Bundle
           import android.os.Handler
           import android.os.Looper
+          import android.os.SystemClock
           import android.provider.MediaStore
           import android.text.InputType
           import android.util.Base64
@@ -125,6 +127,7 @@ jobs:
           import android.webkit.JavascriptInterface
           import android.webkit.MimeTypeMap
           import android.webkit.ValueCallback
+          import android.webkit.WebSettings
           import android.webkit.WebChromeClient
           import android.webkit.WebView
           import android.webkit.WebViewClient
@@ -132,6 +135,7 @@ jobs:
           import android.widget.CheckBox
           import android.widget.EditText
           import android.widget.FrameLayout
+          import android.widget.ImageView
           import android.widget.LinearLayout
           import android.widget.ProgressBar
           import android.widget.ScrollView
@@ -153,7 +157,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v8"
+                  private const val VERSION = "v10"
                   private const val REQ_FILE = 4711
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
@@ -184,7 +188,9 @@ jobs:
               private lateinit var rdHint: TextView
               private lateinit var valUid: TextView
               private lateinit var valSize: TextView
+              private lateinit var valMeter: TextView
               private lateinit var valSend: TextView
+              private lateinit var valTime: TextView
               private lateinit var tvWebState: TextView
               private lateinit var cbSave: CheckBox
 
@@ -193,6 +199,7 @@ jobs:
               private var pageLoaded = false
               private var undelivered = false
               @Volatile private var reading = false
+              @Volatile private var t0 = 0L                 // เวลาเริ่มอ่าน (ms) ใช้จับเวลา Dump
               private var token = 0
               private val handler = Handler(Looper.getMainLooper())
               private var fileCallback: ValueCallback<Array<Uri>>? = null
@@ -252,11 +259,12 @@ jobs:
                   val titleCol = LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
                       addView(label("SMCV4 Reader", 24f, Color.WHITE, true))
-                      addView(label("อ่านมิเตอร์น้ำผ่าน NFC (ST25DV)", 12f, cMuted))
+                      addView(label("DEK SRANG Academy  •  อ่านมิเตอร์น้ำผ่าน NFC", 12f, cMuted))
                   }
                   val head = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       gravity = Gravity.CENTER_VERTICAL
+                      addView(logoView(54), LinearLayout.LayoutParams(WRAP_CONTENT, dp(54)).apply { marginEnd = dp(12) })
                       addView(titleCol, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                       addView(tvNfc, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
                   }
@@ -290,14 +298,20 @@ jobs:
                   valUid.gravity = Gravity.END
                   valSize = label("—", 13f, Color.WHITE, true)
                   valSize.gravity = Gravity.END
+                  valMeter = label("—", 15f, cTeal, true)
+                  valMeter.gravity = Gravity.END
                   valSend = label("ยังไม่ได้ส่ง", 13f, cMuted, true)
                   valSend.gravity = Gravity.END
+                  valTime = label("—", 13f, Color.WHITE, true)
+                  valTime.gravity = Gravity.END
                   val infoCard = LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
                       setPadding(dp(18), dp(10), dp(18), dp(10))
                       background = rounded(cCard, 18, cStroke, 1)
                       addView(infoRow("UID", valUid))
+                      addView(infoRow("Meter ID (Addr 72–75)", valMeter))
                       addView(infoRow("ข้อมูลที่อ่าน", valSize))
+                      addView(infoRow("เวลาที่ใช้อ่าน", valTime))
                       addView(infoRow("ส่งเข้า Web App", valSend))
                   }
 
@@ -335,7 +349,7 @@ jobs:
                       addView(cbSave, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row1, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row2, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
-                      addView(label("$VERSION  •  ST25DV / ISO15693", 11f, cMuted).apply { gravity = Gravity.CENTER },
+                      addView(label("DEK SRANG Academy  •  $VERSION  •  ST25DV / ISO15693", 11f, cMuted).apply { gravity = Gravity.CENTER },
                           LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
                   }
                   return ScrollView(this).apply {
@@ -351,6 +365,9 @@ jobs:
                   val back = pill("←  อ่าน NFC ใหม่", true) { showReaderScreen() }
                   back.textSize = 13f
                   back.setPadding(dp(14), dp(8), dp(14), dp(8))
+                  val reload = pill("↻", false) { reloadWeb() }
+                  reload.textSize = 16f
+                  reload.setPadding(dp(12), dp(6), dp(12), dp(6))
                   tvWebState = label("", 11f, cMuted)
                   val bar = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
@@ -358,12 +375,16 @@ jobs:
                       setPadding(dp(10), dp(8), dp(10), dp(8))
                       background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(cNavy, cNavy2))
                       addView(back, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+                      addView(reload, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginStart = dp(6) })
                       addView(tvWebState, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(10) })
+                      addView(logoView(30), LinearLayout.LayoutParams(WRAP_CONTENT, dp(30)).apply { marginStart = dp(8) })
                   }
 
                   webView = WebView(this).apply {
                       settings.javaScriptEnabled = true
                       settings.domStorageEnabled = true
+                      settings.cacheMode = WebSettings.LOAD_NO_CACHE       // โหลดหน้าเว็บล่าสุดจากเซิร์ฟเวอร์เสมอ ไม่ใช้ของเก่าที่ค้างในแคช
+                      clearCache(true)
                       addJavascriptInterface(Bridge(), "NfcBridge")
                       setDownloadListener { url, _, _, mime, _ -> this@MainActivity.handleDownload(url, mime) }
                       webViewClient = object : WebViewClient() {
@@ -452,11 +473,16 @@ jobs:
               override fun onTagDiscovered(tag: Tag) {
                   if (reading) return
                   reading = true
+                  t0 = SystemClock.elapsedRealtime()
                   val start = cfgInt("start", 0)
                   val len = cfgInt("len", 8192)
                   runOnUiThread { showReaderScreen(); uiReading() }
                   try {
-                      val res = readRange(tag, start, len) { done, total -> runOnUiThread { uiProgress(done, total) } }
+                      val res = readRange(tag, start, len) { done, total ->
+                          val sec = (SystemClock.elapsedRealtime() - t0) / 1000.0
+                          runOnUiThread { uiProgress(done, total, sec) }
+                      }
+                      val sec = (SystemClock.elapsedRealtime() - t0) / 1000.0
                       val json = JSONObject()
                           .put("ok", true)
                           .put("uid", res.uid)
@@ -469,8 +495,9 @@ jobs:
                           pendingDump = json
                           undelivered = true
                           valUid.text = res.uid
+                          valMeter.text = meterId(res.full, res.start, res.range.size)
                           valSize.text = "${res.range.size} bytes (Addr ${res.start}–${res.start + res.range.size - 1})"
-                          uiDone(res.bad.size)
+                          uiDone(res.bad.size, res.range.size, sec)
                           if (pageLoaded) push(json) else setSendStatus("รอหน้าเว็บโหลดเสร็จ...", true)
                           if (cbSave.isChecked) saveDump(res.range)       // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
                           val t = token
@@ -607,25 +634,33 @@ jobs:
                   valSend.text = "ยังไม่ได้ส่ง"
                   valSend.setTextColor(cMuted)
                   valUid.text = "—"
+                  valMeter.text = "—"
                   valSize.text = "—"
+                  valTime.text = "กำลังจับเวลา..."
                   tvWebState.text = ""
               }
 
-              private fun uiProgress(done: Int, total: Int) {
+              private fun fmt(v: Double, digits: Int = 1): String = String.format(Locale.US, "%." + digits + "f", v)
+
+              private fun uiProgress(done: Int, total: Int, sec: Double) {
                   val pct = if (total > 0) done * 100 / total else 0
                   rdPercent.text = "$pct%"
                   rdBar.progress = pct
-                  rdDetail.text = "อ่านแล้ว $done / $total blocks"
+                  rdDetail.text = "อ่านแล้ว $done / $total blocks  •  ${fmt(sec)} วินาที"
+                  valTime.text = "${fmt(sec)} วินาที ..."
               }
 
-              private fun uiDone(bad: Int) {
+              private fun uiDone(bad: Int, bytes: Int, sec: Double) {
+                  val speed = if (sec > 0.0) fmt(bytes / 1024.0 / sec) + " KB/s" else ""
+                  valTime.text = fmt(sec, 2) + " วินาที" + (if (speed.isNotEmpty()) "  ($speed)" else "")
                   rdState.text = "อ่านสำเร็จ ✓"
                   rdState.setTextColor(cGreen)
                   rdPercent.text = "100%"
                   rdPercent.setTextColor(cGreen)
                   setBar(cGreen, cGreen2, 100)
-                  rdHint.text = if (bad > 0) "อ่านไม่ได้ $bad blocks (เติมเป็น 00) • กำลังส่งเข้า Web App..."
-                  else "กำลังส่งข้อมูลเข้า Web App เพื่อประมวลผล..."
+                  rdHint.text = "อ่านครบใน ${fmt(sec)} วินาที" +
+                      (if (bad > 0) "  •  อ่านไม่ได้ $bad blocks (เติมเป็น 00)" else "") +
+                      "\nกำลังส่งข้อมูลเข้า Web App..."
                   setSendStatus("กำลังส่ง...", true)
               }
 
@@ -637,6 +672,7 @@ jobs:
                   setBar(cRed, cRed2, 100)
                   rdDetail.text = msg
                   rdHint.text = "ลองแตะใหม่ และถือโทรศัพท์ให้นิ่งจนครบ 100%"
+                  valTime.text = "—"
                   setSendStatus("ไม่ได้ส่ง (อ่านไม่สำเร็จ)", false)
               }
 
@@ -658,6 +694,10 @@ jobs:
 
               // =====================================================================  การนำทาง / ปุ่ม
 
+              /** Meter ID = ไบต์ Addr 72–75 ต่อกันเป็นเลข hex ตรง ๆ (เช่น 69 05 00 02 -> 69050002) ไม่แปลงฐาน 10 */
+              private fun meterId(full: ByteArray, start: Int, n: Int): String =
+                  if (start <= 72 && start + n >= 76 && full.size >= 76) full.copyOfRange(72, 76).toHex() else "—"
+
               private fun showReaderScreen() {
                   readerScreen.visibility = View.VISIBLE
               }
@@ -665,6 +705,15 @@ jobs:
               private fun openWebScreen() {
                   readerScreen.visibility = View.GONE
                   if (undelivered && pageLoaded) pendingDump?.let { push(it) }
+              }
+
+              /** โหลดหน้าเว็บใหม่แบบล้างแคช แล้วส่งข้อมูลล่าสุดเข้าเว็บให้อีกครั้ง */
+              private fun reloadWeb() {
+                  pageLoaded = false
+                  undelivered = pendingDump != null
+                  webView.clearCache(true)
+                  webView.reload()
+                  toast("กำลังโหลดหน้าเว็บใหม่...")
               }
 
               private fun resend() {
@@ -828,6 +877,20 @@ jobs:
                   return b
               }
 
+              /** โลโก้ DEK SRANG Academy (assets/logo.png) ถ้าไม่มีไฟล์ก็ข้าม ไม่ทำให้แอปพัง */
+              private fun logoView(heightDp: Int): ImageView {
+                  val iv = ImageView(this)
+                  try {
+                      iv.setImageBitmap(BitmapFactory.decodeStream(assets.open("logo.png")))
+                  } catch (e: Exception) {
+                      iv.visibility = View.GONE
+                  }
+                  iv.adjustViewBounds = true
+                  iv.scaleType = ImageView.ScaleType.FIT_CENTER
+                  iv.minimumHeight = dp(heightDp)
+                  return iv
+              }
+
               private fun infoRow(name: String, value: TextView): View {
                   val row = LinearLayout(this)
                   row.orientation = LinearLayout.HORIZONTAL
@@ -918,6 +981,218 @@ jobs:
               }
             } catch (e) {}
           }
+          EOF_FILE
+          mkdir -p 'app/src/main/assets'
+          base64 -d > 'app/src/main/assets/logo.png' << 'EOF_FILE'
+          iVBORw0KGgoAAAANSUhEUgAAAHoAAACICAMAAAAf3Q/EAAAWfmNhQlgAABZ+anVtYgAAAB5qdW1k
+          YzJwYQARABCAAACqADibcQNjMnBhAAAAFlhqdW1iAAAAR2p1bWRjMm1hABEAEIAAAKoAOJtxA3Vy
+          bjpjMnBhOmRiNjFlYTQ5LTU4MWYtNGFiNy05OWRiLWIyMTdlZmRiNWU3MwAAAAOTanVtYgAAAClq
+          dW1kYzJhcwARABCAAACqADibcQNjMnBhLmFzc2VydGlvbnMAAAAAuGp1bWIAAABEanVtZGNib3IA
+          EQAQgAAAqgA4m3ETYzJwYS5pbmdyZWRpZW50LnYzAAAAABhjMnNoJYnMwqzhLDpgM9WE33lQ9QAA
+          AGxjYm9yo2lkYzpmb3JtYXRpaW1hZ2UvcG5namluc3RhbmNlSUR4LHhtcDppaWQ6OWQ3MTIzZTQt
+          OThjOC00ZmJjLWExNzItZTIwYWFmNTVmY2MybHJlbGF0aW9uc2hpcGhwYXJlbnRPZgAAAeJqdW1i
+          AAAAQWp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuYWN0aW9ucy52MgAAAAAYYzJzaG2Yy5GNBHmX
+          oroWLP6U4aEAAAGZY2JvcqJnYWN0aW9uc4KiZmFjdGlvbmtjMnBhLm9wZW5lZGpwYXJhbWV0ZXJz
+          oWtpbmdyZWRpZW50c4GiY3VybHgtc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5pbmdy
+          ZWRpZW50LnYzZGhhc2hYIOZodn5AiRyXx6BJ5iex8l+uHZC+XrNiMoLeSj4jn/tupGZhY3Rpb254
+          HWNvbS5hbnRocm9waWMuY2xhdWRlLnByb3ZpZGVkanBhcmFtZXRlcnOheB9jb20uYW50aHJvcGlj
+          Lm9yaWdpbi1jb25maWRlbmNlZ3Vua25vd25rZGVzY3JpcHRpb254ZkNsYXVkZSBwcm92aWRlZCB0
+          aGlzIGZpbGUgYXQgdGhlIHJlcXVlc3Qgb2YgYSB1c2VyIGFuZCBtYXkgaGF2ZSBjcmVhdGVkIG9y
+          IG1vZGlmaWVkIHRoZSBmaWxlIGNvbnRlbnRzLm1zb2Z0d2FyZUFnZW50oWRuYW1lZkNsYXVkZXJh
+          bGxBY3Rpb25zSW5jbHVkZWT1AAAAyGp1bWIAAABAanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5o
+          YXNoLmRhdGEAAAAAGGMyc2hqgessyhJu8qzNfDh5mtehAAAAgGNib3KlY2FsZ2ZzaGEyNTZjcGFk
+          TQAAAAAAAAAAAAAAAABkaGFzaFggP+bqQsYKTt+PyUlhq1iwXNHAnnLfEgZiq5usGc++pJFkbmFt
+          ZW5qdW1iZiBtYW5pZmVzdGpleGNsdXNpb25zgaJlc3RhcnQYIWZsZW5ndGgZFooAAAI+anVtYgAA
+          ACdqdW1kYzJjbAARABCAAACqADibcQNjMnBhLmNsYWltLnYyAAAAAg9jYm9ypWNhbGdmc2hhMjU2
+          aXNpZ25hdHVyZXhNc2VsZiNqdW1iZj0vYzJwYS91cm46YzJwYTpkYjYxZWE0OS01ODFmLTRhYjct
+          OTlkYi1iMjE3ZWZkYjVlNzMvYzJwYS5zaWduYXR1cmVqaW5zdGFuY2VJRHgseG1wOmlpZDphZTZj
+          YmYwNi1mYWRhLTQ5MjYtYmUwMC00MWVhNjMwOTcwMGFyY3JlYXRlZF9hc3NlcnRpb25zg6JjdXJs
+          eC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFgg5mh2
+          fkCJHJfHoEnmJ7HyX64dkL5es2Iygt5KPiOf+26iY3VybHgqc2VsZiNqdW1iZj1jMnBhLmFzc2Vy
+          dGlvbnMvYzJwYS5hY3Rpb25zLnYyZGhhc2hYILlNdMpk8cSnmywmHD/+7ZL08jgEXNJDIHeNCjsC
+          fZ/1omN1cmx4KXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaGFzaC5kYXRhZGhhc2hY
+          IMDzzR5sbiKar9NpdYBRsZm2Ih/fDau24PfCcBA6vdCBdGNsYWltX2dlbmVyYXRvcl9pbmZvo2Ru
+          YW1lb0FudGhyb3BpYyBGaWxlc2d2ZXJzaW9uZTEuMC4wa3NwZWNWZXJzaW9uZTIuNC4wAAAQOGp1
+          bWIAAAAoanVtZGMyY3MAEQAQgAAAqgA4m3EDYzJwYS5zaWduYXR1cmUAAAAQCGNib3LShFkCEqIB
+          JhghWQIKMIICBjCCAY2gAwIBAgIUQOWgCu7COdC+uIP6BkIFPWdVEwAwCgYIKoZIzj0EAwMwSTEX
+          MBUGA1UEChMOQW50aHJvcGljLCBQQkMxLjAsBgNVBAMTJUFudGhyb3BpYyBDb250ZW50IENyZWRl
+          bnRpYWxzIFJvb3QgQ0EwHhcNMjYwODA3MTg0MzU2WhcNMjgwODA2MTk0MzU2WjBEMRcwFQYDVQQK
+          Ew5BbnRocm9waWMsIFBCQzEpMCcGA1UEAxMgQW50aHJvcGljIENsYXVkZSBDb250ZW50IFNpZ25p
+          bmcwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASYegpry1AYBRTVNL1CpTlbROnY3dey+UrsF9C3
+          phYrATN3ZHf93Mo8RQN0KOUuOn19P4oWNFWe5n2/She9N7eTo1gwVjAOBgNVHQ8BAf8EBAMCB4Aw
+          FQYDVR0lBA4wDAYKKwYBBAGD6F4CATAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFM5R4gSBTmRb
+          I/jjxM+aPpzB11zCMAoGCCqGSM49BAMDA2cAMGQCMDFzHRSeAXrSy1WOzkbhPZ6Km2wGTmZ/2gK1
+          8k8BQGXyqz88Rdrz6CTX9flAnYNVxgIwcF9c3fVhqmJKpi+UhasNUMko69cyX6STPfta3Q8EjyzD
+          jzoyrol46FP6VFHhvUcJoWNwYWRZDZ4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+          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
+          4/Abu/g/9tmRO4y+87UAAAAASUVORK5CYII=
           EOF_FILE
           sed -i "s|https://your-webapp.example.com/|$WEB_APP_URL|" app/src/main/java/com/example/smcv4reader/MainActivity.kt
       - name: Build debug APK
