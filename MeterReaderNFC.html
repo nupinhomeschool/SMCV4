@@ -426,7 +426,7 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(V.l
 function load(buffer,name){
   fname=name;const u=new Uint8Array(buffer);
   $('fn').textContent=`${name} (${(u.length/1024).toFixed(1)} KB)`;
-  $('mid').textContent=u.length>=76?Array.from(u.slice(72,76),x=>String(x).padStart(2,'0')).join(''):'-';
+  $('mid').textContent=u.length>=76?Array.from(u.slice(72,76),x=>x.toString(16).padStart(2,'0').toUpperCase()).join(''):'-';
   latest=null;
   if(u.length>=212){latest=decode(u.slice(188,212));drawMap(u.slice(188,212))}else drawMap(null);
   show(latest);
