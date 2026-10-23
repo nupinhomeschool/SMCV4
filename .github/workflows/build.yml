@@ -142,6 +142,8 @@ jobs:
           import android.widget.ImageView
           import android.widget.LinearLayout
           import android.widget.ProgressBar
+          import android.widget.RadioButton
+          import android.widget.RadioGroup
           import android.widget.ScrollView
           import android.widget.TextView
           import android.widget.Toast
@@ -240,7 +242,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v11"
+                  private const val VERSION = "v12"
                   private const val REQ_FILE = 4711
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
@@ -273,6 +275,7 @@ jobs:
               private lateinit var valTime: TextView
               private lateinit var tvWebState: TextView
               private lateinit var cbSave: CheckBox
+              private lateinit var btnMode: Button
 
               private var nfc: NfcAdapter? = null
               private var pendingDump: String? = null
@@ -413,6 +416,9 @@ jobs:
                   cbSave.setOnCheckedChangeListener { _, c -> prefs.edit().putBoolean("save", c).apply() }
                   refreshSaveLabel()
 
+                  btnMode = pill("", false) { toggleMode() }
+                  refreshModeLabel()
+
                   // ---- ปุ่ม ----
                   val row1 = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
@@ -440,6 +446,7 @@ jobs:
                       addView(progCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
                       addView(infoCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(14) })
                       addView(cbSave, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                      addView(btnMode, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row1, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row2, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
                       addView(footer, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
@@ -567,41 +574,137 @@ jobs:
                   if (reading) return
                   reading = true
                   t0 = SystemClock.elapsedRealtime()
+                  val mode = effectiveMode()
                   val start = cfgInt("start", 0)
                   val len = cfgInt("len", 8192)
                   runOnUiThread { showReaderScreen(); uiReading() }
                   try {
-                      val res = readRange(tag, start, len) { done, total ->
+                      val onProg: (Int, Int) -> Unit = { done, total ->
                           val sec = (SystemClock.elapsedRealtime() - t0) / 1000.0
                           runOnUiThread { uiProgress(done, total, sec) }
                       }
+                      val res = when (mode) {
+                          "quick" -> readRanges(tag, QUICK_RANGES, onProg)      // อ่านเร็ว: เฉพาะ ID · ขนาด · ค่าล่าสุด
+                          "head" -> readRange(tag, 0, 212, onProg)              // ส่วนหัว Addr 0–211
+                          "full" -> readRange(tag, 0, 8192, onProg)             // ทั้งหมด (มีประวัติ)
+                          else -> readRange(tag, start, len, onProg)            // กำหนดเอง
+                      }
                       val sec = (SystemClock.elapsedRealtime() - t0) / 1000.0
+                      val rr: List<IntArray> = if (mode == "quick") QUICK_RANGES else listOf(intArrayOf(res.start, res.range.size))
+                      val partial = res.range.size < res.full.size
+                      val hexEnd = if (partial) rr.maxOf { it[0] + it[1] } else res.full.size
+                      val rj = JSONArray()
+                      rr.forEach { rj.put(JSONArray().put(it[0]).put(it[1])) }
                       val json = JSONObject()
                           .put("ok", true)
                           .put("uid", res.uid)
                           .put("start", 0)
-                          .put("length", res.full.size)
-                          .put("hex", res.full.toHex())          // เติม 00 ให้ครบ address ตรงกับแอป ST25
+                          .put("length", hexEnd)
+                          .put("hex", res.full.copyOf(hexEnd).toHex())          // เติม 00 ให้ address ตรงกับแอป ST25 (ตัดส่วนท้ายที่ไม่ได้อ่านทิ้ง)
+                          .put("mode", mode)
+                          .put("partial", partial)
+                          .put("ranges", rj)
                           .put("unreadableBlocks", JSONArray(res.bad))
                           .toString()
+                      val mm = if (covers(rr, 76, 77)) res.full[76].toInt() and 0xFF else 0
+                      val idText = if (covers(rr, 72, 76)) res.full.copyOfRange(72, 76).toHex() + (if (mm in 1..254) "  ·  $mm mm" else "") else "—"
                       runOnUiThread {
                           pendingDump = json
                           undelivered = true
                           valUid.text = res.uid
-                          valMeter.text = meterId(res.full, res.start, res.range.size)
-                          valSize.text = if (res.start == 0) "${res.range.size} bytes"
-                          else "${res.range.size} bytes (Addr ${res.start}–${res.start + res.range.size - 1})"
+                          valMeter.text = idText
+                          valSize.text = when {
+                              mode == "quick" -> "${res.range.size} bytes  (อ่านเร็ว)"
+                              res.start == 0 -> "${res.range.size} bytes"
+                              else -> "${res.range.size} bytes (Addr ${res.start}–${res.start + res.range.size - 1})"
+                          }
                           uiDone(res.bad.size, res.range.size, sec)
                           if (pageLoaded) push(json) else setSendStatus("รอหน้าเว็บโหลดเสร็จ...", true)
-                          if (cbSave.isChecked) saveDump(res.range)       // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
+                          if (cbSave.isChecked) saveDump(if (mode == "quick") res.full.copyOf(hexEnd) else res.range)   // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
                           val t = token
-                          handler.postDelayed({ if (t == token && !reading) openWebScreen() }, 1100)
+                          handler.postDelayed({ if (t == token && !reading) openWebScreen() }, if (mode == "quick") 500L else 1100L)
                       }
                   } catch (e: Exception) {
                       val msg = e.message ?: e.toString()
                       runOnUiThread { uiError(msg) }
                   } finally {
                       reading = false
+                  }
+              }
+
+              /** ช่วงที่อ่านในโหมด "อ่านเร็ว": Addr 68–83 (Command · Meter ID · ขนาด · เวลา · วันที่) และ 188–211 (ค่าล่าสุด 24 ไบต์) = 10 blocks */
+              private val QUICK_RANGES: List<IntArray> = listOf(intArrayOf(68, 16), intArrayOf(188, 24))
+
+              private fun covers(rr: List<IntArray>, a: Int, b: Int): Boolean = rr.any { it[0] <= a && it[0] + it[1] >= b }
+
+              private fun effectiveMode(): String {
+                  val m = prefs.getString("mode", null)
+                  if (m != null) return m
+                  return if (cfgInt("start", 0) == 0 && cfgInt("len", 8192) >= 8192) "full" else "custom"
+              }
+
+              private fun refreshModeLabel() {
+                  btnMode.text = when (effectiveMode()) {
+                      "quick" -> "⚡ โหมดอ่านเร็ว  (แตะ = อ่านทั้งหมด)"
+                      "full" -> "โหมดอ่านทั้งหมด  (แตะ = อ่านเร็ว ⚡)"
+                      "head" -> "โหมดอ่านส่วนหัว 0–211  (แตะ = อ่านเร็ว ⚡)"
+                      else -> "โหมดกำหนดเอง  (แตะ = อ่านเร็ว ⚡)"
+                  }
+              }
+
+              private fun toggleMode() {
+                  val next = if (effectiveMode() == "quick") "full" else "quick"
+                  prefs.edit().putString("mode", next).apply()
+                  refreshModeLabel()
+                  toast(if (next == "quick") "อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด" else "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)")
+              }
+
+              /** อ่านหลายช่วงในการเชื่อมต่อครั้งเดียว (เร็วกว่าอ่านทั้งชิป) แล้ววางลง address เดิม ส่วนที่ไม่ได้อ่านเป็น 00 */
+              private fun readRanges(tag: Tag, rs: List<IntArray>, onProgress: (Int, Int) -> Unit): DumpResult {
+                  val v = NfcV.get(tag)
+                      ?: error("แท็กไม่ใช่ NFC-V (ISO15693): " + tag.techList.joinToString())
+                  v.connect()
+                  try {
+                      val info = readMemoryInfo(v)
+                      val bs = info.blockSize
+                      val totalBytes = info.blockCount * bs
+                      val chunk = ((v.maxTransceiveLength - 2) / bs).coerceIn(1, 32)
+                      val spans = rs.map { r ->
+                          val s0 = r[0].coerceIn(0, totalBytes - 1)
+                          val n0 = r[1].coerceIn(1, totalBytes - s0)
+                          intArrayOf(s0, n0, s0 / bs, (s0 + n0 - 1) / bs)
+                      }
+                      val total = spans.fold(0) { a, p -> a + (p[3] - p[2] + 1) }
+                      val full = ByteArray(totalBytes)
+                      val out = ByteArrayOutputStream()
+                      val bad = ArrayList<Int>()
+                      var done = 0
+                      for (p in spans) {
+                          val first = p[2]
+                          val last = p[3]
+                          val buf = ByteArrayOutputStream()
+                          var b = first
+                          while (b <= last) {
+                              val cnt = minOf(chunk, last - b + 1)
+                              val d = readBlocks(v, b, cnt, bs, info.extended)
+                              if (d != null) buf.write(d)
+                              else for (i in 0 until cnt) {                      // ถ้าพลาด ลองอ่านทีละ block
+                                  val one = readBlocks(v, b + i, 1, bs, info.extended)
+                                  if (one != null) buf.write(one) else { bad.add(b + i); buf.write(ByteArray(bs)) }
+                              }
+                              b += cnt
+                              done += cnt
+                              onProgress(done, total)
+                          }
+                          val all = buf.toByteArray()
+                          val off = p[0] - first * bs
+                          val part = all.copyOfRange(off, off + p[1])
+                          System.arraycopy(part, 0, full, p[0], p[1])
+                          out.write(part)
+                      }
+                      return DumpResult(tag.id.reversedArray().toHex(), 0, out.toByteArray(), full, bad)
+                  } finally {
+                      try { v.close() } catch (_: Exception) {}
                   }
               }
 
@@ -826,19 +929,43 @@ jobs:
                       box.addView(e)
                       return e
                   }
-                  val eStart = field("Start address", cfgInt("start", 0).toString(), true)
-                  val eLen = field("Number of Bytes", cfgInt("len", 8192).toString(), true)
+                  box.addView(label("โหมดการอ่าน", 12f, Color.parseColor("#475569")))
+                  val modes = listOf(
+                      "full" to "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)  ≈ 3 วินาที",
+                      "quick" to "⚡ อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด  < 1 วินาที",
+                      "head" to "อ่านส่วนหัว Addr 0–211 (มี K1–K20 ไม่มีประวัติ)",
+                      "custom" to "กำหนดเอง (ตาม Start / Number of Bytes)"
+                  )
+                  val group = RadioGroup(this)
+                  modes.forEachIndexed { i, m ->
+                      val rb = RadioButton(this)
+                      rb.id = 1000 + i
+                      rb.text = m.second
+                      rb.textSize = 14f
+                      group.addView(rb)
+                  }
+                  val cur = effectiveMode()
+                  val curIdx = modes.indexOfFirst { it.first == cur }.let { if (it < 0) 3 else it }
+                  group.check(1000 + curIdx)
+                  box.addView(group)
+                  val eStart = field("Start address (ใช้เมื่อเลือก \"กำหนดเอง\")", cfgInt("start", 0).toString(), true)
+                  val eLen = field("Number of Bytes (ใช้เมื่อเลือก \"กำหนดเอง\")", cfgInt("len", 8192).toString(), true)
                   val eName = field("ชื่อไฟล์ที่บันทึก", cfgName(), false)
+                  val sv = ScrollView(this)
+                  sv.addView(box)
                   AlertDialog.Builder(this)
                       .setTitle("ตั้งค่าอ่าน")
-                      .setView(box)
+                      .setView(sv)
                       .setPositiveButton("บันทึก") { _, _ ->
+                          val sel = modes[(group.checkedRadioButtonId - 1000).coerceIn(0, modes.size - 1)].first
                           prefs.edit()
+                              .putString("mode", sel)
                               .putInt("start", eStart.text.toString().toIntOrNull() ?: 0)
                               .putInt("len", (eLen.text.toString().toIntOrNull() ?: 8192).coerceAtLeast(1))
                               .putString("name", eName.text.toString().trim().ifEmpty { "data.bin" })
                               .apply()
                           refreshSaveLabel()
+                          refreshModeLabel()
                           toast("บันทึกการตั้งค่าแล้ว")
                       }
                       .setNegativeButton("ยกเลิก", null)
@@ -1037,7 +1164,7 @@ jobs:
                 }
                 return null;
               }
-              function feed(w) { w.load(u.buffer, 'nfc.bin'); rep('OK: เว็บประมวลผลข้อมูลจากมิเตอร์แล้ว'); }
+              function feed(w) { w.NFC_PART = (d.partial && d.ranges) ? d.ranges : null; w.load(u.buffer, 'nfc.bin'); rep('OK: เว็บประมวลผลข้อมูลจากมิเตอร์แล้ว' + (d.partial ? ' (อ่านเร็ว)' : '')); }
 
               var w = find(window, 0);
               if (w) { feed(w); return 'OK:direct'; }
