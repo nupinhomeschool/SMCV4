@@ -242,7 +242,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v12"
+                  private const val VERSION = "v13"
                   private const val REQ_FILE = 4711
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
@@ -276,6 +276,7 @@ jobs:
               private lateinit var tvWebState: TextView
               private lateinit var cbSave: CheckBox
               private lateinit var btnMode: Button
+              @Volatile private var attemptNo = 1
 
               private var nfc: NfcAdapter? = null
               private var pendingDump: String? = null
@@ -583,14 +584,25 @@ jobs:
                           val sec = (SystemClock.elapsedRealtime() - t0) / 1000.0
                           runOnUiThread { uiProgress(done, total, sec) }
                       }
+                      var ver: QuickVerify.Verify? = null
+                      var escalated = false
+                      attemptNo = 1
                       val res = when (mode) {
-                          "quick" -> readRanges(tag, QUICK_RANGES, onProg)      // อ่านเร็ว: เฉพาะ ID · ขนาด · ค่าล่าสุด
+                          "quick" -> {                                           // อ่านเร็ว: เฉพาะ ID · ขนาด · ค่าล่าสุด + อ่านซ้ำยืนยัน
+                              val (q, vv) = readQuickVerified(tag, onProg) { n -> attemptNo = n }
+                              ver = vv
+                              if (!vv.confirmed || vv.suspect) {                 // ค่าไม่ตรงกัน / ปริมาตร 0 / น้อยกว่าครั้งก่อน → อ่านทั้งหมดเพื่อเทียบกับประวัติ
+                                  escalated = true
+                                  runOnUiThread { uiEscalate(vv.note) }
+                                  readRange(tag, 0, 8192, onProg)
+                              } else q
+                          }
                           "head" -> readRange(tag, 0, 212, onProg)              // ส่วนหัว Addr 0–211
                           "full" -> readRange(tag, 0, 8192, onProg)             // ทั้งหมด (มีประวัติ)
                           else -> readRange(tag, start, len, onProg)            // กำหนดเอง
                       }
                       val sec = (SystemClock.elapsedRealtime() - t0) / 1000.0
-                      val rr: List<IntArray> = if (mode == "quick") QUICK_RANGES else listOf(intArrayOf(res.start, res.range.size))
+                      val rr: List<IntArray> = if (mode == "quick" && !escalated) QUICK_RANGES else listOf(intArrayOf(res.start, res.range.size))
                       val partial = res.range.size < res.full.size
                       val hexEnd = if (partial) rr.maxOf { it[0] + it[1] } else res.full.size
                       val rj = JSONArray()
@@ -601,8 +613,14 @@ jobs:
                           .put("start", 0)
                           .put("length", hexEnd)
                           .put("hex", res.full.copyOf(hexEnd).toHex())          // เติม 00 ให้ address ตรงกับแอป ST25 (ตัดส่วนท้ายที่ไม่ได้อ่านทิ้ง)
-                          .put("mode", mode)
+                          .put("mode", if (escalated) "full" else mode)
                           .put("partial", partial)
+                          .put("verify", ver != null)
+                          .put("verified", ver?.confirmed ?: false)
+                          .put("attempts", ver?.attempts ?: 0)
+                          .put("same", ver?.same ?: 0)
+                          .put("escalated", escalated)
+                          .put("note", ver?.note ?: "")
                           .put("ranges", rj)
                           .put("unreadableBlocks", JSONArray(res.bad))
                           .toString()
@@ -614,13 +632,16 @@ jobs:
                           valUid.text = res.uid
                           valMeter.text = idText
                           valSize.text = when {
-                              mode == "quick" -> "${res.range.size} bytes  (อ่านเร็ว)"
+                              mode == "quick" && !escalated -> "${res.range.size} bytes  (อ่านเร็ว)"
                               res.start == 0 -> "${res.range.size} bytes"
                               else -> "${res.range.size} bytes (Addr ${res.start}–${res.start + res.range.size - 1})"
                           }
                           uiDone(res.bad.size, res.range.size, sec)
+                      uiVerifyNote(mode, ver, escalated)
+                      val v2 = ver
+                      if (v2 != null && v2.confirmed && !v2.suspect) prefs.edit().putString("lv_" + res.uid, QuickVerify.volDigits(res.full)).apply()
                           if (pageLoaded) push(json) else setSendStatus("รอหน้าเว็บโหลดเสร็จ...", true)
-                          if (cbSave.isChecked) saveDump(if (mode == "quick") res.full.copyOf(hexEnd) else res.range)   // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
+                          if (cbSave.isChecked) saveDump(if (mode == "quick" && !escalated) res.full.copyOf(hexEnd) else res.range)   // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
                           val t = token
                           handler.postDelayed({ if (t == token && !reading) openWebScreen() }, if (mode == "quick") 500L else 1100L)
                       }
@@ -659,57 +680,69 @@ jobs:
                   toast(if (next == "quick") "อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด" else "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)")
               }
 
-              /** อ่านหลายช่วงในการเชื่อมต่อครั้งเดียว (เร็วกว่าอ่านทั้งชิป) แล้ววางลง address เดิม ส่วนที่ไม่ได้อ่านเป็น 00 */
-              private fun readRanges(tag: Tag, rs: List<IntArray>, onProgress: (Int, Int) -> Unit): DumpResult {
+              /** อ่านหลายช่วงบนการเชื่อมต่อที่เปิดอยู่แล้ว แล้ววางลง address เดิม ส่วนที่ไม่ได้อ่านเป็น 00 */
+              private fun readRangesOn(v: NfcV, info: MemInfo, uid: String, rs: List<IntArray>, onProgress: (Int, Int) -> Unit): DumpResult {
+                  val bs = info.blockSize
+                  val totalBytes = info.blockCount * bs
+                  val chunk = ((v.maxTransceiveLength - 2) / bs).coerceIn(1, 32)
+                  val spans = rs.map { r ->
+                      val s0 = r[0].coerceIn(0, totalBytes - 1)
+                      val n0 = r[1].coerceIn(1, totalBytes - s0)
+                      intArrayOf(s0, n0, s0 / bs, (s0 + n0 - 1) / bs)
+                  }
+                  val total = spans.fold(0) { a, p -> a + (p[3] - p[2] + 1) }
+                  val full = ByteArray(totalBytes)
+                  val out = ByteArrayOutputStream()
+                  val bad = ArrayList<Int>()
+                  var done = 0
+                  for (p in spans) {
+                      val first = p[2]
+                      val last = p[3]
+                      val buf = ByteArrayOutputStream()
+                      var b = first
+                      while (b <= last) {
+                          val cnt = minOf(chunk, last - b + 1)
+                          val d = readBlocks(v, b, cnt, bs, info.extended)
+                          if (d != null) buf.write(d)
+                          else for (i in 0 until cnt) {                      // ถ้าพลาด ลองอ่านทีละ block
+                              val one = readBlocks(v, b + i, 1, bs, info.extended)
+                              if (one != null) buf.write(one) else { bad.add(b + i); buf.write(ByteArray(bs)) }
+                          }
+                          b += cnt
+                          done += cnt
+                          onProgress(done, total)
+                      }
+                      val all = buf.toByteArray()
+                      val off = p[0] - first * bs
+                      val part = all.copyOfRange(off, off + p[1])
+                      System.arraycopy(part, 0, full, p[0], p[1])
+                      out.write(part)
+                  }
+                  return DumpResult(uid, 0, out.toByteArray(), full, bad)
+              }
+
+              /** อ่านเร็ว + ตรวจยืนยัน: อ่านซ้ำในการเชื่อมต่อเดียวจนค่าตรงกัน (ปกติ 2 ครั้ง · ปริมาตร 0/น้อยลง 3 ครั้ง) */
+              private fun readQuickVerified(tag: Tag, onProgress: (Int, Int) -> Unit, onTry: (Int) -> Unit): Pair<DumpResult, QuickVerify.Verify> {
                   val v = NfcV.get(tag)
                       ?: error("แท็กไม่ใช่ NFC-V (ISO15693): " + tag.techList.joinToString())
                   v.connect()
                   try {
                       val info = readMemoryInfo(v)
-                      val bs = info.blockSize
-                      val totalBytes = info.blockCount * bs
-                      val chunk = ((v.maxTransceiveLength - 2) / bs).coerceIn(1, 32)
-                      val spans = rs.map { r ->
-                          val s0 = r[0].coerceIn(0, totalBytes - 1)
-                          val n0 = r[1].coerceIn(1, totalBytes - s0)
-                          intArrayOf(s0, n0, s0 / bs, (s0 + n0 - 1) / bs)
-                      }
-                      val total = spans.fold(0) { a, p -> a + (p[3] - p[2] + 1) }
-                      val full = ByteArray(totalBytes)
-                      val out = ByteArrayOutputStream()
-                      val bad = ArrayList<Int>()
-                      var done = 0
-                      for (p in spans) {
-                          val first = p[2]
-                          val last = p[3]
-                          val buf = ByteArrayOutputStream()
-                          var b = first
-                          while (b <= last) {
-                              val cnt = minOf(chunk, last - b + 1)
-                              val d = readBlocks(v, b, cnt, bs, info.extended)
-                              if (d != null) buf.write(d)
-                              else for (i in 0 until cnt) {                      // ถ้าพลาด ลองอ่านทีละ block
-                                  val one = readBlocks(v, b + i, 1, bs, info.extended)
-                                  if (one != null) buf.write(one) else { bad.add(b + i); buf.write(ByteArray(bs)) }
-                              }
-                              b += cnt
-                              done += cnt
-                              onProgress(done, total)
-                          }
-                          val all = buf.toByteArray()
-                          val off = p[0] - first * bs
-                          val part = all.copyOfRange(off, off + p[1])
-                          System.arraycopy(part, 0, full, p[0], p[1])
-                          out.write(part)
-                      }
-                      return DumpResult(tag.id.reversedArray().toHex(), 0, out.toByteArray(), full, bad)
+                      val uid = tag.id.reversedArray().toHex()
+                      val lastVol = prefs.getString("lv_" + uid, null)
+                      return QuickVerify.run(
+                          6, lastVol,
+                          { readRangesOn(v, info, uid, QUICK_RANGES, onProgress) },
+                          onTry,
+                          { try { Thread.sleep(90) } catch (_: InterruptedException) {} }
+                      )
                   } finally {
                       try { v.close() } catch (_: Exception) {}
                   }
               }
 
               private class MemInfo(val blockCount: Int, val blockSize: Int, val extended: Boolean)
-              private class DumpResult(
+              class DumpResult(
                   val uid: String, val start: Int, val range: ByteArray, val full: ByteArray, val bad: List<Int>
               )
 
@@ -820,6 +853,7 @@ jobs:
 
               private fun uiReading() {
                   token++
+                  attemptNo = 1
                   ring.set(0f, "กำลังอ่าน", "0%", "กำลังเชื่อมต่อชิป", cSky, cBlue)
                   setBar(cSky, cBlue, 0)
                   rdDetail.text = "กำลังเชื่อมต่อชิป..."
@@ -837,8 +871,23 @@ jobs:
                   val pct = if (total > 0) done * 100 / total else 0
                   ring.set(pct / 100f, "กำลังอ่าน", "$pct%", "$done / $total blocks", cSky, cBlue)
                   rdBar.progress = pct
-                  rdDetail.text = "อ่านแล้ว $done / $total blocks  •  ${fmt(sec)} วินาที"
+                  rdDetail.text = "อ่านแล้ว $done / $total blocks  •  ${fmt(sec)} วินาที" + (if (attemptNo > 1) "  •  ตรวจยืนยันครั้งที่ $attemptNo" else "")
                   valTime.text = "${fmt(sec)} วินาที ..."
+              }
+
+              private fun uiEscalate(why: String) {
+                  attemptNo = 1
+                  rdDetail.text = "ค่าผิดสังเกต" + (if (why.isNotEmpty()) " ($why)" else "") + " — อ่านทั้งหมดเพื่อยืนยัน"
+                  rdHint.text = "ถือโทรศัพท์ให้นิ่ง กำลังอ่านประวัติเพื่อเทียบกับค่าล่าสุด (ประมาณ 3 วินาที)"
+              }
+
+              private fun uiVerifyNote(mode: String, ver: QuickVerify.Verify?, escalated: Boolean) {
+                  val n = when {
+                      escalated -> "⚠ ค่าผิดสังเกต จึงอ่านทั้งหมดเพื่อเทียบกับประวัติ"
+                      mode == "quick" && ver != null && ver.confirmed -> "✔ ยืนยันแล้ว: อ่านตรงกัน ${ver.same} ครั้ง"
+                      else -> ""
+                  }
+                  if (n.isNotEmpty()) rdHint.text = n + "\n" + rdHint.text
               }
 
               private fun uiDone(bad: Int, bytes: Int, sec: Double) {
@@ -1139,6 +1188,86 @@ jobs:
 
               private fun ByteArray.toHex() = joinToString("") { "%02X".format(it) }
           }
+
+          /** ตรวจความถูกต้องของข้อมูลล่าสุด (Addr 188–211) และอ่านซ้ำจนกว่าค่าจะตรงกัน — ใช้แยกค่า "ปริมาตร 0 จริง" ออกจาก "อ่านพลาด" */
+          object QuickVerify {
+              class Latest(val ok: Boolean, val reason: String, val volZero: Boolean)
+              class Verify(val confirmed: Boolean, val suspect: Boolean, val attempts: Int, val same: Int, val note: String)
+
+              val CRITICAL_BLOCKS: IntRange = 47..52          // Addr 188–211
+              val ID_BLOCKS: IntRange = 17..20                 // Addr 68–83
+
+              private fun u(b: Byte): Int = b.toInt() and 0xFF
+              private fun bcdOk(b: Byte): Boolean = (u(b) shr 4) <= 9 && (u(b) and 15) <= 9
+              private fun bcd(b: Byte): Int = (u(b) shr 4) * 10 + (u(b) and 15)
+              fun hex(a: ByteArray): String = a.joinToString("") { "%02X".format(it) }
+
+              /** โครงสร้างของบล็อกล่าสุด: ปริมาตร BCD 6 ไบต์ · ไหลย้อน · อัตราไหล BCD 3 ไบต์ · เวลา hh:mm · วันที่ dd mm yyyy */
+              fun checkLatest(full: ByteArray): Latest {
+                  if (full.size < 212) return Latest(false, "ข้อมูลสั้นกว่า 212 ไบต์", false)
+                  val b = full.copyOfRange(188, 212)
+                  if (b.all { it == 0.toByte() } || b.all { it == 0xFF.toByte() })
+                      return Latest(false, "บล็อกค่าล่าสุดว่าง (00/FF ทั้งหมด)", false)
+                  if (!(0..5).all { bcdOk(b[it]) }) return Latest(false, "ปริมาตรไม่ใช่รูปแบบ BCD", false)
+                  if (!(12..14).all { bcdOk(b[it]) }) return Latest(false, "อัตราไหลไม่ใช่รูปแบบ BCD", false)
+                  if (!(15..20).all { bcdOk(b[it]) }) return Latest(false, "วันที่/เวลาไม่ใช่รูปแบบ BCD", false)
+                  val hh = bcd(b[15]); val mm = bcd(b[16]); val dd = bcd(b[17]); val mo = bcd(b[18])
+                  val yr = bcd(b[19]) * 100 + bcd(b[20])
+                  if (hh > 23 || mm > 59 || dd !in 1..31 || mo !in 1..12 || yr !in 2020..2099)
+                      return Latest(false, "วันที่/เวลาไม่สมเหตุสมผล", false)
+                  return Latest(true, "", (0..5).all { b[it] == 0.toByte() })
+              }
+
+              /** ปริมาตรสะสม 12 หลัก (BCD) ใช้เทียบ "น้อยกว่าครั้งก่อนหรือไม่" */
+              fun volDigits(full: ByteArray): String = hex(full.copyOfRange(188, 194))
+
+              /** กุญแจเปรียบเทียบการอ่าน: Meter ID/ขนาด (72–77) + ค่าล่าสุด (188–211) — ไม่รวมเวลาของมิเตอร์ที่เปลี่ยนทุกนาที */
+              fun key(full: ByteArray): String = hex(full.copyOfRange(72, 78)) + hex(full.copyOfRange(188, 212))
+
+              fun criticalBad(bad: List<Int>): Boolean = bad.any { it in CRITICAL_BLOCKS || it in ID_BLOCKS }
+
+              fun run(
+                  maxTries: Int,
+                  lastVol: String?,
+                  readOnce: () -> MainActivity.DumpResult,
+                  onTry: (Int) -> Unit,
+                  pause: () -> Unit
+              ): Pair<MainActivity.DumpResult, Verify> {
+                  var prevKey: String? = null
+                  var same = 0
+                  var need = 2
+                  var tries = 0
+                  var note = ""
+                  var suspect = false
+                  var res: MainActivity.DumpResult? = null
+                  while (tries < maxTries) {
+                      tries++
+                      onTry(tries)
+                      val r = readOnce()
+                      res = r
+                      val chk = checkLatest(r.full)
+                      if (!chk.ok || criticalBad(r.bad)) {
+                          note = if (criticalBad(r.bad)) "อ่านบล็อกสำคัญไม่ได้" else chk.reason
+                          prevKey = null
+                          same = 0
+                          suspect = false
+                      } else {
+                          val dropped = lastVol != null && volDigits(r.full) < lastVol
+                          suspect = chk.volZero || dropped
+                          need = if (suspect) 3 else 2                    // ปริมาตร 0 หรือน้อยกว่าครั้งก่อน ต้องอ่านตรงกัน 3 ครั้ง
+                          note = if (chk.volZero) "ปริมาตรเป็น 0" else if (dropped) "ปริมาตรน้อยกว่าครั้งก่อน" else ""
+                          val k = key(r.full)
+                          same = if (k == prevKey) same + 1 else 1
+                          prevKey = k
+                          if (same >= need) break
+                      }
+                      pause()
+                  }
+                  val r = res!!
+                  val ok = checkLatest(r.full).ok && !criticalBad(r.bad) && same >= need
+                  return Pair(r, Verify(ok, suspect, tries, same, if (ok && !suspect) "" else if (note.isEmpty()) "ค่าไม่ตรงกันระหว่างอ่านซ้ำ" else note))
+              }
+          }
           EOF_FILE
           mkdir -p 'app/src/main/assets'
           cat > 'app/src/main/assets/feed.js' << 'EOF_FILE'
@@ -1164,7 +1293,7 @@ jobs:
                 }
                 return null;
               }
-              function feed(w) { w.NFC_PART = (d.partial && d.ranges) ? d.ranges : null; w.load(u.buffer, 'nfc.bin'); rep('OK: เว็บประมวลผลข้อมูลจากมิเตอร์แล้ว' + (d.partial ? ' (อ่านเร็ว)' : '')); }
+              function feed(w) { w.NFC_PART = (d.partial && d.ranges) ? d.ranges : null; w.NFC_META = d.verify ? { verify: true, verified: !!d.verified, attempts: d.attempts || 0, same: d.same || 0, escalated: !!d.escalated, note: d.note || '', unread: d.unreadableBlocks || [] } : { verify: false, unread: d.unreadableBlocks || [] }; w.load(u.buffer, 'nfc.bin'); rep('OK: เว็บประมวลผลข้อมูลจากมิเตอร์แล้ว' + (d.partial ? ' (อ่านเร็ว)' : '')); }
 
               var w = find(window, 0);
               if (w) { feed(w); return 'OK:direct'; }
