@@ -242,7 +242,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v13"
+                  private const val VERSION = "v14"
                   private const val REQ_FILE = 4711
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
@@ -597,12 +597,17 @@ jobs:
                                   readRange(tag, 0, 8192, onProg)
                               } else q
                           }
+                          "bench" -> {                                           // แท่นเทส: ID · ขนาด · K1–K20 · จำนวนรอบ · ค่าล่าสุด + อ่านซ้ำยืนยัน (ไม่อ่านทั้งชิป)
+                              val (q, vv) = readQuickVerified(tag, onProg, BENCH_RANGES) { n -> attemptNo = n }
+                              ver = vv
+                              q
+                          }
                           "head" -> readRange(tag, 0, 212, onProg)              // ส่วนหัว Addr 0–211
                           "full" -> readRange(tag, 0, 8192, onProg)             // ทั้งหมด (มีประวัติ)
                           else -> readRange(tag, start, len, onProg)            // กำหนดเอง
                       }
                       val sec = (SystemClock.elapsedRealtime() - t0) / 1000.0
-                      val rr: List<IntArray> = if (mode == "quick" && !escalated) QUICK_RANGES else listOf(intArrayOf(res.start, res.range.size))
+                      val rr: List<IntArray> = if (mode == "quick" && !escalated) QUICK_RANGES else if (mode == "bench") BENCH_RANGES else listOf(intArrayOf(res.start, res.range.size))
                       val partial = res.range.size < res.full.size
                       val hexEnd = if (partial) rr.maxOf { it[0] + it[1] } else res.full.size
                       val rj = JSONArray()
@@ -633,6 +638,7 @@ jobs:
                           valMeter.text = idText
                           valSize.text = when {
                               mode == "quick" && !escalated -> "${res.range.size} bytes  (อ่านเร็ว)"
+                          mode == "bench" -> "${res.range.size} bytes  (แท่นเทส)"
                               res.start == 0 -> "${res.range.size} bytes"
                               else -> "${res.range.size} bytes (Addr ${res.start}–${res.start + res.range.size - 1})"
                           }
@@ -641,7 +647,7 @@ jobs:
                       val v2 = ver
                       if (v2 != null && v2.confirmed && !v2.suspect) prefs.edit().putString("lv_" + res.uid, QuickVerify.volDigits(res.full)).apply()
                           if (pageLoaded) push(json) else setSendStatus("รอหน้าเว็บโหลดเสร็จ...", true)
-                          if (cbSave.isChecked) saveDump(if (mode == "quick" && !escalated) res.full.copyOf(hexEnd) else res.range)   // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
+                          if (cbSave.isChecked) saveDump(if ((mode == "quick" && !escalated) || mode == "bench") res.full.copyOf(hexEnd) else res.range)   // บันทึกไฟล์เฉพาะเมื่อติ๊กเลือกไว้
                           val t = token
                           handler.postDelayed({ if (t == token && !reading) openWebScreen() }, if (mode == "quick") 500L else 1100L)
                       }
@@ -656,6 +662,9 @@ jobs:
               /** ช่วงที่อ่านในโหมด "อ่านเร็ว": Addr 68–83 (Command · Meter ID · ขนาด · เวลา · วันที่) และ 188–211 (ค่าล่าสุด 24 ไบต์) = 10 blocks */
               private val QUICK_RANGES: List<IntArray> = listOf(intArrayOf(68, 16), intArrayOf(188, 24))
 
+              /** โหมดแท่นเทส: Addr 68–211 = Meter ID · ขนาด · K1–K20 · จำนวนรอบ (184–186) · ค่าล่าสุด = 36 blocks */
+              private val BENCH_RANGES: List<IntArray> = listOf(intArrayOf(68, 144))
+
               private fun covers(rr: List<IntArray>, a: Int, b: Int): Boolean = rr.any { it[0] <= a && it[0] + it[1] >= b }
 
               private fun effectiveMode(): String {
@@ -666,7 +675,8 @@ jobs:
 
               private fun refreshModeLabel() {
                   btnMode.text = when (effectiveMode()) {
-                      "quick" -> "⚡ โหมดอ่านเร็ว  (แตะ = อ่านทั้งหมด)"
+                      "quick" -> "⚡ โหมดอ่านเร็ว  (แตะ = แท่นเทส 🧪)"
+                      "bench" -> "🧪 โหมดแท่นเทส  (แตะ = อ่านทั้งหมด)"
                       "full" -> "โหมดอ่านทั้งหมด  (แตะ = อ่านเร็ว ⚡)"
                       "head" -> "โหมดอ่านส่วนหัว 0–211  (แตะ = อ่านเร็ว ⚡)"
                       else -> "โหมดกำหนดเอง  (แตะ = อ่านเร็ว ⚡)"
@@ -674,10 +684,14 @@ jobs:
               }
 
               private fun toggleMode() {
-                  val next = if (effectiveMode() == "quick") "full" else "quick"
+                  val next = when (effectiveMode()) { "quick" -> "bench"; "bench" -> "full"; else -> "quick" }
                   prefs.edit().putString("mode", next).apply()
                   refreshModeLabel()
-                  toast(if (next == "quick") "อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด" else "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)")
+                  toast(when (next) {
+                      "quick" -> "อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด"
+                      "bench" -> "แท่นเทส: ID · ขนาด · K1–K20 · จำนวนรอบ · ค่าล่าสุด"
+                      else -> "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)"
+                  })
               }
 
               /** อ่านหลายช่วงบนการเชื่อมต่อที่เปิดอยู่แล้ว แล้ววางลง address เดิม ส่วนที่ไม่ได้อ่านเป็น 00 */
@@ -722,7 +736,7 @@ jobs:
               }
 
               /** อ่านเร็ว + ตรวจยืนยัน: อ่านซ้ำในการเชื่อมต่อเดียวจนค่าตรงกัน (ปกติ 2 ครั้ง · ปริมาตร 0/น้อยลง 3 ครั้ง) */
-              private fun readQuickVerified(tag: Tag, onProgress: (Int, Int) -> Unit, onTry: (Int) -> Unit): Pair<DumpResult, QuickVerify.Verify> {
+              private fun readQuickVerified(tag: Tag, onProgress: (Int, Int) -> Unit, rs: List<IntArray> = QUICK_RANGES, onTry: (Int) -> Unit): Pair<DumpResult, QuickVerify.Verify> {
                   val v = NfcV.get(tag)
                       ?: error("แท็กไม่ใช่ NFC-V (ISO15693): " + tag.techList.joinToString())
                   v.connect()
@@ -732,7 +746,7 @@ jobs:
                       val lastVol = prefs.getString("lv_" + uid, null)
                       return QuickVerify.run(
                           6, lastVol,
-                          { readRangesOn(v, info, uid, QUICK_RANGES, onProgress) },
+                          { readRangesOn(v, info, uid, rs, onProgress) },
                           onTry,
                           { try { Thread.sleep(90) } catch (_: InterruptedException) {} }
                       )
@@ -884,7 +898,8 @@ jobs:
               private fun uiVerifyNote(mode: String, ver: QuickVerify.Verify?, escalated: Boolean) {
                   val n = when {
                       escalated -> "⚠ ค่าผิดสังเกต จึงอ่านทั้งหมดเพื่อเทียบกับประวัติ"
-                      mode == "quick" && ver != null && ver.confirmed -> "✔ ยืนยันแล้ว: อ่านตรงกัน ${ver.same} ครั้ง"
+                      (mode == "quick" || mode == "bench") && ver != null && ver.confirmed -> "✔ ยืนยันแล้ว: อ่านตรงกัน ${ver.same} ครั้ง"
+                      mode == "bench" && ver != null -> "⚠ ยังยืนยันค่าไม่ได้ — ถือโทรศัพท์ให้นิ่งแล้วแตะอ่านใหม่"
                       else -> ""
                   }
                   if (n.isNotEmpty()) rdHint.text = n + "\n" + rdHint.text
@@ -982,6 +997,7 @@ jobs:
                   val modes = listOf(
                       "full" to "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)  ≈ 3 วินาที",
                       "quick" to "⚡ อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด  < 1 วินาที",
+                      "bench" to "🧪 แท่นเทส: ID · ขนาด · K1–K20 · จำนวนรอบ · ค่าล่าสุด  (36 blocks)",
                       "head" to "อ่านส่วนหัว Addr 0–211 (มี K1–K20 ไม่มีประวัติ)",
                       "custom" to "กำหนดเอง (ตาม Start / Number of Bytes)"
                   )
@@ -994,7 +1010,7 @@ jobs:
                       group.addView(rb)
                   }
                   val cur = effectiveMode()
-                  val curIdx = modes.indexOfFirst { it.first == cur }.let { if (it < 0) 3 else it }
+                  val curIdx = modes.indexOfFirst { it.first == cur }.let { if (it < 0) 4 else it }
                   group.check(1000 + curIdx)
                   box.addView(group)
                   val eStart = field("Start address (ใช้เมื่อเลือก \"กำหนดเอง\")", cfgInt("start", 0).toString(), true)
@@ -1194,7 +1210,7 @@ jobs:
               class Latest(val ok: Boolean, val reason: String, val volZero: Boolean)
               class Verify(val confirmed: Boolean, val suspect: Boolean, val attempts: Int, val same: Int, val note: String)
 
-              val CRITICAL_BLOCKS: IntRange = 47..52          // Addr 188–211
+              val CRITICAL_BLOCKS: IntRange = 21..52          // Addr 84–211 (K1–K20 · จำนวนรอบ · ค่าล่าสุด)
               val ID_BLOCKS: IntRange = 17..20                 // Addr 68–83
 
               private fun u(b: Byte): Int = b.toInt() and 0xFF
@@ -1222,7 +1238,7 @@ jobs:
               fun volDigits(full: ByteArray): String = hex(full.copyOfRange(188, 194))
 
               /** กุญแจเปรียบเทียบการอ่าน: Meter ID/ขนาด (72–77) + ค่าล่าสุด (188–211) — ไม่รวมเวลาของมิเตอร์ที่เปลี่ยนทุกนาที */
-              fun key(full: ByteArray): String = hex(full.copyOfRange(72, 78)) + hex(full.copyOfRange(188, 212))
+              fun key(full: ByteArray): String = hex(full.copyOfRange(72, 78)) + hex(full.copyOfRange(184, 188)) + hex(full.copyOfRange(188, 212))
 
               fun criticalBad(bad: List<Int>): Boolean = bad.any { it in CRITICAL_BLOCKS || it in ID_BLOCKS }
 
