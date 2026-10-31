@@ -65,6 +65,12 @@ jobs:
               }
               kotlinOptions { jvmTarget = "17" }
           }
+
+          dependencies {
+              // อ่านตัวเลข/บาร์โค้ดในเครื่อง (ไม่ใช้อินเทอร์เน็ต) สำหรับโหมดกลไก (กล้อง)
+              implementation("com.google.mlkit:text-recognition:16.0.1")
+              implementation("com.google.mlkit:barcode-scanning:17.3.0")
+          }
           EOF_FILE
           mkdir -p 'app/src/main'
           cat > 'app/src/main/AndroidManifest.xml' << 'EOF_FILE'
@@ -74,6 +80,10 @@ jobs:
               <uses-permission android:name="android.permission.NFC" />
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-feature android:name="android.hardware.nfc" android:required="true" />
+              <uses-feature android:name="android.hardware.camera" android:required="false" />
+              <queries>
+                  <intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent>
+              </queries>
 
               <application
                   android:label="SMCV4 Reader"
@@ -102,7 +112,10 @@ jobs:
           import android.content.Context
           import android.content.Intent
           import android.content.res.ColorStateList
+          import android.graphics.Bitmap
           import android.graphics.BitmapFactory
+          import android.graphics.Matrix
+          import android.media.ExifInterface
           import android.graphics.Canvas
           import android.graphics.Color
           import android.graphics.Paint
@@ -139,6 +152,7 @@ jobs:
           import android.widget.CheckBox
           import android.widget.EditText
           import android.widget.FrameLayout
+          import android.widget.HorizontalScrollView
           import android.widget.ImageView
           import android.widget.LinearLayout
           import android.widget.ProgressBar
@@ -147,6 +161,10 @@ jobs:
           import android.widget.ScrollView
           import android.widget.TextView
           import android.widget.Toast
+          import com.google.mlkit.vision.barcode.BarcodeScanning
+          import com.google.mlkit.vision.common.InputImage
+          import com.google.mlkit.vision.text.TextRecognition
+          import com.google.mlkit.vision.text.latin.TextRecognizerOptions
           import org.json.JSONArray
           import org.json.JSONObject
           import java.io.ByteArrayOutputStream
@@ -242,8 +260,10 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v16"
+                  private const val VERSION = "v17"
                   private const val REQ_FILE = 4711
+                  private const val REQ_CAM = 4712
+                  private const val REQ_PICK = 4713
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
               }
@@ -276,6 +296,9 @@ jobs:
               private lateinit var tvWebState: TextView
               private lateinit var cbSave: CheckBox
               private lateinit var btnMode: Button
+              private lateinit var camRow: View
+              private var camUri: Uri? = null
+              private var pendingMech: String? = null
               @Volatile private var attemptNo = 1
 
               private var nfc: NfcAdapter? = null
@@ -291,6 +314,7 @@ jobs:
               private val prefs by lazy { getSharedPreferences("cfg", Context.MODE_PRIVATE) }
               private val feedJs: String by lazy { assets.open("feed.js").bufferedReader().readText() }
               private val openNfcJs: String by lazy { assets.open("opennfc.js").bufferedReader().readText() }
+              private val feedMechJs: String by lazy { assets.open("feedmech.js").bufferedReader().readText() }
               private val tfReg: Typeface by lazy {
                   try { Typeface.createFromAsset(assets, "prompt_regular.ttf") } catch (e: Exception) { Typeface.DEFAULT }
               }
@@ -417,6 +441,13 @@ jobs:
                   cbSave.setOnCheckedChangeListener { _, c -> prefs.edit().putBoolean("save", c).apply() }
                   refreshSaveLabel()
 
+                  val btnCam = pill("📷  ถ่ายหน้าปัดมิเตอร์", true) { openCamera() }
+                  val btnPick = pill("🖼 เลือกรูป", false) { openGallery() }
+                  camRow = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      addView(btnCam, LinearLayout.LayoutParams(0, WRAP_CONTENT, 2f).apply { marginEnd = dp(8) })
+                      addView(btnPick, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                  }
                   btnMode = pill("", false) { toggleMode() }
                   refreshModeLabel()
 
@@ -447,6 +478,7 @@ jobs:
                       addView(progCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
                       addView(infoCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(14) })
                       addView(cbSave, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                      addView(camRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(btnMode, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row1, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row2, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
@@ -543,6 +575,14 @@ jobs:
                   if (requestCode == REQ_FILE) {
                       fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
                       fileCallback = null
+                  } else if (requestCode == REQ_CAM) {
+                      val u = camUri
+                      camUri = null
+                      if (resultCode == RESULT_OK && u != null) analyzeImage(u, true)
+                      else if (u != null) discardImage(u, true)
+                  } else if (requestCode == REQ_PICK) {
+                      val u = data?.data
+                      if (resultCode == RESULT_OK && u != null) analyzeImage(u, false)
                   } else {
                       super.onActivityResult(requestCode, resultCode, data)
                   }
@@ -572,6 +612,7 @@ jobs:
               // =====================================================================  NFC (background thread)
 
               override fun onTagDiscovered(tag: Tag) {
+                  if (effectiveMode() == "mech") { runOnUiThread { toast("โหมดกลไก: ใช้ปุ่ม 📷 ถ่ายหน้าปัด (กดปุ่มโหมดเพื่อกลับไปอ่าน NFC)") }; return }
                   if (reading) return
                   reading = true
                   t0 = SystemClock.elapsedRealtime()
@@ -675,23 +716,26 @@ jobs:
               }
 
               private fun refreshModeLabel() {
+                  camRow.visibility = if (effectiveMode() == "mech") View.VISIBLE else View.GONE
                   btnMode.text = when (effectiveMode()) {
                       "quick" -> "⚡ โหมดอ่านเร็ว  (แตะ = แท่นเทส 🧪)"
                       "bench" -> "🧪 โหมดแท่นเทส  (แตะ = อ่านทั้งหมด)"
-                      "full" -> "โหมดอ่านทั้งหมด  (แตะ = อ่านเร็ว ⚡)"
+                      "full" -> "โหมดอ่านทั้งหมด  (แตะ = กลไก 📷)"
+                      "mech" -> "📷 โหมดกลไก (กล้อง)  (แตะ = อ่านเร็ว ⚡)"
                       "head" -> "โหมดอ่านส่วนหัว 0–211  (แตะ = อ่านเร็ว ⚡)"
                       else -> "โหมดกำหนดเอง  (แตะ = อ่านเร็ว ⚡)"
                   }
               }
 
               private fun toggleMode() {
-                  val next = when (effectiveMode()) { "quick" -> "bench"; "bench" -> "full"; else -> "quick" }
+                  val next = when (effectiveMode()) { "quick" -> "bench"; "bench" -> "full"; "full" -> "mech"; else -> "quick" }
                   prefs.edit().putString("mode", next).apply()
                   refreshModeLabel()
                   if (pageLoaded) webView.evaluateJavascript("($openNfcJs)('$next')", null)   // สลับแท็บตามโหมดทันที
                   toast(when (next) {
                       "quick" -> "อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด"
                       "bench" -> "แท่นเทส: ID · ขนาด · K1–K20 · จำนวนรอบ · ค่าล่าสุด"
+                      "mech" -> "กลไก: ถ่ายหน้าปัดมาตรแมคคานิค → OCR → ตรวจ/แก้ → ส่งเข้า Web App"
                       else -> "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)"
                   })
               }
@@ -970,9 +1014,11 @@ jobs:
               }
 
               private fun resend() {
-                  val j = pendingDump
-                  if (j == null) toast("ยังไม่มีข้อมูล ให้แตะมิเตอร์ก่อน")
+                  val mech = effectiveMode() == "mech"
+                  val j = if (mech) pendingMech else pendingDump
+                  if (j == null) toast(if (mech) "ยังไม่มีข้อมูล ให้ถ่ายหน้าปัดก่อน" else "ยังไม่มีข้อมูล ให้แตะมิเตอร์ก่อน")
                   else if (!pageLoaded) toast("หน้าเว็บยังโหลดไม่เสร็จ")
+                  else if (mech) pushMech(j)
                   else { readerScreen.visibility = View.GONE; push(j) }
               }
 
@@ -1000,6 +1046,7 @@ jobs:
                       "full" to "อ่านทั้งหมด 8192 ไบต์ (มีประวัติ)  ≈ 3 วินาที",
                       "quick" to "⚡ อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด  < 1 วินาที",
                       "bench" to "🧪 แท่นเทส: ID · ขนาด · K1–K20 · จำนวนรอบ · ค่าล่าสุด  (36 blocks)",
+                      "mech" to "📷 กลไก: ถ่ายหน้าปัดมาตรแมคคานิค (OCR + บาร์โค้ด)",
                       "head" to "อ่านส่วนหัว Addr 0–211 (มี K1–K20 ไม่มีประวัติ)",
                       "custom" to "กำหนดเอง (ตาม Start / Number of Bytes)"
                   )
@@ -1012,12 +1059,13 @@ jobs:
                       group.addView(rb)
                   }
                   val cur = effectiveMode()
-                  val curIdx = modes.indexOfFirst { it.first == cur }.let { if (it < 0) 4 else it }
+                  val curIdx = modes.indexOfFirst { it.first == cur }.let { if (it < 0) modes.size - 1 else it }
                   group.check(1000 + curIdx)
                   box.addView(group)
                   val eStart = field("Start address (ใช้เมื่อเลือก \"กำหนดเอง\")", cfgInt("start", 0).toString(), true)
                   val eLen = field("Number of Bytes (ใช้เมื่อเลือก \"กำหนดเอง\")", cfgInt("len", 8192).toString(), true)
                   val eName = field("ชื่อไฟล์ที่บันทึก", cfgName(), false)
+                  val eFrac = field("โหมดกลไก: จำนวนหลักสีแดง (ทศนิยม m³) บนหน้าปัด", cfgInt("frac", 3).toString(), true)
                   val sv = ScrollView(this)
                   sv.addView(box)
                   AlertDialog.Builder(this)
@@ -1030,6 +1078,7 @@ jobs:
                               .putInt("start", eStart.text.toString().toIntOrNull() ?: 0)
                               .putInt("len", (eLen.text.toString().toIntOrNull() ?: 8192).coerceAtLeast(1))
                               .putString("name", eName.text.toString().trim().ifEmpty { "data.bin" })
+                              .putInt("frac", (eFrac.text.toString().toIntOrNull() ?: 3).coerceIn(0, 4))
                               .apply()
                           refreshSaveLabel()
                           refreshModeLabel()
@@ -1094,6 +1143,179 @@ jobs:
                       toast("ไม่รองรับการดาวน์โหลดจากลิงก์นี้")
                   }
               }
+
+              // =====================================================================  โหมดกลไก (ถ่ายหน้าปัด + OCR ในเครื่อง)
+
+              private fun openCamera() {
+                  try {
+                      val cv = ContentValues().apply {
+                          put(MediaStore.Images.Media.DISPLAY_NAME, "SMCV4_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg")
+                          put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                          put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/SMCV4")
+                      }
+                      val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv)
+                      if (uri == null) { toast("สร้างไฟล์ภาพไม่สำเร็จ"); return }
+                      camUri = uri
+                      val cam = Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                      startActivityForResult(cam, REQ_CAM)
+                  } catch (e: Exception) {
+                      toast("เปิดกล้องไม่ได้: ${e.message}")
+                  }
+              }
+
+              private fun openGallery() {
+                  val pick = Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
+                  startActivityForResult(Intent.createChooser(pick, "เลือกรูปหน้าปัด"), REQ_PICK)
+              }
+
+              private fun discardImage(uri: Uri, own: Boolean) {
+                  if (own) try { contentResolver.delete(uri, null, null) } catch (e: Exception) { }
+              }
+
+              /** อ่านข้อความและบาร์โค้ด/QR จากรูปเดียวกันด้วย ML Kit (โมเดลอยู่ในแอป) */
+              private fun analyzeImage(uri: Uri, own: Boolean) {
+                  toast("กำลังอ่านตัวเลขจากภาพ...")
+                  val img = try { InputImage.fromFilePath(this, uri) } catch (e: Exception) { toast("เปิดภาพไม่ได้: ${e.message}"); return }
+                  val lines = ArrayList<String>()
+                  val codes = ArrayList<String>()
+                  val rec = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                  val scanner = BarcodeScanning.getClient()
+                  rec.process(img)
+                      .addOnSuccessListener { t -> t.textBlocks.forEach { b -> b.lines.forEach { l -> lines.add(l.text) } } }
+                      .addOnFailureListener { }
+                      .addOnCompleteListener {
+                          scanner.process(img)
+                              .addOnSuccessListener { list -> list.forEach { b -> b.rawValue?.let { v -> codes.add(v) } } }
+                              .addOnFailureListener { }
+                              .addOnCompleteListener {
+                                  val r = MechParse.parse(lines, codes, cfgInt("frac", 3))
+                                  runOnUiThread { showMechConfirm(uri, own, r) }
+                              }
+                      }
+              }
+
+              private fun previewBitmap(uri: Uri): Bitmap? {
+                  return try {
+                      val o = BitmapFactory.Options()
+                      o.inSampleSize = 4
+                      var bm = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o) }
+                      val deg = contentResolver.openInputStream(uri)?.use { s ->
+                          when (ExifInterface(s).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)) {
+                              ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                              ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                              ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                              else -> 0
+                          }
+                      } ?: 0
+                      if (bm != null && deg != 0) {
+                          val m = Matrix()
+                          m.postRotate(deg.toFloat())
+                          bm = Bitmap.createBitmap(bm, 0, 0, bm.width, bm.height, m, true)
+                      }
+                      bm
+                  } catch (e: Exception) {
+                      null
+                  }
+              }
+
+              /** แสดงผล OCR ให้ตรวจ/แก้ก่อนส่ง (หน้าปัดเก่ามัวหรือเลขเหลื่อมกันได้) */
+              private fun showMechConfirm(uri: Uri, own: Boolean, r: MechParse.Result) {
+                  val slate = Color.parseColor("#475569")
+                  val box = LinearLayout(this)
+                  box.orientation = LinearLayout.VERTICAL
+                  box.setPadding(dp(18), dp(10), dp(18), dp(0))
+                  val bm = previewBitmap(uri)
+                  if (bm != null) {
+                      val iv = ImageView(this)
+                      iv.setImageBitmap(bm)
+                      iv.scaleType = ImageView.ScaleType.FIT_CENTER
+                      box.addView(iv, LinearLayout.LayoutParams(MATCH_PARENT, dp(170)))
+                  }
+                  val msg = if (r.reading.isEmpty()) "อ่านตัวเลขจากภาพไม่ได้ — พิมพ์เองได้เลย" else "ตรวจตัวเลขให้ตรงกับหน้าปัดก่อนส่ง (ตัวเลขสีแดงคือเศษของ m³)"
+                  box.addView(label(msg, 12f, slate).apply { setPadding(0, dp(8), 0, 0) })
+                  box.addView(label("ค่าที่อ่านจากหน้าปัด (m³)", 12f, slate).apply { setPadding(0, dp(8), 0, 0) })
+                  val eVal = EditText(this)
+                  eVal.setText(r.reading)
+                  eVal.setSingleLine()
+                  eVal.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                  eVal.textSize = 24f
+                  eVal.typeface = Typeface.MONOSPACE
+                  box.addView(eVal)
+                  box.addView(label("Meter ID / เลขซีเรียล (เว้นว่างได้ ระบบจะใส่ตำแหน่งถัดไปให้)", 12f, slate).apply { setPadding(0, dp(8), 0, 0) })
+                  val eId = EditText(this)
+                  eId.setText(r.id)
+                  eId.setSingleLine()
+                  eId.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+                  eId.textSize = 18f
+                  box.addView(eId)
+                  if (r.cands.isNotEmpty()) {
+                      box.addView(label("ตัวเลขอื่นที่เจอ — แตะ = ใส่เป็นค่าหน้าปัด · กดค้าง = ใส่เป็น ID", 11f, slate).apply { setPadding(0, dp(8), 0, 0) })
+                      val row = LinearLayout(this)
+                      row.orientation = LinearLayout.HORIZONTAL
+                      r.cands.forEach { c ->
+                          val b = Button(this)
+                          b.text = c
+                          b.isAllCaps = false
+                          b.textSize = 12f
+                          b.minHeight = 0
+                          b.minimumHeight = 0
+                          b.setPadding(dp(10), dp(4), dp(10), dp(4))
+                          b.setOnClickListener { eVal.setText(c) }
+                          b.setOnLongClickListener { eId.setText(c.filter { ch -> ch.isLetterOrDigit() || ch == '-' }); true }
+                          row.addView(b, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(6) })
+                      }
+                      val hs = HorizontalScrollView(this)
+                      hs.addView(row)
+                      box.addView(hs)
+                  }
+                  val sv = ScrollView(this)
+                  sv.addView(box)
+                  val dlg = AlertDialog.Builder(this)
+                      .setTitle("📷 ตรวจค่าหน้าปัดมาตรกลไก")
+                      .setView(sv)
+                      .setPositiveButton("✔ ส่งเข้า Web App", null)
+                      .setNeutralButton("📷 ถ่ายใหม่", null)
+                      .setNegativeButton("ยกเลิก", null)
+                      .create()
+                  dlg.setCanceledOnTouchOutside(false)
+                  dlg.show()
+                  dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                      var v = eVal.text.toString().trim().replace(',', '.')
+                      if (!Regex("^\\d+(\\.\\d+)?$").matches(v)) { toast("ค่าหน้าปัดต้องเป็นตัวเลข เช่น 00123.456"); return@setOnClickListener }
+                      if (!v.contains('.')) v = MechParse.format(v, cfgInt("frac", 3))
+                      dlg.dismiss()
+                      sendMech(eId.text.toString().trim(), v)
+                  }
+                  dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener { dlg.dismiss(); discardImage(uri, own); openCamera() }
+                  dlg.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener { dlg.dismiss(); discardImage(uri, own) }
+              }
+
+              private fun sendMech(id: String, reading: String) {
+                  val j = JSONObject().put("id", id).put("reading", reading).put("by", "cam").toString()
+                  pendingMech = j
+                  valMeter.text = if (id.isEmpty()) "(ตำแหน่งถัดไป)" else id
+                  valSize.text = "หน้าปัด $reading m³"
+                  valTime.text = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+                  pushMech(j)
+              }
+
+              private fun pushMech(json: String) {
+                  if (!pageLoaded) {
+                      undelivered = true
+                      setSendStatus("รอหน้าเว็บโหลด — กด “ส่งซ้ำ”", false)
+                      toast("หน้าเว็บยังโหลดไม่เสร็จ")
+                      return
+                  }
+                  webView.evaluateJavascript("($feedMechJs)($json)") { r ->
+                      val res = (r ?: "").trim('"')
+                      when {
+                          res.startsWith("OK") -> { undelivered = false; setSendStatus("✓ ส่งค่าหน้าปัดเข้า Web App แล้ว", true) }
+                          res.startsWith("WAIT") -> { undelivered = false; setSendStatus("กำลังเปิด Test Bench ในเว็บ...", true) }
+                          else -> { undelivered = true; setSendStatus("✗ $res", false); toast("ส่งเข้า Web App ไม่สำเร็จ: $res") }
+                      }
+                  }
+              }
+
 
               // =====================================================================  ส่งข้อมูลเข้า Web App
 
@@ -1287,6 +1509,108 @@ jobs:
               }
           }
           EOF_FILE
+          cat > 'app/src/main/java/com/example/smcv4reader/MechParse.kt' << 'EOF_FILE'
+          package com.example.smcv4reader
+
+          /** แยก "ค่าหน้าปัด" และ "Meter ID" จากข้อความ OCR + บาร์โค้ด (ทำงานในเครื่อง ไม่ใช้เน็ต) */
+          object MechParse {
+              class Result(val id: String, val reading: String, val cands: List<String>)
+
+              private class Tok(val digits: String, val frac: String?, val spaced: Boolean)
+
+              /** แก้ตัวอักษรที่ OCR มักสับสนกับตัวเลข (เฉพาะคำที่เป็นตัวเลขเป็นส่วนใหญ่) */
+              private fun fixWord(w: String): String {
+                  if (w.length < 3) return w
+                  val d = w.count { it.isDigit() }
+                  if (d * 2 < w.length) return w
+                  return w.map {
+                      when (it) {
+                          'O', 'o', 'D', 'Q' -> '0'
+                          'l', 'I', '|', '!' -> '1'
+                          'S', 's' -> '5'
+                          'B' -> '8'
+                          'Z', 'z' -> '2'
+                          'G' -> '6'
+                          else -> it
+                      }
+                  }.joinToString("")
+              }
+
+              private fun fixLine(ln: String): String = ln.split(Regex("\\s+")).joinToString(" ") { fixWord(it) }
+
+              /** ตัวเลขที่อาจคั่นด้วยช่องว่าง/จุด/คอมมา เช่น "00123 456", "00123.456", "00123456" */
+              private val NUM = Regex("\\d[\\d ,.]*\\d|\\d")
+
+              private fun toTok(raw: String): Tok? {
+                  val s = raw.trim()
+                  val digits = s.filter { it.isDigit() }
+                  if (digits.length < 3) return null
+                  val m = Regex("^(\\d[\\d ]*)[.,](\\d{1,5})$").find(s.replace(" ", " "))
+                  if (m != null) {
+                      val ip = m.groupValues[1].filter { it.isDigit() }
+                      return Tok(ip, m.groupValues[2], true)
+                  }
+                  val groups = s.split(Regex("[ ,.]+")).filter { it.isNotEmpty() }
+                  if (groups.size >= 2) {
+                      val last = groups.last()
+                      val head = groups.dropLast(1).joinToString("")
+                      if (last.length in 1..5 && head.length >= 3) return Tok(head, last, true)
+                      return Tok(digits, null, true)
+                  }
+                  return Tok(digits, null, false)
+              }
+
+              private fun cleanId(v: String): String {
+                  var s = v.trim()
+                  if (s.contains("=") || s.contains("/")) s = s.split('=', '/', '&', '?').last { it.isNotBlank() }
+                  s = s.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.uppercase()
+                  return if (s.length > 24) s.takeLast(24) else s
+              }
+
+              fun format(t: String, frac: Int): String = if (frac > 0 && t.length > frac && !t.contains('.')) t.dropLast(frac) + "." + t.takeLast(frac) else t
+
+              fun parse(lines: List<String>, barcodes: List<String>, frac: Int): Result {
+                  val want = 5 + frac
+                  val toks = ArrayList<Tok>()
+                  val serials = LinkedHashSet<String>()
+                  for (ln in lines) {
+                      val fx = fixLine(ln)
+                      NUM.findAll(fx).forEach { m -> toTok(m.value)?.let { toks.add(it) } }
+                      // ซีเรียลแบบมีตัวอักษรปน เช่น SN12345678, A1234567
+                      Regex("[A-Za-z]{1,3}[- ]?\\d{6,12}").findAll(ln).forEach { m -> serials.add(cleanId(m.value)) }
+                  }
+                  val bc = barcodes.map { cleanId(it) }.firstOrNull { it.length >= 4 } ?: ""
+                  val idDigits = bc.filter { it.isDigit() }
+
+                  fun disp(t: Tok): String = if (t.frac != null) t.digits + "." + t.frac else format(t.digits, frac)
+                  fun total(t: Tok): Int = t.digits.length + (t.frac?.length ?: 0)
+
+                  // ตัดตัวเลขที่เป็น ID (ตรงกับบาร์โค้ดหรือซีเรียล) ออกจากตัวเลือกค่าหน้าปัด
+                  val serialDigits = serials.map { it.filter { c -> c.isDigit() } }
+                  val pool = toks.filter { t -> val d = t.digits + (t.frac ?: ""); d != idDigits && serialDigits.none { it == d } && total(t) <= 10 }
+
+                  val reading = pool
+                      .filter { total(it) in 4..9 }
+                      .sortedWith(compareBy<Tok>({ if (it.frac != null) 0 else if (it.spaced) 1 else 2 },
+                          { Math.abs(total(it) - want) },
+                          { if (it.digits.startsWith("0")) 0 else 1 }))
+                      .firstOrNull()
+
+                  // ID: บาร์โค้ด > ซีเรียลมีตัวอักษร > ตัวเลขยาว ≥ 8 หลักที่ไม่ใช่ค่าหน้าปัด
+                  val longNum = toks.filter { it !== reading && total(it) >= 8 && it.frac == null && !it.spaced }
+                      .map { it.digits }.firstOrNull() ?: ""
+                  val id = if (bc.isNotEmpty()) bc else serials.firstOrNull() ?: longNum
+
+                  val cands = LinkedHashSet<String>()
+                  reading?.let { cands.add(disp(it)) }
+                  pool.forEach { if (total(it) in 3..10) cands.add(disp(it)) }
+                  serials.forEach { cands.add(it) }
+                  toks.forEach { if (total(it) >= 8 && it.frac == null) cands.add(it.digits) }
+                  return Result(id, reading?.let { disp(it) } ?: "", cands.take(8))
+              }
+          }
+
+          EOF_FILE
           mkdir -p 'app/src/main/assets'
           cat > 'app/src/main/assets/feed.js' << 'EOF_FILE'
           function (d) {
@@ -1341,12 +1665,52 @@ jobs:
           cat > 'app/src/main/assets/opennfc.js' << 'EOF_FILE'
           function (mode) {
             try {
-              var tab = mode === 'bench' ? 'bench' : 'nfc';
+              var tab = (mode === 'bench' || mode === 'mech') ? 'bench' : 'nfc';
               if (typeof ui !== 'undefined' && typeof render === 'function' && ui.tab !== tab) {
                 var b = document.querySelector('[data-a="tab"][data-v="' + tab + '"]');
                 if (b) b.click(); else { ui.tab = tab; render(); }
               }
             } catch (e) {}
+          }
+          EOF_FILE
+          mkdir -p 'app/src/main/assets'
+          cat > 'app/src/main/assets/feedmech.js' << 'EOF_FILE'
+          function (d) {
+            function rep(m) { try { NfcBridge.report(m); } catch (e) {} }
+            try {
+              function isBench(w) { try { return typeof w.benchMech === 'function'; } catch (e) { return false; } }
+              function find(w, depth) {
+                if (isBench(w)) return w;
+                if (depth > 3) return null;
+                var fr;
+                try { fr = w.document.querySelectorAll('iframe'); } catch (e) { return null; }
+                for (var k = 0; k < fr.length; k++) {
+                  var r = null;
+                  try { r = find(fr[k].contentWindow, depth + 1); } catch (e) {}
+                  if (r) return r;
+                }
+                return null;
+              }
+              function show() {
+                if (typeof ui !== 'undefined' && typeof render === 'function' && ui.tab !== 'bench') {
+                  var b = document.querySelector('[data-a="tab"][data-v="bench"]');
+                  if (b) b.click(); else { ui.tab = 'bench'; render(); }
+                }
+              }
+              var w = find(window, 0);
+              if (w) { show(); w.benchMech(d); return 'OK:direct'; }
+              if (typeof ui !== 'undefined' && typeof render === 'function') {
+                show();
+                var n = 0, t = setInterval(function () {
+                  n++;
+                  var x = find(window, 0);
+                  if (x) { clearInterval(t); try { x.benchMech(d); rep('OK'); } catch (e) { rep('ERR:' + e.message); } }
+                  else if (n > 80) { clearInterval(t); rep('ERR: รอ Test Bench ในหน้า Dashboard นานเกินไป'); }
+                }, 250);
+                return 'WAIT:เปิดแท็บ bench แล้ว';
+              }
+              return 'ERR: ไม่พบ Test Bench ในหน้า ' + location.pathname;
+            } catch (e) { return 'ERR:' + e.message; }
           }
           EOF_FILE
           base64 -d > 'app/src/main/assets/logo_full.png' << 'EOF_FILE'
