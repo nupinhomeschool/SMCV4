@@ -159,7 +159,7 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 #mon .mft{margin-top:1.2vh}
 @media(max-width:900px){#mon{overflow:auto}#mon .mmain{grid-template-columns:1fr}}
 .card.cfgd{padding:12px 16px;margin-bottom:14px}.cfgd summary{cursor:pointer;font-size:1rem}.cfgd summary small{color:var(--mut)}.cfgr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}@media(max-width:700px){.cfgr{grid-template-columns:1fr 1fr}}
-#rlchip{cursor:pointer}#mon .mt{padding-right:8vw}
+#rlchip{cursor:pointer}.lcd.rv{font-size:.82rem;margin-top:4px;min-height:1.7em;padding:2px 34px 1px 8px}.lcd.rv .gh{top:2px;right:34px}.lcd.rv i{top:1px;right:6px;font-size:.58rem}#mon .mt{padding-right:8vw}
 #mon .mmulti{flex:1;min-height:0;display:flex;flex-direction:column;gap:1.4vh;margin-top:1.4vh}
 #mon .mdg{flex:1;min-height:0;display:grid;gap:1.6vh 1.2vw;align-content:center;justify-items:center}
 #mon .md{text-align:center;border-radius:2vh;padding:1vh .6vw;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);width:100%}
@@ -212,6 +212,13 @@ const Q3SER=[1000,1600,2500,4000,6300,10000,16000,25000,40000,63000,100000,16000
 const Q3T={15:2500,20:4000,25:6300,32:10000,40:16000,50:25000,65:40000,80:63000,100:100000,125:160000,150:250000};   // Q3 อ้างอิง (L/h) ตามขนาด — แก้ได้ในหน้าตั้งค่า
 const q3Of=(model,size)=>{const v=S.q3map&&S.q3map[model+size];return v>0?v:(Q3T[size]||null)};
 const q3Std=()=>q3Of(S.batch.model,S.batch.size);
+/* ชุด K1–K20 และอัตราไหลที่ใช้แต่ละดัชนี (L/h) แยกตามชนิด/ขนาด — ข้อมูลเดียวกับ Studio K ของ Web App */
+const KREF={"SJ15":{"k":[6901,6714,6754,6754,6754,6754,6878,6878,6878,6878,6878,6878,6878,6878,6878,6878,6878,6878,6878,6878],"q":[15.625,23,35,50,100,120,150,250,350,450,550,800,1200,1500,1850,2400,2700,2900,3100,3400],"src":"BATCH-102851 · K1–K20 ผ่านการทดสอบจริง"},"MJ15":{"k":[7221,6882,6770,6549,6328,6221,6227,6045,5863,5802,5741,5711,5681,5664,5648,5648,5648,5648,5648,5648],"q":[30,55,80,100,120,140,160,480,800,1150,1500,1750,2000,2200,2400,2400,2400,2400,2400,2400],"src":"SMCV4 Dashboard · Multijet 15 mm K set"},"MJ20":{"k":[12266,11345,10931,10919,10493,10505,10572,10634,10697,10759,10822,10814,10807,10723,10618,10574,10574,10549,10549,10549],"q":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4357,5027,5764,6434,7239],"src":"ข้อมูลจริง · 8 ล็อต × 10 มาตร + RPM จากใบจด (16-10-2026)"}};
+function kRef(model,size){const key=model+size,own=KREF[key],base=model==='SJ'?KREF.SJ15:KREF.MJ15,s=(q3Of(model,size)||2500)/2500;
+  const est=base.q.map((x,i)=>!(own&&own.q[i]!=null)),q=base.q.map((x,i)=>est[i]?x*s:own.q[i]);
+  return{key,q,est,k:own?own.k:null,src:own?own.src:'ประมาณจาก '+(model==='SJ'?'Single Jet':'Multijet')+' 15 mm ตามสัดส่วน Q3 — รอข้อมูลจริงของรุ่น/ขนาดนี้'}}
+const idxByFlow=(f,R)=>{let b=0,bd=1e9;R.q.forEach((x,i)=>{if(!(x>0))return;const d=Math.abs(Math.log(f/x));if(d<bd-1e-12){bd=d;b=i}});return b};
+const pad6=n=>n==null?'------':String(Math.max(0,Math.round(n))%1000000).padStart(6,'0');
 let CFN=null;const askConfirm=(msg,fn)=>{CFN=fn;modal('<h3>⚠ ยืนยันการเปลี่ยนแปลง</h3><p style="line-height:1.6;white-space:pre-line">'+esc(msg)+'</p><div style="display:flex;gap:8px;margin-top:12px"><button class="btn bad" data-a="cfok">ดำเนินการต่อ</button><button class="btn" data-a="mclose">ยกเลิก</button></div>')};
 const RCL=[50,63,80,100,125,160,200,250,315,400];
 const RPM_MAP=[10,15,25,40,60,80,100,150,200,300,500,800,1000,1250,1500,1750,2000,2300,2500,Infinity];   // ช่วง RPM → ดัชนี K1..K20
@@ -317,13 +324,15 @@ function calc(pi,id){
   if(!o.valid){o.flags.push(dVol<=0?'ปริมาตรสิ้นสุด ≤ เริ่มต้น':'ปริมาตรอ้างอิงไม่ถูกต้อง');return o}
   o.err=(dVol-vref)/vref*100;o.pass=Math.abs(o.err)<=p.lim+1e-9;
   const st=S.pt[pi]||{};
-  if(r.s.rev!=null&&r.e.rev!=null){let d=r.e.rev-r.s.rev;if(d<0)d+=1e6;o.dRev=d}
+  if(r.s.rev!=null&&r.e.rev!=null){let d=r.e.rev-r.s.rev;if(d<0){d+=1e6;o.wrap=true}o.dRev=d}
   const mins=(st.t0&&st.t1&&st.t1>st.t0)?(st.t1-st.t0)/60000:vref/p.f*60;o.mins=mins;
   if(o.dRev>0){o.rpm=o.dRev/mins;o.idxTab=kIdx(o.rpm);o.kObs=dVol*1e6/o.dRev;o.kNeed=vref*1e6/o.dRev;
     const ks=r.s.k&&r.s.k.every(x=>x>0)?r.s.k:null;
-    if(ks){let b=0;ks.forEach((k,i)=>{if(Math.abs(k-o.kObs)<Math.abs(ks[b]-o.kObs))b=i});o.idx=b;o.kUsed=ks[b];o.devObs=(o.kObs/ks[b]-1)*100;
+    const KR=kRef(S.batch.model,S.batch.size);o.idxF=idxByFlow(p.f,KR);o.idx=o.idxF;
+    const kmed=med(ks||KR.k||[]);if(kmed){const exp=vref*1e6/kmed;if(o.dRev<exp*0.5||o.dRev>exp*2)o.flags.push('จำนวนรอบ Δ='+fx(o.dRev)+' ผิดปกติ (คาดประมาณ '+fx(exp)+')'+(o.wrap?' — มีการวนรอบ 999999→000000':'')+' ตรวจการอ่านพลาด/วนรอบ')}
+    if(ks){let b=0;ks.forEach((k,i)=>{if(Math.abs(k-o.kObs)<Math.abs(ks[b]-o.kObs))b=i});o.idxObs=b;o.kUsed=ks[o.idxF];o.devObs=(o.kObs/Math.min.apply(null,[ks[b]])-1)*100;
       if(Math.abs(o.devObs)>3)o.flags.push('K ที่มิเตอร์ใช้ไม่ตรง K1–K20 (รอบ/ปริมาตรไม่สอดคล้อง)')}
-    else o.idx=o.idxTab}
+    }
   else if(o.dRev===0)o.flags.push('จำนวนรอบไม่เปลี่ยน');else o.flags.push('ไม่มีข้อมูลจำนวนรอบ');
   if((r.e.rvol||0)-(r.s.rvol||0)>0)o.flags.push('มีน้ำไหลย้อน');
   if(r.e.bat!=null&&r.e.bat<2.7)o.flags.push('แบตต่ำ');
@@ -347,9 +356,9 @@ function agg(){
   const all=ms.flatMap(m=>m.cells.filter(c=>c&&c.valid).map(c=>c.err));A.mean=mean(all);A.worst=all.length?all.reduce((a,b)=>Math.abs(b)>Math.abs(a)?b:a):null;
   /* K แนะนำ: median ของ K ที่ต้องใช้ (K = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ, หน่วย µL/รอบ) แยกตามดัชนี */
   const byIdx=Array.from({length:20},()=>({need:[],used:[],pts:new Set()}));
-  ms.forEach(m=>m.cells.forEach((c,i)=>{if(c&&c.valid&&c.idx!=null&&c.kNeed&&!c.flags.some(f=>f.indexOf('K ที่มิเตอร์ใช้')===0)){const ix=kMapTab?c.idxTab:c.idx;byIdx[ix].need.push(c.kNeed);if(c.kUsed)byIdx[ix].used.push(c.kUsed);byIdx[ix].pts.add(i)}}));
-  const cur=mids.map(id=>S.meters.find(m=>m.id===id)).map(m=>m&&m.k).filter(Boolean),curMed=Array.from({length:20},(_,i)=>med(cur.map(k=>k[i])));
-  A.kPts=S.plan.map((p,i)=>{const cs=mids.map(id=>A.M[id].cells[i]).filter(c=>c&&c.valid&&c.kNeed&&!c.flags.some(f=>f.indexOf('K ที่มิเตอร์ใช้')===0));return{i,n:cs.length,rpm:med(cs.map(c=>c.rpm)),kObs:med(cs.map(c=>c.kObs)),kNeed:med(cs.map(c=>c.kNeed)),idx:med(cs.map(c=>c.idx)),idxTab:med(cs.map(c=>c.idxTab))}});
+  ms.forEach(m=>m.cells.forEach((c,i)=>{if(c&&c.valid&&c.idx!=null&&c.kNeed&&!c.flags.some(f=>f.indexOf('K ที่มิเตอร์ใช้')===0)){const ix=(kMapTab&&c.idxObs!=null)?c.idxObs:c.idxF;byIdx[ix].need.push(c.kNeed);if(c.kUsed)byIdx[ix].used.push(c.kUsed);byIdx[ix].pts.add(i)}}));
+  const cur=mids.map(id=>S.meters.find(m=>m.id===id)).map(m=>m&&m.k).filter(Boolean),KR0=kRef(S.batch.model,S.batch.size),curMed=Array.from({length:20},(_,i)=>med(cur.map(k=>k[i]))||(KR0.k?KR0.k[i]:null));
+  A.kPts=S.plan.map((p,i)=>{const cs=mids.map(id=>A.M[id].cells[i]).filter(c=>c&&c.valid&&c.kNeed&&!c.flags.some(f=>f.indexOf('K ที่มิเตอร์ใช้')===0));return{i,n:cs.length,rpm:med(cs.map(c=>c.rpm)),kObs:med(cs.map(c=>c.kObs)),kNeed:med(cs.map(c=>c.kNeed)),idx:med(cs.map(c=>c.idxF)),idxTab:med(cs.map(c=>c.idxObs).filter(x=>x!=null))}});
   A.kRec=byIdx.map((b,i)=>({i,cur:curMed[i],need:med(b.need),n:b.need.length,prop:b.need.length?Math.round(med(b.need)):null}));
   return A}
 /* เติม K ดัชนีที่ไม่ได้ทดสอบ ด้วยการสอดแทรกเปอร์เซ็นต์การปรับตามลำดับดัชนี */
@@ -519,11 +528,12 @@ function vPlan(A){const b=S.batch,Q=qs(b.q3,b.R),tw=S.plan.reduce((a,p)=>a+p.v,0
 /* ---------- ③ ทดสอบ ---------- */
 /* ---------- ③ ทดสอบ (ใช้งานง่าย: ผังแท่น + จอ LCD + บอกว่าต้องทำอะไรต่อ) ---------- */
 let LAST=null,SELSLOT=null;
+const lcdRev=rev=>`<div class="lcd rv"><span class="gh">888888</span><span class="vv">${rev==null?'&nbsp;':pad6(rev)}</span><i>รอบ</i></div>`;
 const lcd=(vol,cls='')=>{const t=vol==null?'':Math.floor(vol/1e5)+'.'+String(vol%1e5).padStart(5,'0');return`<div class="lcd ${cls}"><span class="gh">8888888.88888</span><span class="vv">${t||'&nbsp;'}</span><i>m³</i></div>`};
 function dial(r,prog){const C=2*Math.PI*118,p=Math.max(0,Math.min(1,prog||0));
   return`<div class="dial"><svg viewBox="0 0 280 280" aria-hidden="true"><circle cx="140" cy="140" r="134" fill="#eef3f6" stroke="#cfdbe3" stroke-width="4"/><circle cx="140" cy="140" r="118" fill="none" stroke="#0a2a43" stroke-width="20"/><circle cx="140" cy="140" r="118" fill="none" stroke="#34d399" stroke-width="13" stroke-linecap="round" stroke-dasharray="${C*.75*p} ${C}" transform="rotate(135 140 140)"/></svg>
   <div class="dc"><b class="dt">SMCV.4</b><small class="mut">WATER METER</small><small class="mut" style="margin-top:4px">TOTAL VOLUME</small>${lcd(r?r.vol:null)}
-  <div class="did"><small>METER ID</small><b class="mono">${r?esc(r.id):'—'}</b></div><small class="mono">${r&&r.time?esc(r.time.replace('.',':')):'&nbsp;'}</small>
+  <div class="did"><small>METER ID</small><b class="mono">${r?esc(r.id):'—'}</b></div><small class="mono">${r&&r.time?esc(r.time.replace('.',':')):'&nbsp;'}${r&&r.rev!=null?' · รอบ '+pad6(r.rev):''}</small>
   <span class="szp">SIZE <b>${r&&r.size?r.size:'–'}</b> mm</span></div></div>`}
 function guideSteps(){const b=S.batch,N=Math.max(b.nm,S.meters.filter(m=>m.id).length),p=S.plan,tw=p.reduce((a,x)=>a+x.v,0),tm=p.reduce((a,x)=>a+x.v/x.f*60,0),f0=p[0];
   return[
@@ -563,10 +573,10 @@ function vRun(A){
     const shown=rd.e?rd.e.vol:rd.s?rd.s.vol:null,j=LAST&&LAST.id===m.id&&Date.now()-LAST.t<6000;
     const lab=c&&c.valid?(c.pass?'<span class="pill ok">PASS</span>':'<span class="pill bad">FAIL</span>'):rd.e?'<span class="pill ok">อ่านสิ้นสุดแล้ว</span>':rd.s?(st.step==='start'?`<span class="pill ok">อ่านเริ่มต้นแล้ว${rd.s.carried?' (ต่อ)':''}</span>`:`<span class="pill warn">รออ่านสิ้นสุด</span>`):'<span class="pill warn">ยังไม่อ่านจุดนี้</span>';
     const pr=c&&c.valid?Math.min(130,c.dVol/c.vref*100):0;
-    return`<div class="sl ${cls} ${j?'just':''}" data-a="slotdet" data-v="${i}"><div class="sh"><span class="no">${i+1}</span>${lab}</div>${lcd(shown)}
+    return`<div class="sl ${cls} ${j?'just':''}" data-a="slotdet" data-v="${i}"><div class="sh"><span class="no">${i+1}</span>${lab}</div>${lcd(shown)}${lcdRev(rd.e?rd.e.rev:rd.s?rd.s.rev:null)}
     <div class="idr"><b class="mono">${esc(m.id)}</b><span class="szp2">${m.size?m.size+' mm':'? mm'}</span></div>
     <div class="er ${c&&c.valid?(c.pass?'p':'f'):'n'}">${c&&c.valid?sg(c.err)+'%':'—'}</div>
-    <div class="pb"><i style="width:${pr}%"></i></div><div class="sm">${c&&c.valid?'ใช้น้ำ '+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L':rd.s&&!rd.e?'รอค่าสิ้นสุด · อ้างอิง '+p.v+' L':'อ้างอิง '+p.v+' L'}${(c?c.flags:[]).length?' · ⚠ '+esc(c.flags[0]):''}</div></div>`};
+    <div class="pb"><i style="width:${pr}%"></i></div><div class="sm">${c&&c.valid?'ใช้น้ำ '+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L'+(c.dRev!=null?' · Δรอบ '+fx(c.dRev)+(c.wrap?' ↻วนรอบ':'')+' · K'+(c.idx+1):''):rd.s&&!rd.e?'รอค่าสิ้นสุด · อ้างอิง '+p.v+' L':'อ้างอิง '+p.v+' L'}${(c?c.flags:[]).length?' · ⚠ '+esc(c.flags[0]):''}</div></div>`};
   const rows=Math.ceil(N/2),lr=LAST&&LAST.r,lc=lr&&LAST.pi===pi?calc(pi,lr.id):null;
   const doneP=A.P.filter(x=>x.state==='done'||x.state==='fail').length;
   const cfg=`<details class="card cfgd" ${anyData?'':'open'}><summary>🔧 <b>ตั้งค่าการทดสอบ</b> · ${MODEL(S.batch.model)} · ${S.batch.size} mm · R${S.batch.R} · ${N} ตัวบนแท่น <small>(แตะเพื่อแก้ไข)</small></summary><div class="cfgr">${sel('ชนิดมิเตอร์','batch.model',[['SJ','Single Jet'],['MJ','Multijet']])}${sel('ขนาด (mm)','batch.size',SIZES.map(s=>[s,s+' mm']))}${sel('คลาส R','batch.R',RCL.map(r=>[r,'R'+r]))}${fld('จำนวนมิเตอร์บนแท่น','batch.nm','number','min="1" max="40"')}</div>${q3Info()}<p class="hint" style="margin-top:8px">เปลี่ยนขนาด / คลาส R แล้วระบบปรับอัตราการไหลและแผนทดสอบให้อัตโนมัติ · ข้อมูลอื่น (ผู้ทดสอบ เกณฑ์ ความดัน อุณหภูมิ) อยู่ที่แท็บ ①</p></details>`;
@@ -594,10 +604,10 @@ function matrix(A,cls=''){const hd=S.plan.map(p=>`<th>${flowT(p.f)}<br><small st
   const body=A.mids.map(id=>{const m=A.M[id];return`<tr><td class="l mono"><b>${esc(id)}</b></td>${m.cells.map((c,i)=>`<td class="${c&&c.valid?heat(c.err,S.plan[i].lim):'hn'}">${c&&c.valid?sg(c.err):'–'}</td>`).join('')}<td>${m.tested?m.pass+'/'+S.plan.length:'–'}</td><td><span class="pill ${VD[m.verdict][0]}">${m.verdict==='pass'?'ผ่านครบ':m.verdict==='fail'?'ตก '+m.fail+' จุด':'รอ'}</span></td></tr>`}).join('');
   const foot=[['เฉลี่ย %',p=>sg(p.mean)],['ต่ำสุด … สูงสุด',p=>p.n?sg(p.min,1)+' … '+sg(p.max,1):'–'],['ผ่าน / ทดสอบ',p=>p.n?p.pass+'/'+p.n:'–']].map(f=>`<tr style="background:var(--card2);font-weight:700"><td class="l">${f[0]}</td>${A.P.map(p=>`<td>${f[1](p)}</td>`).join('')}<td colspan="2"></td></tr>`).join('');
   return`<div class="tw ${cls}"><table><thead><tr><th class="l">มิเตอร์</th>${hd}<th>ผ่าน</th><th>สรุป</th></tr></thead><tbody>${body||'<tr><td colspan="99" class="hint">ยังไม่มีผลทดสอบ</td></tr>'}${foot}</tbody></table></div>`}
-function kGrid(A){const fill=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),bands=RPM_MAP.map((m,i)=>i===0?'≤'+m:i===19?'>'+RPM_MAP[18]:RPM_MAP[i-1]+'–'+m);
-  return`<div class="kk">${A.kRec.map((r,i)=>{const k=fill[i],tested=r.prop!=null,dl=k&&r.cur?(k/r.cur-1)*100:null;return`<div class="${tested?'an':''}"><small>K${i+1} · ${bands[i]} rpm</small><b>${k?fx(k):(r.cur?fx(r.cur):'–')}</b><em>${r.cur?fx(r.cur)+' → '+(dl!=null?sg(dl,1)+'%':'คงเดิม'):'ไม่มีค่าเดิม'}${tested?' · '+r.n+' ค่า':''}</em></div>`}).join('')}</div>`}
-function kPtsTable(A){const rows=A.kPts.filter(r=>r.n).map(r=>`<tr><td><b>${esc(S.plan[r.i].l)}</b> · ${flowT(S.plan[r.i].f)} L/h</td><td>${fx(r.rpm,1)}</td><td>${fx(r.kObs)}</td><td><b>${fx(r.kNeed)}</b></td><td class="${heat((r.kNeed/r.kObs-1)*100,3)}">${sg((r.kNeed/r.kObs-1)*100,2)}%</td><td>K${Math.round(r.idx)+1}</td><td>K${Math.round(r.idxTab)+1}</td></tr>`).join('');
-  return rows?`<div class="tw"><table><thead><tr><th class="l">จุดทดสอบ</th><th>RPM จริง</th><th>K ที่มิเตอร์ใช้</th><th>K ที่ต้องใช้</th><th>ปรับ</th><th>ดัชนีที่ใกล้สุด</th><th>ดัชนีตามตาราง RPM</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">K ที่มิเตอร์ใช้ = ปริมาตรที่มิเตอร์แสดง × 10⁶ ÷ จำนวนรอบ · K ที่ต้องใช้ = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ (ค่ากลางของทั้ง Batch) · ถ้าสองดัชนีไม่ตรงกัน ให้เทียบกับ Studio K ของ Web App</p>`:'<p class="hint">ยังไม่มีข้อมูลจำนวนรอบ (Addr 184–186)</p>'}
+function kGrid(A){const fill=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),KR=kRef(S.batch.model,S.batch.size),bands=RPM_MAP.map((m,i)=>'≈'+fx(KR.q[i],KR.q[i]<100?1:0)+' L/h'+(KR.est[i]?'*':''));
+  return`<div class="kk">${A.kRec.map((r,i)=>{const k=fill[i],tested=r.prop!=null,dl=k&&r.cur?(k/r.cur-1)*100:null;return`<div class="${tested?'an':''}"><small title="ช่วง RPM ${i===0?'≤'+RPM_MAP[0]:i===19?'>'+RPM_MAP[18]:RPM_MAP[i-1]+'–'+RPM_MAP[i]}">K${i+1} · ${bands[i]}</small><b>${k?fx(k):(r.cur?fx(r.cur):'–')}</b><em>${r.cur?fx(r.cur)+' → '+(dl!=null?sg(dl,1)+'%':'คงเดิม'):'ไม่มีค่าเดิม'}${tested?' · '+r.n+' ค่า':''}</em></div>`}).join('')}</div><p class="hint" style="margin-top:8px">อัตราไหลของแต่ละดัชนี (L/h) ของ ${MODEL(S.batch.model)} ${S.batch.size} mm · ${esc(KR.src)}${KR.est.some(x=>x)?' · * = ประมาณการ':''}</p>`}
+function kPtsTable(A){const rows=A.kPts.filter(r=>r.n).map(r=>`<tr><td><b>${esc(S.plan[r.i].l)}</b> · ${flowT(S.plan[r.i].f)} L/h</td><td>${fx(r.rpm,1)}</td><td>${fx(r.kObs)}</td><td><b>${fx(r.kNeed)}</b></td><td class="${heat((r.kNeed/r.kObs-1)*100,3)}">${sg((r.kNeed/r.kObs-1)*100,2)}%</td><td><b>K${Math.round(r.idx)+1}</b></td><td>${r.idxTab==null?'–':'K'+(Math.round(r.idxTab)+1)}</td></tr>`).join('');
+  return rows?`<div class="tw"><table><thead><tr><th class="l">จุดทดสอบ</th><th>รอบ/นาที</th><th>K ที่มิเตอร์ใช้</th><th>K ที่ต้องใช้</th><th>ปรับ</th><th>ดัชนี K ตามอัตราไหล</th><th>ดัชนี K ที่ใกล้สุด</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">K ที่มิเตอร์ใช้ = ปริมาตรที่มิเตอร์แสดง × 10⁶ ÷ จำนวนรอบ · K ที่ต้องใช้ = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ (ค่ากลางของทั้ง Batch) · ถ้าสองดัชนีไม่ตรงกัน ให้เทียบกับ Studio K ของ Web App</p>`:'<p class="hint">ยังไม่มีข้อมูลจำนวนรอบ (Addr 184–186)</p>'}
 function vRes(A){const v=VD[A.verdict],pts=S.plan;
   const warn=planWarn();
   const ser=A.mids.map(id=>({id,pass:A.M[id].verdict!=='fail',pts:A.M[id].cells.map((c,i)=>c&&c.valid?{e:c.err,ok:c.pass,f:pts[i].f}:null)}));
@@ -609,7 +619,7 @@ function vRes(A){const v=VD[A.verdict],pts=S.plan;
   <div class="grid g2"><div class="card"><h2><em>📈</em>% error เทียบอัตราการไหล</h2><p class="sub">เส้นฟ้า = ผ่าน · เส้นแดง = มีจุดเกินเกณฑ์</p>${pts.length?chartSvg({series:ser}):''}</div>
   <div class="card"><h2><em>🔩</em>ค่า K รายจุดทดสอบ</h2><p class="sub">ค่า K ที่ต้องใช้ ณ อัตราไหลที่ทดสอบ — ใช้เป็นข้อมูลปรับ K1–K20</p>${kPtsTable(A)}</div></div>
   <div class="card"><h2><em>🔧</em>ค่าคงที่ K1–K20 ที่แนะนำ</h2><p class="sub">K = ปริมาตรต่อ 1 รอบใบพัด (µL/รอบ) · K ใหม่ = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ (ค่ากลางของมิเตอร์ทั้ง Batch) · ช่องฟ้า = ดัชนีที่ทดสอบจริง</p>
-   <label class="hint"><input type="checkbox" id="fillK" ${fillK?'checked':''}> สอดแทรกดัชนีที่ไม่ได้ทดสอบ</label> &nbsp; <label class="hint"><input type="checkbox" id="kMapTab" ${kMapTab?'checked':''}> จับคู่ดัชนีตามตาราง RPM (ไม่เลือก = ตาม K ที่มิเตอร์ใช้จริง)</label>${A.kRec.some(r=>r.prop!=null)?kGrid(A):'<p class="hint">ยังไม่มีข้อมูลจำนวนรอบ (Addr 184–186) — ใช้โหมด “แท่นเทส” หรืออ่านส่วนหัว 0–211 ในแอป หรือไฟล์ .bin เต็ม</p>'}
+   <label class="hint"><input type="checkbox" id="fillK" ${fillK?'checked':''}> สอดแทรกดัชนีที่ไม่ได้ทดสอบ</label> &nbsp; <label class="hint"><input type="checkbox" id="kMapTab" ${kMapTab?'checked':''}> จับคู่ดัชนีจากค่า K ที่ใกล้ที่สุด (ไม่เลือก = จัดตามอัตราไหลของรุ่น/ขนาดนี้)</label>${A.kRec.some(r=>r.prop!=null)?kGrid(A):'<p class="hint">ยังไม่มีข้อมูลจำนวนรอบ (Addr 184–186) — ใช้โหมด “แท่นเทส” หรืออ่านส่วนหัว 0–211 ในแอป หรือไฟล์ .bin เต็ม</p>'}
    <div style="margin-top:10px"><button class="btn sm" data-a="kcopy">📋 คัดลอกค่า K (BCD 8 หลัก)</button></div></div>`}
 
 /* ---------- ⑤ รายงาน ---------- */
@@ -664,7 +674,7 @@ function monHtml(A){
   const tiles=Array.from({length:N},(_,i)=>{const m=S.meters[i]||{id:''};
     if(!m.id)return`<div class="t empty"><span class="n">${i+1}</span>${lcd(null)}<div class="r2"><span class="ti">รอแตะมิเตอร์</span></div></div>`;
     const rd=rdOf(m),c=np?calc(pi,m.id):null,ok=c&&c.valid,shown=rd.e?rd.e.vol:rd.s?rd.s.vol:null,need=(st.step==='start'&&!rd.s)||(st.step==='end'&&!rd.e);
-    return`<div class="t ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''} ${LAST&&LAST.id===m.id&&fresh?'flash':''}"><span class="n">${i+1}</span>${lcd(shown)}<div class="r2"><span class="ti mono">${esc(m.id)}<br>${m.size||'?'} mm</span><span class="te mono">${ok?sg(c.err)+'%':rd.e?'อ่านแล้ว':rd.s?(st.step==='start'?'พร้อม':'รอสิ้นสุด'):'รออ่าน'}</span></div></div>`}).join('');
+    return`<div class="t ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''} ${LAST&&LAST.id===m.id&&fresh?'flash':''}"><span class="n">${i+1}</span>${lcd(shown)}<div class="r2"><span class="ti mono">${esc(m.id)} · ${m.size||'?'} mm<br>รอบ ${pad6((rd.e||rd.s||{}).rev)}</span><span class="te mono">${ok?sg(c.err)+'%':rd.e?'อ่านแล้ว':rd.s?(st.step==='start'?'พร้อม':'รอสิ้นสุด'):'รออ่าน'}</span></div></div>`}).join('');
   const chips=S.plan.map((q,i)=>`<span class="pc ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}">${esc(q.l)} <small>${flowT(q.f)}</small></span>`).join('');
   const hd=`<div class="mhd"><div><div style="opacity:.75;font-size:2.1vh">${np?'จุดที่ '+(pi+1)+' / '+np:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div><div class="tim mono" id="mtm"></div></div>
     <div class="pcs">${chips}</div>`;
@@ -708,8 +718,8 @@ async function wbReport(){const X=await needXL(),A=agg(),b=S.batch,wb=X.utils.bo
   const mx=[['มิเตอร์',...S.plan.map(p=>flowT(p.f)+' L/h ('+p.l+')'),'ผ่าน','สรุป']];mx.push(['เกณฑ์ ±%',...S.plan.map(p=>p.lim),'','']);
   A.mids.forEach(id=>{const m=A.M[id];mx.push([id,...m.cells.map(c=>c&&c.valid?+c.err.toFixed(3):''),m.pass+'/'+S.plan.length,m.verdict==='pass'?'PASS':m.verdict==='fail'?'FAIL':'รอ'])});
   mx.push(['เฉลี่ย %',...A.P.map(p=>p.mean==null?'':+p.mean.toFixed(3))]);const w2=X.utils.aoa_to_sheet(mx);w2['!cols']=[{wch:14},...S.plan.map(()=>({wch:14})),{wch:9},{wch:9}];X.utils.book_append_sheet(wb,w2,'ผล_%error');
-  const kr=[['ดัชนี','ช่วง RPM','K ปัจจุบัน (µL/รอบ)','K ที่ต้องใช้ (ค่ากลาง)','จำนวนค่า','K แนะนำ','K แนะนำ (สอดแทรก)','BCD 8 หลักสำหรับเขียนกลับ']],fill=kFill(A.kRec);
-  A.kRec.forEach((r,i)=>kr.push(['K'+(i+1),i===0?'≤'+RPM_MAP[0]:i===19?'>'+RPM_MAP[18]:RPM_MAP[i-1]+'–'+RPM_MAP[i],r.cur||'',r.need==null?'':+r.need.toFixed(1),r.n,r.prop||'',fill[i]||'',k8(fill[i])]));
+  const KRx=kRef(S.batch.model,S.batch.size),kr=[['ดัชนี','ช่วง RPM','อัตราไหลที่ใช้ดัชนี (L/h)','K ปัจจุบัน (µL/รอบ)','K ที่ต้องใช้ (ค่ากลาง)','จำนวนค่า','K แนะนำ','K แนะนำ (สอดแทรก)','BCD 8 หลักสำหรับเขียนกลับ']],fill=kFill(A.kRec);
+  A.kRec.forEach((r,i)=>kr.push(['K'+(i+1),i===0?'≤'+RPM_MAP[0]:i===19?'>'+RPM_MAP[18]:RPM_MAP[i-1]+'–'+RPM_MAP[i],+KRx.q[i].toFixed(1)+(KRx.est[i]?'*':''),r.cur||'',r.need==null?'':+r.need.toFixed(1),r.n,r.prop||'',fill[i]||'',k8(fill[i])]));
   X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(kr),'K1-K20');
   S.plan.forEach((p,i)=>{if(A.P[i].n)X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(batchAoa(i)),('F'+flowT(p.f)).replace(/[^\w.]/g,'_').slice(0,28))});
   return X.writeFile(wb,'TestBench_'+b.id+'.xlsx')}
@@ -744,7 +754,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='howto')modal('<h3>📖 วิธีใช้ Test Bench</h3><p class="hint" style="margin-bottom:6px">ตัวอย่างตามการตั้งค่าปัจจุบัน: '+esc(MODEL(S.batch.model))+' · '+S.batch.size+' mm · R'+S.batch.R+' · '+Math.max(S.batch.nm,S.meters.length)+' ตัว</p>'+guideHtml()+'<button class="btn p" data-a="mclose" style="margin-top:12px">เข้าใจแล้ว</button>');
   else if(a==='selslot'){SELSLOT=SELSLOT===+v?null:+v;render()}
   else if(a==='slotdet'){const m=S.meters[+v];if(!m||!m.id)return;const pi=S.cur,rd=((S.rd[pi]||{})[m.id])||{},c=calc(pi,m.id),L=x=>x?fx(x.vol/1e5,5)+' m³'+(x.rev!=null?' · '+fx(x.rev)+' รอบ':''):'—';
-    modal('<h3>ตำแหน่ง #'+(+v+1)+' · <span class="mono">'+esc(m.id)+'</span></h3><div class="log" style="max-height:none"><div>ขนาด: <b>'+(m.size?m.size+' mm':'ไม่ทราบ')+'</b></div><div>จุด: <b>'+esc(S.plan[pi].l)+'</b> · '+flowT(S.plan[pi].f)+' L/h · '+S.plan[pi].v+' L</div><div>เริ่มต้น'+(rd.s&&rd.s.carried?' (ต่อจากจุดก่อน)':'')+': <b>'+L(rd.s)+'</b></div><div>สิ้นสุด: <b>'+L(rd.e)+'</b></div>'+(c&&c.valid?'<div>ปริมาตรมิเตอร์ / อ้างอิง: <b>'+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L</b></div><div>% Error: <b>'+sg(c.err)+'%</b> (เกณฑ์ ±'+c.lim+'%)</div>'+(c.dRev!=null?'<div>รอบ: <b>'+fx(c.dRev)+'</b> · RPM '+fx(c.rpm,1)+' · K'+(c.idx+1)+'</div>':'')+(c.flags.length?'<div>⚠ '+c.flags.map(esc).join(' · ')+'</div>':''):'<div class="hint">ยังคำนวณไม่ได้ — ต้องมีค่าเริ่มต้นและสิ้นสุด</div>')+'</div><button class="btn" data-a="mclose" style="margin-top:12px">ปิด</button>')}
+    modal('<h3>ตำแหน่ง #'+(+v+1)+' · <span class="mono">'+esc(m.id)+'</span></h3><div class="log" style="max-height:none"><div>ขนาด: <b>'+(m.size?m.size+' mm':'ไม่ทราบ')+'</b></div><div>จุด: <b>'+esc(S.plan[pi].l)+'</b> · '+flowT(S.plan[pi].f)+' L/h · '+S.plan[pi].v+' L</div><div>เริ่มต้น'+(rd.s&&rd.s.carried?' (ต่อจากจุดก่อน)':'')+': <b>'+L(rd.s)+'</b></div><div>สิ้นสุด: <b>'+L(rd.e)+'</b></div>'+(c&&c.valid?'<div>ปริมาตรมิเตอร์ / อ้างอิง: <b>'+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L</b></div><div>% Error: <b>'+sg(c.err)+'%</b> (เกณฑ์ ±'+c.lim+'%)</div>'+(c.dRev!=null?'<div>จำนวนรอบ: <b class="mono">'+pad6(rd.s&&rd.s.rev)+' → '+pad6(rd.e&&rd.e.rev)+'</b> · Δ = <b>'+fx(c.dRev)+'</b>'+(c.wrap?' (วนรอบ 999999→000000 แล้ว คิดต่อให้ถูกต้อง)':'')+' · '+fx(c.rpm,1)+' รอบ/นาที</div><div>ดัชนี K ตามอัตราไหล: <b>K'+(c.idx+1)+'</b>'+(c.idxObs!=null?' · K ที่ใกล้สุด: K'+(c.idxObs+1):'')+' · K ที่ต้องใช้ '+fx(c.kNeed)+' µL/รอบ</div>':'')+(c.flags.length?'<div>⚠ '+c.flags.map(esc).join(' · ')+'</div>':''):'<div class="hint">ยังคำนวณไม่ได้ — ต้องมีค่าเริ่มต้นและสิ้นสุด</div>')+'</div><button class="btn" data-a="mclose" style="margin-top:12px">ปิด</button>')}
   else if(a==='relay'){if(RL.role==='off'&&rlBridge())RL.role='send';modal(relayHtml())}
   else if(a==='rlnew'){const c=$('#rlCode');if(c)c.value=rlGen().toUpperCase()}
   else if(a==='rlcopy'){const c=($('#rlCode')||{}).value||RL.code;(navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toast('คัดลอกรหัสแล้ว'),()=>toast('รหัส: '+c,6000))}
