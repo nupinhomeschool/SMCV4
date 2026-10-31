@@ -142,6 +142,25 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 .gd li::before{content:counter(g);grid-row:span 2;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#0a2a43,#0b7ea4);color:#fff;display:grid;place-items:center;font-weight:700}
 .gd li b{font-size:1rem}.gd li span{color:#35566b;font-size:.92rem;line-height:1.5}.card.guide{margin-bottom:16px;border-left:6px solid var(--acc2)}
 .side .kpi b{font-size:1.35rem}.side .kpi{padding:8px 8px}
+
+#mon .mmain{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr);gap:2vw;margin-top:1.6vh}
+#mon .mleft{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4vh;min-height:0}
+#mon .dialw{display:flex;justify-content:center}#mon .dial{width:290px;margin:0}
+#mon .mst{text-align:center}#mon .ml{font-size:2.8vh}#mon .ml b{font-size:3.6vh}#mon .mbig{font-size:11vh;font-weight:700;line-height:1}#mon .mbig.ok,#mon .mv.ok{color:#6ee7b7}#mon .mbig.bad,#mon .mv.bad{color:#fb7185}#mon .mv{font-size:2.4vh;opacity:.92}
+#mon .mright{display:flex;flex-direction:column;min-height:0;gap:1.2vh}
+#mon .mhd{display:flex;justify-content:space-between;align-items:flex-end;gap:2vw}#mon .big{font-size:7vh}#mon .tim{font-size:7vh}
+#mon .pcs{display:flex;gap:.8vw;flex-wrap:wrap}#mon .pc{border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:.4vh 1vw;font-size:2vh;background:rgba(255,255,255,.08)}#mon .pc small{opacity:.75}#mon .pc.cur{background:#fff;color:#0a2a43;font-weight:700}#mon .pc.done{border-color:#34d399}#mon .pc.fail{border-color:#fb7185}
+#mon .mgrid{align-content:stretch;min-height:0;gap:1.6vh 1vw;flex:1}
+#mon .t{position:relative;display:flex;flex-direction:column;justify-content:center;gap:.6vh;padding:1.2vh 1vw;min-height:0}
+#mon .t .n{position:absolute;left:-.5vw;top:-1vh;background:#0a2a43;border:2px solid rgba(255,255,255,.55);width:3.6vh;height:3.6vh;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:1.9vh;z-index:1}
+#mon .t .lcd{font-size:min(2.6vh,1.5vw)}#mon .t .ti{font-size:1.8vh;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mon .t .te{font-size:4.2vh;font-weight:700;line-height:1}
+#mon .t.need{background:rgba(251,191,36,.18);border-color:#fbbf24}#mon .t.got{border-color:#93c5fd;background:rgba(147,197,253,.12)}
+#mon .flash{animation:jp2 1.2s ease-out}@keyframes jp2{0%{box-shadow:0 0 0 0 rgba(52,211,153,.9)}100%{box-shadow:0 0 0 2.4vh rgba(52,211,153,0)}}
+#mon .mft{margin-top:1.2vh}
+@media(max-width:900px){#mon{overflow:auto}#mon .mmain{grid-template-columns:1fr}}
+.card.cfgd{padding:12px 16px;margin-bottom:14px}.cfgd summary{cursor:pointer;font-size:1rem}.cfgd summary small{color:var(--mut)}.cfgr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}@media(max-width:700px){.cfgr{grid-template-columns:1fr 1fr}}
+#rlchip{cursor:pointer}#mon .dialw .flash{border-radius:50%}
+#mon .dial{color:#0a2a43}#mon .r2{display:flex;justify-content:space-between;align-items:center;gap:.8vw}#mon .t .ti{font-size:1.7vh;line-height:1.25}#mon .t .te{font-size:3.6vh;white-space:nowrap}#mon .t .lcd{font-size:min(2.3vh,1.3vw)}
 </style>
 </head>
 <body>
@@ -149,7 +168,7 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
   <div class="row">
     <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7dd3fc"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><circle cx="32" cy="32" r="29" fill="rgba(255,255,255,.12)" stroke="url(#lg)" stroke-width="3"/><path d="M32 12c8 10 13 16 13 23a13 13 0 0 1-26 0c0-7 5-13 13-23z" fill="url(#lg)"/><path d="M24 36l5 5 11-12" fill="none" stroke="#0a2a43" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <h1>SMCV4 Test Bench<small>แท่นทดสอบมิเตอร์น้ำ · อ่านค่าผ่าน NFC · คำนวณ % ความคลาดเคลื่อน</small></h1>
-    <span class="chip" id="hdBatch">—</span><span class="chip" id="hdMeter">—</span>
+    <span class="chip" id="hdBatch">—</span><span class="chip" id="hdMeter">—</span><span class="chip" id="rlchip" data-a="relay" title="เชื่อมมือถือ → จอคอมพิวเตอร์"></span>
     <span class="sp"></span>
     <button class="btn g" data-a="howto">📖 วิธีใช้</button>
     <button class="btn g" data-a="monitor">📺 Monitor</button>
@@ -204,7 +223,50 @@ function loadState(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if
   try{const t=JSON.parse(localStorage.getItem(TPLK)||'null');if(t)S.tpl=Object.assign(TPL_DEF(),t)}catch(e){}
   while(S.meters.length<S.batch.nm)S.meters.push({id:'',size:null,k:null})}
 let BC=null;try{BC=('BroadcastChannel' in window)?new BroadcastChannel('smcv4-bench'):null}catch(e){}
-function save(){try{localStorage.setItem(LS,JSON.stringify(S));localStorage.setItem(TPLK,JSON.stringify(S.tpl))}catch(e){}try{BC&&!IS_MON&&BC.postMessage({t:'state',S})}catch(e){}}
+/* ---------- Relay: มือถือ (แอป SMCV4 Reader) → จอคอมพิวเตอร์ ผ่านบริการ ntfy (SSE) ---------- */
+const RLK='smcv4_bench_relay';
+const RL={code:'',role:'',beep:true,server:'https://ntfy.sh',st:'off',last:0,n:0,sent:0,err:'',es:null,seen:new Set()};
+const rlBridge=()=>{try{return !!(window.NfcBridge||(window.parent&&window.parent.NfcBridge))}catch(e){return false}};
+const rlGen=()=>{const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';const a=new Uint8Array(8);(window.crypto||{getRandomValues:x=>x.forEach((_,i)=>x[i]=Math.random()*256)}).getRandomValues(a);a.forEach(x=>s+=c[x%c.length]);return s};
+function rlSave(){try{localStorage.setItem(RLK,JSON.stringify({code:RL.code,role:RL.role,beep:RL.beep,server:RL.server}))}catch(e){}}
+function rlLoad(){try{const j=JSON.parse(localStorage.getItem(RLK)||'null');if(j)Object.assign(RL,{code:j.code||'',role:j.role||'',beep:j.beep!==false,server:j.server||RL.server})}catch(e){}
+  try{const q=new URLSearchParams(location.search),pc=q.get('pair');if(pc){RL.code=pc.toLowerCase().replace(/[^a-z0-9]/g,'');RL.role=q.get('role')||(rlBridge()?'send':'recv')}}catch(e){}
+  if(!RL.role)RL.role=rlBridge()?'off':'recv';
+  if(RL.role==='recv'&&!RL.code)RL.code=rlGen();
+  rlSave()}
+const rlTopic=()=>RL.server.replace(/\/+$/,'')+'/smcv4-'+RL.code;
+let AC=null;
+function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
+  const seq=kind==='bad'?[[330,.0,.18],[220,.2,.3]]:kind==='warn'?[[520,0,.2],[520,.25,.2]]:[[880,0,.1],[1320,.12,.14]];
+  seq.forEach(([f,t,d])=>{const o=AC.createOscillator(),g=AC.createGain(),t0=AC.currentTime+t;o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.25,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.start(t0);o.stop(t0+d+.02)})}catch(e){}}
+const SENT=[];
+function rlPost(m){return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
+function rlSend(r){
+  if(!r||!r.id||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
+  const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,issues:r.issues||[],meta:r.meta||null,ts:Date.now()};
+  const e={r,t:Date.now(),ok:null};SENT.unshift(e);SENT.length=Math.min(SENT.length,30);RL.sent++;beep('ok');
+  rlPost(m).then(()=>{e.ok=true;render()},er=>{e.ok=false;RL.err=er.message||'ส่งไม่สำเร็จ';render()});
+  render();return true}
+function rlRecv(m){
+  if(!m||m.v!==1)return;
+  if(m.t==='ping'){RL.last=Date.now();toast('✔ ได้รับสัญญาณทดสอบจากมือถือ — การเชื่อมต่อใช้งานได้',3200);beep('ok');rlChip();return}
+  if(m.t!=='read'||!m.id||m.seq&&RL.seen.has(m.seq))return;if(m.seq){RL.seen.add(m.seq);if(RL.seen.size>200)RL.seen.delete(RL.seen.values().next().value)}
+  RL.last=Date.now();RL.n++;
+  applyRead(Object.assign({},m,{k8:m.k?m.k.map(k8):null,ts:Date.now(),issues:m.issues||[]}),'phone')}
+function rlConnect(){
+  try{RL.es&&RL.es.close()}catch(e){}RL.es=null;RL.st='off';
+  if(IS_MON||RL.role!=='recv'||!RL.code||typeof EventSource==='undefined'){rlChip();return}
+  try{const es=new EventSource(rlTopic()+'/sse');RL.es=es;RL.st='conn';
+    es.onopen=()=>{RL.st='on';rlChip()};es.onerror=()=>{RL.st='retry';rlChip()};
+    es.onmessage=e=>{try{const j=JSON.parse(e.data);if(j.event&&j.event!=='message')return;rlRecv(JSON.parse(j.message))}catch(x){}}}
+  catch(e){RL.st='err'}
+  rlChip()}
+function rlText(){if(IS_MON)return '🖥 จอแสดงผลแยก'+(RL.code?' · '+RL.code.toUpperCase():'');const ago=RL.last?Math.max(0,Math.round((Date.now()-RL.last)/1000)):null;
+  if(RL.role==='off'||!RL.code)return RL.role==='off'?'📡 ใช้เครื่องเดียว':'📡 ยังไม่จับคู่';
+  if(RL.role==='send')return '📱 ส่งขึ้นจอ · รหัส '+RL.code.toUpperCase()+' · ส่งแล้ว '+RL.sent;
+  return (RL.st==='on'?'🟢':RL.st==='conn'?'🟡':'🔴')+' รับจากมือถือ · '+RL.code.toUpperCase()+(RL.st==='on'?' · เชื่อมต่อแล้ว':RL.st==='conn'?' · กำลังเชื่อมต่อ…':' · ขาดการเชื่อมต่อ')+(ago!=null?' · ล่าสุด '+(ago<60?ago+' วิ':Math.floor(ago/60)+' นาที')+'ที่แล้ว':'')}
+function rlChip(){const t=rlText();['#rlchip','#mrl'].forEach(s=>{const el=$(s);if(el)el.textContent=t})}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));localStorage.setItem(TPLK,JSON.stringify(S.tpl))}catch(e){}try{BC&&!IS_MON&&BC.postMessage({t:'state',S,LAST})}catch(e){}}
 
 /* ---------- แผนทดสอบ ---------- */
 function mkPoint(f,l,Q){f=rs3(f);return{l,f,v:defVol(f),lim:f<Q.q2*0.995?S.batch.limLow:S.batch.limHigh}}
@@ -297,8 +359,9 @@ function enterPoint(j){S.cur=j;const st=pointState(j);
   save()}
 function applyRead(r,src){
   if(!r||!r.id){toast('ไม่พบ Meter ID ในข้อมูลที่อ่าน');return false}
-  if(r.bad||r.vol==null){toast('ข้อมูลล่าสุดไม่สมบูรณ์ — แตะอ่านใหม่',3600);S.log.unshift({t:Date.now(),id:r.id,msg:'อ่านไม่สมบูรณ์',bad:1});save();render();return false}
+  if(r.bad||r.vol==null){toast('ข้อมูลล่าสุดไม่สมบูรณ์ — แตะอ่านใหม่',3600);beep('bad');S.log.unshift({t:Date.now(),id:r.id,msg:'อ่านไม่สมบูรณ์',bad:1});save();render();return false}
   if(!S.plan.length){toast('ยังไม่มีแผนทดสอบ — ไปที่แท็บ ② แผนทดสอบ');return false}
+  if(r.size&&S.batch.size&&r.size!==S.batch.size){r.issues=r.issues||[];r.issues.unshift('ขนาดมิเตอร์ '+r.size+' mm ไม่ตรงกับที่ตั้งไว้ '+S.batch.size+' mm');beep('warn')}
   const m=slotFor(r.id,SELSLOT);SELSLOT=null;m.id=r.id;if(r.size)m.size=r.size;if(r.k)m.k=r.k;
   const pi=S.cur,st=pointState(pi),rd=((S.rd[pi]=S.rd[pi]||{})[r.id]=(S.rd[pi]||{})[r.id]||{});let role;
   if(st.step==='done'){toast('จุดนี้ยืนยันแล้ว — กด “แก้ไข/อ่านใหม่” ก่อน');return false}
@@ -309,11 +372,11 @@ function applyRead(r,src){
     rd.e=r;role='สิ้นสุด'}
   const c=calc(pi,r.id);
   S.log.unshift({t:Date.now(),id:r.id,msg:role+' · '+fx(r.vol/1e5,5)+' m³'+(r.rev!=null?' · '+fx(r.rev)+' รอบ':'')+(c&&c.valid?' · '+sg(c.err)+'%':''),bad:c&&c.valid&&!c.pass?1:0,src});S.log=S.log.slice(0,60);
-  LAST={r,id:r.id,role,slot:S.meters.indexOf(m),pi,t:Date.now()};
+  LAST={r,id:r.id,role,slot:S.meters.indexOf(m),pi,t:Date.now()};if(!(r.issues&&r.issues[0]&&/ขนาดมิเตอร์/.test(r.issues[0])))beep(c&&c.valid&&!c.pass?'bad':'ok');
   toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³',2400);
   r.issues&&r.issues.length&&toast(r.id+': '+r.issues[0],3600);
   save();render();return true}
-function ingest(u,part,meta,src){return applyRead(parseNfc(u,part,meta),src)}
+function ingest(u,part,meta,src){const r=parseNfc(u,part,meta);if(RL.role==='send'&&RL.code&&src==='app')return rlSend(r);return applyRead(r,src)}
 function hexToBytes(h){h=h.replace(/[^0-9a-fA-F]/g,'');const u=new Uint8Array(h.length>>1);for(let i=0;i<u.length;i++)u[i]=parseInt(h.substr(i*2,2),16);return u}
 /* รองรับ feed.js ของแอป SMCV4 Reader (เรียก load(buffer,name) พร้อม window.NFC_PART/NFC_META) */
 function benchLoad(buffer,name){const part=(window.NFC_PART&&window.NFC_PART.length)?window.NFC_PART:null,meta=window.NFC_META||null;window.NFC_PART=null;window.NFC_META=null;ingest(new Uint8Array(buffer),part,meta,'app')}
@@ -373,7 +436,7 @@ function render(){
   const A=agg();
   $('#tabs').innerHTML=TABS.map((t,i)=>`<button class="tab ${TAB===t[0]?'on':''} ${t[0]==='run'&&A.nm&&A.pend?'warn':''}" data-a="tab" data-v="${t[0]}"><i>${i+1}</i>${t[1]}<span class="dot"></span></button>`).join('');
   const b=S.batch;$('#hdBatch').textContent=b.id;$('#hdMeter').textContent=MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · '+A.nm+'/'+S.meters.length+' มิเตอร์';
-  $('#view').innerHTML=({setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep}[TAB])(A);
+  $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep}[TAB])(A);rlChip();
   if(MON)renderMon(A)}
 
 /* ---------- ① ตั้งค่า ---------- */
@@ -487,7 +550,8 @@ function vRun(A){
     <div class="pb"><i style="width:${pr}%"></i></div><div class="sm">${c&&c.valid?'ใช้น้ำ '+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L':rd.s&&!rd.e?'รอค่าสิ้นสุด · อ้างอิง '+p.v+' L':'อ้างอิง '+p.v+' L'}${(c?c.flags:[]).length?' · ⚠ '+esc(c.flags[0]):''}</div></div>`};
   const rows=Math.ceil(N/2),lr=LAST&&LAST.r,lc=lr&&LAST.pi===pi?calc(pi,lr.id):null;
   const doneP=A.P.filter(x=>x.state==='done'||x.state==='fail').length;
-  return`${anyData?'':`<div class="card guide"><h2><em>📖</em>เริ่มใช้งานใน 6 ขั้น</h2>${guideHtml()}</div>`}
+  const cfg=`<details class="card cfgd" ${anyData?'':'open'}><summary>🔧 <b>ตั้งค่าการทดสอบ</b> · ${MODEL(S.batch.model)} · ${S.batch.size} mm · R${S.batch.R} · ${N} ตัวบนแท่น <small>(แตะเพื่อแก้ไข)</small></summary><div class="cfgr">${sel('ชนิดมิเตอร์','batch.model',[['SJ','Single Jet'],['MJ','Multijet']])}${sel('ขนาด (mm)','batch.size',SIZES.map(s=>[s,s+' mm']))}${sel('คลาส R','batch.R',RCL.map(r=>[r,'R'+r]))}${fld('จำนวนมิเตอร์บนแท่น','batch.nm','number','min="1" max="40"')}</div><p class="hint" style="margin-top:8px">เปลี่ยนขนาด / คลาส R แล้วระบบปรับอัตราการไหลและแผนทดสอบให้อัตโนมัติ · ข้อมูลอื่น (ผู้ทดสอบ เกณฑ์ ความดัน อุณหภูมิ) อยู่ที่แท็บ ①</p></details>`;
+  return`${cfg}${anyData?'':`<div class="card guide"><h2><em>📖</em>เริ่มใช้งานใน 6 ขั้น</h2>${guideHtml()}</div>`}
   <div class="steps">${S.plan.map((q,i)=>`<div class="pt ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}" data-a="goto" data-v="${i}"><span class="st">${A.P[i].state==='done'?'✅':A.P[i].state==='fail'?'⚠️':''}</span><b>${esc(q.l)}</b><small>${flowT(q.f)} L/h · ${q.v} L</small><small>±${q.lim}% · ${A.P[i].n?A.P[i].pass+'/'+A.P[i].n+' ผ่าน':'รอทดสอบ'}</small></div>`).join('')}</div>
   <div class="banner"><div><div style="opacity:.8;font-size:.9rem">จุดทดสอบที่ ${pi+1} / ${np} · ยืนยันแล้ว ${doneP} จุด</div><h3>${esc(p.l)} <small>· ${flowT(p.f)} L/h · ${p.v} L</small></h3>
    <div class="k"><span>เกณฑ์ ±${p.lim}%</span><span>เวลาโดยประมาณ ${fx(p.v/p.f*60,1)} นาที</span><span>${regs.length}/${N} มิเตอร์</span>${fa?`<span style="${devBad?'background:#fb7185;color:#fff':''}">อัตราไหลจริง ${fx(fa,fa<100?1:0)} L/h (${sg(dev,1)}%)</span>`:''}</div>
@@ -549,18 +613,52 @@ function qcList(A){const out=[];A.mids.forEach(id=>A.M[id].cells.forEach((c,i)=>
 function vRep(A){return`<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"><button class="btn p" data-a="pdf">🖨 พิมพ์ / บันทึกเป็น PDF</button><button class="btn" data-a="xlsx">⬇ Excel</button><span class="hint" style="align-self:center">ตัวอย่างหน้ารายงาน (A4 แนวนอน) — กด “พิมพ์” แล้วเลือก “บันทึกเป็น PDF”</span></div>${reportHtml(A)}`}
 
 /* ---------- Monitor ---------- */
-function monHtml(A){const pi=Math.min(S.cur,Math.max(0,S.plan.length-1)),p=S.plan[pi],st=S.plan.length?pointState(pi):{step:'start'},b=S.batch,v=VD[A.verdict],n=Math.max(1,S.meters.length),cols=Math.min(n,n>12?6:5);
+/* ---------- ส่งค่าจากมือถือ: หน้าจอฝั่งมือถือ (โหมดส่ง) ---------- */
+function vSend(A){
+  const e=SENT[0],r=e&&e.r;
+  return`<div class="card" style="border-left:6px solid var(--acc2)"><h2><em>📱</em>โหมดส่งค่าขึ้นจอคอมพิวเตอร์</h2>
+   <p class="sub">แตะมิเตอร์ด้วยแอป SMCV4 Reader — ค่าจะถูกส่งไปแสดงบนจอคอมพิวเตอร์ทันที · รหัสจับคู่ <b class="mono">${esc(RL.code.toUpperCase())}</b> · ส่งแล้ว <b>${RL.sent}</b> ครั้ง</p>
+   ${dial(r||null,0)}
+   <div style="text-align:center;margin-top:10px">${!e?'<span class="pill mut">รอแตะมิเตอร์…</span>':e.ok===null?'<span class="pill warn">กำลังส่ง…</span>':e.ok?'<span class="pill ok">✔ ส่งขึ้นจอคอมพิวเตอร์แล้ว</span>':'<span class="pill bad">✖ ส่งไม่สำเร็จ ('+esc(RL.err)+') — ตรวจอินเทอร์เน็ตของมือถือ แล้วแตะใหม่</span>'}</div>
+   <div class="log" style="margin-top:12px">${SENT.slice(0,8).map(x=>`<div class="${x.ok===false?'bd':''}"><b class="mono">${esc(x.r.id)}</b> · ${fx(x.r.vol/1e5,5)} m³ · ${x.ok===null?'กำลังส่ง':x.ok?'ส่งแล้ว':'ล้มเหลว'} <span class="hint">${fdt(x.t).slice(11)}</span></div>`).join('')||'<div class="hint">ยังไม่มีการส่ง</div>'}</div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm" data-a="relay">⚙ ตั้งค่าการเชื่อมต่อ</button><button class="btn sm" data-a="rltest">🧪 ส่งสัญญาณทดสอบ</button></div></div>`}
+function relayHtml(){const o=(v,t)=>`<option value="${v}" ${RL.role===v?'selected':''}>${t}</option>`;
+  return`<h3>📡 เชื่อมมือถือ → จอคอมพิวเตอร์</h3>
+  <p class="hint" style="margin-bottom:8px">แอป SMCV4 Reader บนมือถือแตะอ่านมิเตอร์ → ส่งขึ้นอินเทอร์เน็ต → จอคอมพิวเตอร์แสดงเป็นหน้าปัดมิเตอร์ขนาดใหญ่ทันที ใช้ <b>รหัสจับคู่เดียวกัน</b> ทั้งสองเครื่อง</p>
+  <div class="fr"><div class="fld"><label>เครื่องนี้ทำหน้าที่</label><select id="rlRole">${o('recv','🖥 คอมพิวเตอร์ — รับค่า แสดงผล')}${o('send','📱 มือถือ — ส่งค่า')}${o('off','⛔ ปิด — ใช้เครื่องเดียว')}</select></div>
+  <div class="fld"><label>รหัสจับคู่ (6–16 ตัว a–z 0–9)</label><input id="rlCode" class="mono" value="${esc(RL.code.toUpperCase())}" maxlength="16" style="text-transform:uppercase"></div></div>
+  <div class="fr"><div class="fld"><label>เซิร์ฟเวอร์รีเลย์ (ขั้นสูง)</label><input id="rlSrv" value="${esc(RL.server)}"></div>
+  <div class="fld"><label>เสียงเตือน</label><select id="rlBeep"><option value="1" ${RL.beep?'selected':''}>เปิด (ติ๊ง เมื่ออ่านสำเร็จ / ต่ำเมื่อไม่ผ่าน)</option><option value="0" ${RL.beep?'':'selected'}>ปิด</option></select></div></div>
+  <ol class="gd" style="margin:10px 0"><li><b>คอมพิวเตอร์</b><span>เลือก “คอมพิวเตอร์” → กด “บันทึก” แล้วจดรหัสจับคู่ (หรือกด สุ่มรหัสใหม่) → กด 📺 Monitor เพื่อขึ้นจอใหญ่</span></li><li><b>มือถือ</b><span>เปิดแอป SMCV4 Reader → แท็บ Test Bench → กดแถบ 📡 → เลือก “มือถือ” ใส่รหัสเดียวกัน → บันทึก</span></li><li><b>ทดสอบ</b><span>กด “ส่งสัญญาณทดสอบ” บนมือถือ จอคอมพิวเตอร์ต้องขึ้นข้อความรับสัญญาณ</span></li></ol>
+  <p class="hint">🔒 ค่าที่ส่งคือ Meter ID · ปริมาตร · จำนวนรอบ · K1–K20 ผ่านบริการ ntfy.sh ใครรู้รหัสจะเห็นข้อมูลได้ จึงใช้รหัสสุ่มและเปลี่ยนเมื่อไม่ต้องการแชร์ · องค์กรที่ต้องการความปลอดภัยสูงสามารถตั้งเซิร์ฟเวอร์ ntfy ของตนเองในช่อง “เซิร์ฟเวอร์รีเลย์”</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn p" data-a="rlsave">💾 บันทึกและเชื่อมต่อ</button><button class="btn" data-a="rlnew">🎲 สุ่มรหัสใหม่</button><button class="btn" data-a="rlcopy">📋 คัดลอกรหัส</button><button class="btn" data-a="rltest">🧪 ส่งสัญญาณทดสอบ</button><button class="btn" data-a="mclose">ปิด</button></div>
+  <p class="hint" id="rlst" style="margin-top:8px">${esc(rlText())}</p>`}
+
+/* ---------- Monitor จอใหญ่: หน้าปัดมิเตอร์เสมือนจริง + ผังแท่น ---------- */
+let MONH='';
+function monHtml(A){
+  const np=S.plan.length,pi=Math.min(S.cur,Math.max(0,np-1)),p=S.plan[pi],st=np?pointState(pi):{step:'start'},b=S.batch,v=VD[A.verdict],N=Math.max(1,b.nm,S.meters.length),cols=N>12?4:N>6?2:2,rows=Math.ceil(N/cols);
   const stT={start:'① อ่านค่าเริ่มต้น',run:'② กำลังปล่อยน้ำ',end:'③ อ่านค่าสิ้นสุด',done:'✔ จุดนี้เสร็จแล้ว'}[st.step];
-  const fa=S.plan.length?flowAct(pi):null,tmv=st.t0?dur((st.t1||Date.now())-st.t0):'00:00';
-  const tiles=S.meters.map((m,i)=>{if(!m.id)return`<div class="t empty"><b>#${i+1}</b><div class="e">—</div><div class="d">ว่าง</div></div>`;const c=S.plan.length?calc(pi,m.id):null,ok=c&&c.valid;
-    return`<div class="t ${ok?(c.pass?'pass':'fail'):''}"><b class="mono">${esc(m.id)}</b><div class="e mono">${ok?sg(c.err)+'%':((S.rd[pi]||{})[m.id]||{}).s?'รอสิ้นสุด':'รอ'}</div><div class="d">${ok?fx(c.dVol,2)+' / '+fx(c.vref,0)+' L':((S.rd[pi]||{})[m.id]||{}).s?'เริ่มต้นแล้ว':'—'}</div></div>`}).join('');
+  const fa=np?flowAct(pi):null,rdOf=m=>(S.rd[pi]||{})[m.id]||{};
+  const z=Math.max(.8,Math.min(innerHeight*.56,innerWidth*.30)/290).toFixed(2);
+  const lr=LAST&&LAST.r,lc=lr&&LAST.pi!=null&&S.plan[LAST.pi]?calc(LAST.pi,lr.id):null,fresh=LAST&&Date.now()-LAST.t<1500;
+  const tiles=Array.from({length:N},(_,i)=>{const m=S.meters[i]||{id:''};
+    if(!m.id)return`<div class="t empty"><span class="n">${i+1}</span>${lcd(null)}<div class="r2"><span class="ti">รอแตะมิเตอร์</span></div></div>`;
+    const rd=rdOf(m),c=np?calc(pi,m.id):null,ok=c&&c.valid,shown=rd.e?rd.e.vol:rd.s?rd.s.vol:null,need=(st.step==='start'&&!rd.s)||(st.step==='end'&&!rd.e);
+    return`<div class="t ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''} ${LAST&&LAST.id===m.id&&fresh?'flash':''}"><span class="n">${i+1}</span>${lcd(shown)}<div class="r2"><span class="ti mono">${esc(m.id)}<br>${m.size||'?'} mm</span><span class="te mono">${ok?sg(c.err)+'%':rd.e?'อ่านแล้ว':rd.s?(st.step==='start'?'พร้อม':'รอสิ้นสุด'):'รออ่าน'}</span></div></div>`}).join('');
+  const chips=S.plan.map((q,i)=>`<span class="pc ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}">${esc(q.l)} <small>${flowT(q.f)}</small></span>`).join('');
   return`<button class="btn g x" data-a="closemon">✕ ปิด (Esc)</button>
-  <div class="mt"><h2>SMCV4 Test Bench</h2><span class="c">${esc(b.id)}</span><span class="c">${MODEL(b.model)} ${b.size} mm · R${b.R}</span><span class="c">ผู้ทดสอบ ${esc(b.tester||'—')}</span><span class="c" style="margin-left:auto">${new Date().toLocaleTimeString('th-TH')}</span></div>
-  <div class="mc2"><div><div style="font-size:2.4vh;opacity:.75">${S.plan.length?'จุดที่ '+(pi+1)+' / '+S.plan.length:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.4vh;margin-top:1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div>
-   <div><div class="tim mono">${tmv}</div><div style="text-align:right;font-size:2.6vh;margin-top:1vh">ผ่าน <b style="color:#6ee7b7">${A.cellsPass}</b> / ${A.cellsAll} จุด · <span style="color:${A.verdict==='fail'?'#fb7185':'#6ee7b7'}">${v[1]}</span></div></div></div>
-  <div class="mgrid" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>
-  <div style="margin-top:1.5vh"><div class="bar"><i style="width:${A.cellsAll?A.cellsPass/A.cellsAll*100:0}%;background:#34d399"></i><i style="width:${A.cellsAll?(A.cellsAll-A.cellsPass)/A.cellsAll*100:0}%;background:#fb7185"></i></div></div>`}
-function renderMon(A){A=A||agg();const m=$('#mon');m.innerHTML=monHtml(A);m.classList.add('on')}
+  <div class="mt"><h2>SMCV4 Test Bench</h2><span class="c">${esc(b.id)}</span><span class="c">${MODEL(b.model)} · ${b.size} mm · R${b.R} · ${N} ตัว</span><span class="c">ผู้ทดสอบ ${esc(b.tester||'—')}</span><span class="c" id="mrl">${esc(rlText())}</span><span class="c" id="mclk" style="margin-left:auto"></span></div>
+  <div class="mmain"><div class="mleft"><div class="dialw" style="zoom:${z}"><div class="${fresh?'flash':''}">${dial(lr||null,lc&&lc.valid?lc.dVol/lc.vref:0)}</div></div>
+    <div class="mst">${lr?`<div class="ml">ตำแหน่ง <b>#${LAST.slot+1}</b> · ${esc(LAST.role||'')}</div>${lc&&lc.valid?`<div class="mbig ${lc.pass?'ok':'bad'}">${sg(lc.err)}%</div><div class="mv ${lc.pass?'ok':'bad'}">${lc.pass?'PASS':'FAIL'} · ใช้น้ำ ${fx(lc.dVol,2)} / ${fx(lc.vref,2)} L</div>`:`<div class="mv">ค่าปริมาตรรับเข้าแล้ว · รออ่านสิ้นสุด</div>`}`:'<div class="ml">📡 รอรับค่าจากแอป SMCV4 Reader…</div><div class="mv">แตะมิเตอร์ด้วยมือถือ หน้าปัดจะขึ้นที่นี่</div>'}</div></div>
+   <div class="mright"><div class="mhd"><div><div style="opacity:.75;font-size:2.1vh">${np?'จุดที่ '+(pi+1)+' / '+np:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div><div class="tim mono" id="mtm"></div></div>
+    <div class="pcs">${chips}</div>
+    <div class="mgrid" style="grid-template-columns:repeat(${cols},minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr));grid-auto-flow:column">${tiles}</div></div></div>
+  <div class="mft"><div class="bar"><i style="width:${A.cellsAll?A.cellsPass/A.cellsAll*100:0}%;background:#34d399"></i><i style="width:${A.cellsAll?(A.cellsAll-A.cellsPass)/A.cellsAll*100:0}%;background:#fb7185"></i></div>
+   <div style="font-size:2.3vh;margin-top:.8vh;display:flex;gap:2vw;flex-wrap:wrap"><span>ผ่าน <b style="color:#6ee7b7">${A.cellsPass}</b> / ${A.cellsAll} จุด</span><span>มิเตอร์ผ่านครบ <b>${A.full}</b>/${A.nm}</span><span style="color:${A.verdict==='fail'?'#fb7185':'#6ee7b7'}">${v[1]}</span></div></div>`}
+function monTick(){const c=$('#mclk');if(c)c.textContent=new Date().toLocaleTimeString('th-TH');const t=$('#mtm');if(t&&S.plan.length){const st=pointState(Math.min(S.cur,S.plan.length-1));t.textContent=st.t0?dur((st.t1||Date.now())-st.t0):'00:00'}rlChip()}
+function renderMon(A){A=A||agg();const m=$('#mon'),h=monHtml(A);if(h!==MONH||!m.classList.contains('on')){m.innerHTML=h;MONH=h}m.classList.add('on');monTick()}
+
 
 /* ---------- Demo ---------- */
 function demo(){
@@ -622,6 +720,13 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='selslot'){SELSLOT=SELSLOT===+v?null:+v;render()}
   else if(a==='slotdet'){const m=S.meters[+v];if(!m||!m.id)return;const pi=S.cur,rd=((S.rd[pi]||{})[m.id])||{},c=calc(pi,m.id),L=x=>x?fx(x.vol/1e5,5)+' m³'+(x.rev!=null?' · '+fx(x.rev)+' รอบ':''):'—';
     modal('<h3>ตำแหน่ง #'+(+v+1)+' · <span class="mono">'+esc(m.id)+'</span></h3><div class="log" style="max-height:none"><div>ขนาด: <b>'+(m.size?m.size+' mm':'ไม่ทราบ')+'</b></div><div>จุด: <b>'+esc(S.plan[pi].l)+'</b> · '+flowT(S.plan[pi].f)+' L/h · '+S.plan[pi].v+' L</div><div>เริ่มต้น'+(rd.s&&rd.s.carried?' (ต่อจากจุดก่อน)':'')+': <b>'+L(rd.s)+'</b></div><div>สิ้นสุด: <b>'+L(rd.e)+'</b></div>'+(c&&c.valid?'<div>ปริมาตรมิเตอร์ / อ้างอิง: <b>'+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L</b></div><div>% Error: <b>'+sg(c.err)+'%</b> (เกณฑ์ ±'+c.lim+'%)</div>'+(c.dRev!=null?'<div>รอบ: <b>'+fx(c.dRev)+'</b> · RPM '+fx(c.rpm,1)+' · K'+(c.idx+1)+'</div>':'')+(c.flags.length?'<div>⚠ '+c.flags.map(esc).join(' · ')+'</div>':''):'<div class="hint">ยังคำนวณไม่ได้ — ต้องมีค่าเริ่มต้นและสิ้นสุด</div>')+'</div><button class="btn" data-a="mclose" style="margin-top:12px">ปิด</button>')}
+  else if(a==='relay'){if(RL.role==='off'&&rlBridge())RL.role='send';modal(relayHtml())}
+  else if(a==='rlnew'){const c=$('#rlCode');if(c)c.value=rlGen().toUpperCase()}
+  else if(a==='rlcopy'){const c=($('#rlCode')||{}).value||RL.code;(navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toast('คัดลอกรหัสแล้ว'),()=>toast('รหัส: '+c,6000))}
+  else if(a==='rlsave'){const role=$('#rlRole').value,code=($('#rlCode').value||'').toLowerCase().replace(/[^a-z0-9]/g,''),srv=($('#rlSrv').value||'').trim()||'https://ntfy.sh';
+    if(role!=='off'&&code.length<6){toast('รหัสจับคู่ต้องยาวอย่างน้อย 6 ตัว');return}
+    RL.role=role;if(role!=='off')RL.code=code;RL.server=srv;RL.beep=$('#rlBeep').value==='1';rlSave();rlConnect();closeModal();if(role==='send')TAB='run';render();toast(role==='recv'?'พร้อมรับค่าจากมือถือ · รหัส '+RL.code.toUpperCase():role==='send'?'พร้อมส่งค่าขึ้นจอ · รหัส '+RL.code.toUpperCase():'ปิดการเชื่อมต่อแล้ว (ใช้เครื่องเดียว)',3200)}
+  else if(a==='rltest'){if(RL.role!=='send'||!RL.code){toast('ตั้งค่าเครื่องนี้เป็น “มือถือ” และใส่รหัสก่อน',3200);return}rlPost({v:1,t:'ping',ts:Date.now()}).then(()=>toast('ส่งสัญญาณทดสอบแล้ว — ดูที่จอคอมพิวเตอร์',3000),e=>toast('✖ ส่งไม่สำเร็จ: '+e.message,4200))}
   else if(a==='mclose')closeModal();
   else if(a==='demo'){demo()}
   else if(a==='kcopy'){const A=agg(),f=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),txt=f.map((k,i)=>`K${i+1}\t${k||''}\t${k8(k)}`).join('\n');(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('คัดลอกค่า K แล้ว'),()=>modal('<h3>ค่า K</h3><pre class="mono">'+esc(txt)+'</pre><button class="btn" data-a="mclose">ปิด</button>'))}
@@ -656,10 +761,10 @@ document.addEventListener('change',e=>{const t=e.target;
   document.addEventListener('dragleave',e=>{dz()&&dz().classList.remove('on')});document.addEventListener('drop',e=>{if(dz()&&e.target.closest&&e.target.closest('#drop')){e.preventDefault();dz().classList.remove('on');handleFiles([...e.dataTransfer.files])}})})();
 addEventListener('keydown',e=>{if(e.key==='Escape'){if(MON){MON=false;$('#mon').classList.remove('on')}closeModal()}});
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
-setInterval(()=>{if(IS_MON||MON){renderMon();return}const el=$('#tm');if(el&&S.plan.length){const st=pointState(Math.min(S.cur,S.plan.length-1));el.textContent=st.t0?dur((st.t1||Date.now())-st.t0):'00:00'}},500);
-if(BC)BC.onmessage=e=>{if(IS_MON&&e.data&&e.data.t==='state'){S=e.data.S;renderMon()}};
+setInterval(()=>{if(IS_MON||MON){renderMon();return}rlChip();const el=$('#tm');if(el&&S.plan.length){const st=pointState(Math.min(S.cur,S.plan.length-1));el.textContent=st.t0?dur((st.t1||Date.now())-st.t0):'00:00'}},500);
+if(BC)BC.onmessage=e=>{if(IS_MON&&e.data&&e.data.t==='state'){S=e.data.S;LAST=e.data.LAST||null;renderMon()}};
 addEventListener('storage',e=>{if(IS_MON&&e.key===LS){loadState();renderMon()}});
-loadState();
+loadState();rlLoad();if(RL.role==='send'&&RL.code)TAB='run';rlConnect();
 if(!S.plan.length&&!Object.keys(S.rd).length)S.plan=buildPlan();
 if(IS_MON){document.body.classList.add('monitor');$('.top').style.display='none';$('main').style.display='none'}
 render();
