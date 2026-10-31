@@ -392,8 +392,9 @@ function applyRead(r,src){
   const c=calc(pi,r.id);
   S.log.unshift({t:Date.now(),id:r.id,msg:role+' · '+fx(r.vol/1e5,5)+' m³'+(r.rev!=null?' · '+fx(r.rev)+' รอบ':'')+(c&&c.valid?' · '+sg(c.err)+'%':''),bad:c&&c.valid&&!c.pass?1:0,src});S.log=S.log.slice(0,60);
   if(had)role+=' (อ่านซ้ำตัวเดิม)';
+  if(r.rev==null)beep('warn');
   LAST={r,id:r.id,role,slot:S.meters.indexOf(m),pi,t:Date.now()};if(!(r.issues&&r.issues[0]&&/ขนาดมิเตอร์/.test(r.issues[0])))beep(c&&c.valid&&!c.pass?'bad':'ok');
-  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³'+(had?' — ⚠ ทับค่าเดิม ถ้าเป็นคนละตัวแต่ Meter ID ซ้ำกัน ระบบแยกไม่ได้ ต้องแก้ ID ไม่ให้ซ้ำ':''),had?5200:2400);
+  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³'+(had?' — ⚠ ทับค่าเดิม ถ้าเป็นคนละตัวแต่ Meter ID ซ้ำกัน ระบบแยกไม่ได้ ต้องแก้ ID ไม่ให้ซ้ำ':'')+(r.rev==null?' — ⚠ ไม่ได้อ่านจำนวนรอบ: ในแอป SMCV4 Reader กดปุ่มโหมดเป็น “แท่นเทส” แล้วแตะใหม่':''),(had||r.rev==null)?6000:2400);
   r.issues&&r.issues.length&&toast(r.id+': '+r.issues[0],3600);
   save();render();return true}
 function ingest(u,part,meta,src){const r=parseNfc(u,part,meta);if(RL.role==='send'&&RL.code&&src==='app')return rlSend(r);return applyRead(r,src)}
@@ -528,7 +529,7 @@ function vPlan(A){const b=S.batch,Q=qs(b.q3,b.R),tw=S.plan.reduce((a,p)=>a+p.v,0
 /* ---------- ③ ทดสอบ ---------- */
 /* ---------- ③ ทดสอบ (ใช้งานง่าย: ผังแท่น + จอ LCD + บอกว่าต้องทำอะไรต่อ) ---------- */
 let LAST=null,SELSLOT=null;
-const lcdRev=rev=>`<div class="lcd rv"><span class="gh">888888</span><span class="vv">${rev==null?'&nbsp;':pad6(rev)}</span><i>รอบ</i></div>`;
+const lcdRev=rev=>`<div class="lcd rv"><span class="gh">888888</span><span class="vv" ${rev==null?'title="ไม่ได้อ่านจำนวนรอบ"':''}>${pad6(rev)}</span><i>รอบ</i></div>`;
 const lcd=(vol,cls='')=>{const t=vol==null?'':Math.floor(vol/1e5)+'.'+String(vol%1e5).padStart(5,'0');return`<div class="lcd ${cls}"><span class="gh">8888888.88888</span><span class="vv">${t||'&nbsp;'}</span><i>m³</i></div>`};
 function dial(r,prog){const C=2*Math.PI*118,p=Math.max(0,Math.min(1,prog||0));
   return`<div class="dial"><svg viewBox="0 0 280 280" aria-hidden="true"><circle cx="140" cy="140" r="134" fill="#eef3f6" stroke="#cfdbe3" stroke-width="4"/><circle cx="140" cy="140" r="118" fill="none" stroke="#0a2a43" stroke-width="20"/><circle cx="140" cy="140" r="118" fill="none" stroke="#34d399" stroke-width="13" stroke-linecap="round" stroke-dasharray="${C*.75*p} ${C}" transform="rotate(135 140 140)"/></svg>
