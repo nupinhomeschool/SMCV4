@@ -878,7 +878,6 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='kbSlot'){KEYS
   if(t.dataset.f){const path=t.dataset.f.split('.');let o=S;path.slice(0,-1).forEach(k=>o=o[k]);const k=path[path.length-1];let v=t.value;
     if(t.type==='number')v=v===''?'':+v;if(t.type==='datetime-local')v=Date.parse(v)||Date.now();if(k==='carry')v=v==='true';if(!['model'].includes(k)&&['size','R','nm','passPct','mfrac'].includes(k)&&t.tagName==='SELECT')v=+v;
     const b=S.batch,old=o[k],hasData=Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length);
-    if(k==='mtype'&&v!==old&&hasData){t.value=old;askConfirm('เปลี่ยนประเภทมิเตอร์จะล้างค่าที่อ่านไว้ทั้งหมดของ Batch นี้\nดำเนินการต่อหรือไม่?',()=>{apply();S.rd={};S.pt={};S.cur=0;S.meters.forEach(m=>{m.id='';m.k=null});save();render()});return}
     if(k==='q3'&&!(v>0)){t.value=old;toast('Q3 ต้องเป็นตัวเลขมากกว่า 0',2800);return}
     let nq=b.q3;if(k==='size'||k==='model'){const s=q3Of(k==='model'?v:b.model,k==='size'?v:b.size);if(s)nq=s}else if(k==='q3')nq=v;
     const eff=['size','R','q3','model'].includes(k)&&v!==old&&((k==='R')||nq!==b.q3||k==='size');
@@ -889,6 +888,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='kbSlot'){KEYS
       if(eff){S.plan=buildPlan();S.rd={};S.pt={};S.cur=0;toast('ปรับแผนอัตราการไหลตาม '+MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · Q3 '+fx(b.q3)+' L/h แล้ว ('+S.plan.length+' จุด)',3800)}
       if(k==='limLow'||k==='limHigh'){const Q=qs(b.q3,b.R);S.plan.forEach(p=>p.lim=p.f<Q.q2*0.995?b.limLow:b.limHigh)}
       save();render()};
+    if(k==='mtype'&&v!==old&&hasData){t.value=old;askConfirm('เปลี่ยนประเภทมิเตอร์จะล้างค่าที่อ่านไว้ทั้งหมดของ Batch นี้\nดำเนินการต่อหรือไม่?',()=>{apply();S.rd={};S.pt={};S.cur=0;S.meters.forEach(m=>{m.id='';m.k=null});save();render()});return}
     if(eff&&hasData){t.value=old;askConfirm('การเปลี่ยนชนิด / ขนาด / คลาส R / Q3 จะสร้างแผนอัตราการไหลใหม่ และล้างผลที่อ่านไว้ของ Batch นี้\nดำเนินการต่อหรือไม่?',apply);return}
     apply();return}
   if(t.dataset.q3m){const key=t.dataset.q3m,val=+t.value;S.q3map=S.q3map||{};if(val>0)S.q3map[key]=val;else delete S.q3map[key];
