@@ -164,7 +164,7 @@ const defState=()=>({v:1,
   batch:{id:newId(),date:Date.now(),tester:'',checker:'',org:'FSL · Flo Sensor Lab',bench:'',hw:'',model:'MJ',size:25,R:160,q3:6300,limLow:5,limHigh:2,nm:10,passPct:100,
     tmpC:'',bar:'',ref:'',refDue:'',flowTol:5,carry:true,note:''},
   tpl:TPL_DEF(),plan:[],meters:[],rd:{},pt:{},cur:0,log:[]});
-let S=defState(),TAB='setup',MON=false,IS_MON=/[?&]monitor=1/.test(location.search);
+let S=defState(),TAB='setup',MON=false,IS_MON=/[?&]monitor=1/.test(location.search)||window.name==='smcv4mon';
 function loadState(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(j&&j.v)S=Object.assign(defState(),j,{batch:Object.assign(defState().batch,j.batch||{})})}catch(e){}
   try{const t=JSON.parse(localStorage.getItem(TPLK)||'null');if(t)S.tpl=Object.assign(TPL_DEF(),t)}catch(e){}
   while(S.meters.length<S.batch.nm)S.meters.push({id:'',size:null,k:null})}
@@ -384,6 +384,7 @@ function chartSvg(o){o=o||{};const W=o.w||680,H=o.h||280,L=46,Rr=14,T=14,B=34,pl
     if(pts.length>1)s+=`<path d="M${pts.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join('L')}" fill="none" stroke="${c}" stroke-width="${ok?1.6:2.4}" opacity="${ok?.55:.95}"/>`;
     pts.forEach(q=>{s+=`<circle cx="${q[0]}" cy="${q[1]}" r="${q[2].ok?3.4:5}" fill="${q[2].ok?'#fff':'#e11d48'}" stroke="${c}" stroke-width="2"><title>${esc(se.id)} @ ${flowT(q[2].f)} L/h = ${sg(q[2].e)}%</title></circle>`})});
   return s+'</svg>'}
+function planWarn(){const Q=qs(S.batch.q3,S.batch.R),bad=S.plan.filter(p=>p.f<Q.q1*0.9||p.f>Q.q4*1.1);return bad.length?`<p class="pill bad" style="white-space:normal">⚠ มี ${bad.length} จุดอยู่นอกช่วง Q1–Q4 ของ ${MODEL(S.batch.model)} ${S.batch.size} mm · R${S.batch.R} (${flowT(rs3(Q.q1))}–${flowT(rs3(Q.q4))} L/h) — กด “สร้างแผนจากคลาส R” เพื่อให้ตรงกับขนาดที่ตั้งไว้</p>`:''}
 function vPlan(A){const b=S.batch,Q=qs(b.q3,b.R),tw=S.plan.reduce((a,p)=>a+p.v,0),tm=S.plan.reduce((a,p)=>a+p.v/p.f*60,0),loc=S.plan.some((p,i)=>Object.keys(S.rd[i]||{}).length);
   const rows=S.plan.map((p,i)=>`<tr><td><b>${i+1}</b></td><td><input class="in" data-pp="${i}.l" value="${esc(p.l)}" style="width:76px"></td><td><input class="in" type="number" step="any" data-pp="${i}.f" value="${p.f}" style="width:96px"></td><td><input class="in" type="number" step="any" data-pp="${i}.v" value="${p.v}" style="width:84px"></td><td><input class="in" type="number" step="0.1" data-pp="${i}.lim" value="${p.lim}" style="width:70px"></td><td>${fx(p.v/p.f*60,1)} นาที</td><td><button class="btn sm" data-a="delpt" data-v="${i}">ลบ</button></td></tr>`).join('');
   return`<style>.in{border:1px solid var(--line);border-radius:9px;padding:6px 8px;background:var(--card2);text-align:center}</style>
@@ -391,7 +392,7 @@ function vPlan(A){const b=S.batch,Q=qs(b.q3,b.R),tw=S.plan.reduce((a,p)=>a+p.v,0
   <div class="grid g2"><div class="card"><h2><em>🧭</em>จุดทดสอบ (กำหนดจำนวนจุดตามคลาส R)</h2><p class="sub">${MODEL(b.model)} ${b.size} mm · R${b.R} · Q3 = ${fx(b.q3)} L/h — แก้ตัวเลขในตารางได้ทุกช่อง</p>
    <div class="tw"><table><thead><tr><th>#</th><th>ชื่อจุด</th><th>อัตราไหล (L/h)</th><th>ปริมาตร (L)</th><th>เกณฑ์ ±%</th><th>เวลาโดยประมาณ</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="7" class="hint">ยังไม่มีจุดทดสอบ — กด “สร้างแผนจากคลาส R”</td></tr>'}</tbody></table></div>
    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn p" data-a="mkplan">⚙ สร้างแผนจากคลาส R${b.R}</button><button class="btn" data-a="addpt">➕ เพิ่มจุด</button></div>
-   ${loc?'<p class="hint">⚠ มีข้อมูลทดสอบอยู่แล้ว — การสร้างแผนใหม่จะล้างผลที่อ่านไว้</p>':''}</div>
+   ${planWarn()}${loc?'<p class="hint">⚠ มีข้อมูลทดสอบอยู่แล้ว — การสร้างแผนใหม่จะล้างผลที่อ่านไว้</p>':''}</div>
   <div class="card"><h2><em>📈</em>ตำแหน่งจุดทดสอบเทียบเกณฑ์</h2><p class="sub">แถบเหลือง = เกณฑ์ช่วงต่ำ · แถบเขียว = เกณฑ์ช่วงสูง</p>${S.plan.length?chartSvg():'<p class="hint">เพิ่มจุดทดสอบเพื่อดูกราฟ</p>'}
    <h2 style="margin-top:14px"><em>🗂</em>แม่แบบจำนวนจุดต่อ Batch ตามคลาส R</h2><p class="sub">Q1,Q2,Q3,Q4 หรือตัวเลขสัดส่วนของ Q3 เช่น 0.1 = 10% Q3 (แก้แล้วบันทึกอัตโนมัติ)</p>
    <div class="tw"><table><thead><tr><th>R</th><th class="l">จุดทดสอบ</th><th>จำนวน</th></tr></thead><tbody>${RCL.map(r=>`<tr class="${r===b.R?'h0':''}"><td><b>R${r}</b></td><td class="l"><input class="in" style="width:100%;text-align:left" data-tpl="${r}" value="${esc(S.tpl[r]||'')}"></td><td>${String(S.tpl[r]||'').split(',').filter(x=>x.trim()).length}</td></tr>`).join('')}</tbody></table></div></div></div>`}
@@ -440,8 +441,9 @@ function kGrid(A){const fill=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),bands=RPM
 function kPtsTable(A){const rows=A.kPts.filter(r=>r.n).map(r=>`<tr><td><b>${esc(S.plan[r.i].l)}</b> · ${flowT(S.plan[r.i].f)} L/h</td><td>${fx(r.rpm,1)}</td><td>${fx(r.kObs)}</td><td><b>${fx(r.kNeed)}</b></td><td class="${heat((r.kNeed/r.kObs-1)*100,3)}">${sg((r.kNeed/r.kObs-1)*100,2)}%</td><td>K${Math.round(r.idx)+1}</td><td>K${Math.round(r.idxTab)+1}</td></tr>`).join('');
   return rows?`<div class="tw"><table><thead><tr><th class="l">จุดทดสอบ</th><th>RPM จริง</th><th>K ที่มิเตอร์ใช้</th><th>K ที่ต้องใช้</th><th>ปรับ</th><th>ดัชนีที่ใกล้สุด</th><th>ดัชนีตามตาราง RPM</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">K ที่มิเตอร์ใช้ = ปริมาตรที่มิเตอร์แสดง × 10⁶ ÷ จำนวนรอบ · K ที่ต้องใช้ = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ (ค่ากลางของทั้ง Batch) · ถ้าสองดัชนีไม่ตรงกัน ให้เทียบกับ Studio K ของ Web App</p>`:'<p class="hint">ยังไม่มีข้อมูลจำนวนรอบ (Addr 184–186)</p>'}
 function vRes(A){const v=VD[A.verdict],pts=S.plan;
+  const warn=planWarn();
   const ser=A.mids.map(id=>({id,pass:A.M[id].verdict!=='fail',pts:A.M[id].cells.map((c,i)=>c&&c.valid?{e:c.err,ok:c.pass,f:pts[i].f}:null)}));
-  return`<div class="grid g4" style="margin-bottom:18px"><div class="kpi" style="--c:${A.verdict==='pass'?'var(--ok)':A.verdict==='fail'?'var(--bad)':'#94a3b8'}"><small>ผลสรุป Batch</small><b><span class="verdict ${v[0]}" style="font-size:1.25rem;padding:2px 14px">${v[1]}</span></b><em>เกณฑ์: มาตรผ่านครบ ≥ ${S.batch.passPct}%</em></div>
+  return`${warn}<div class="grid g4" style="margin-bottom:18px"><div class="kpi" style="--c:${A.verdict==='pass'?'var(--ok)':A.verdict==='fail'?'var(--bad)':'#94a3b8'}"><small>ผลสรุป Batch</small><b><span class="verdict ${v[0]}" style="font-size:1.25rem;padding:2px 14px">${v[1]}</span></b><em>เกณฑ์: มาตรผ่านครบ ≥ ${S.batch.passPct}%</em></div>
    <div class="kpi" style="--c:var(--ok)"><small>มิเตอร์ที่ผ่านครบทุกจุด</small><b>${A.full}/${A.nm}</b><em>${fx(A.pct,1)}% · ตก ${A.nfail} · รอ ${A.pend}</em></div>
    <div class="kpi" style="--c:var(--acc)"><small>จุดทดสอบที่ผ่าน (ทุกมิเตอร์)</small><b>${A.cellsPass}/${A.cellsAll}</b><em>${A.cellsAll?fx(A.cellsPass/A.cellsAll*100,1):0}% · ${A.ptsDone}/${pts.length} อัตราไหล</em></div>
    <div class="kpi" style="--c:#f59e0b"><small>error เฉลี่ย / สูงสุด</small><b>${sg(A.mean)} / ${sg(A.worst)}</b><em>% (สูงสุดคือค่าที่ห่างศูนย์มากสุด)</em></div></div>
@@ -550,7 +552,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='pdf'){printReport()}
   else if(a==='monitor')modal(`<h3>📺 Monitor หน้าแท่นทดสอบ</h3><div style="display:grid;gap:10px"><button class="btn p" data-a="openmon">เต็มจอในหน้านี้ (ต่อ HDMI / Cast)</button><button class="btn" data-a="winmon">เปิดหน้าต่างแยก — ลากไปจอที่สองได้ (อัปเดตสด)</button><button class="btn" data-a="mclose">ปิด</button></div><p class="hint" style="margin-top:10px">หน้าต่างแยกต้องเปิดในเบราว์เซอร์เดียวกัน ข้อมูลซิงก์อัตโนมัติทุกครั้งที่มีการอ่านค่า</p>`);
   else if(a==='openmon'){closeModal();MON=true;renderMon();try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}catch(x){}}
-  else if(a==='winmon'){closeModal();window.open(location.href.split(/[?#]/)[0]+'?monitor=1','smcv4mon','width=1280,height=720')}
+  else if(a==='winmon'){closeModal();const emb=!/^https?:|^file:/.test(location.protocol),w2=window.open(emb?'':location.href.split(/[?#]/)[0]+'?monitor=1','smcv4mon','width=1280,height=720');if(emb&&w2){w2.document.open();w2.document.write('<!DOCTYPE html>'+document.documentElement.outerHTML);w2.document.close()}}
   else if(a==='closemon'){MON=false;$('#mon').classList.remove('on');try{document.fullscreenElement&&document.exitFullscreen()}catch(x){}if(IS_MON)window.close()}
   else if(a==='more')modal(`<h3>เมนู</h3><div style="display:grid;gap:10px"><button class="btn" data-a="pickfile">📂 เปิดไฟล์ (.xlsx Batch เดิม / .json โปรเจกต์ / .bin)</button><button class="btn" data-a="savejson">💾 บันทึกโปรเจกต์ (.json)</button><button class="btn" data-a="demo">🎬 โหลดข้อมูลตัวอย่าง (Demo)</button><button class="btn bad" data-a="reset">🗑 เริ่ม Batch ใหม่ (ล้างข้อมูล)</button><button class="btn" data-a="mclose">ปิด</button></div>`);
   else if(a==='savejson'){closeModal();saveJson()}
@@ -560,11 +562,14 @@ document.addEventListener('change',e=>{const t=e.target;
   if(t.id==='fillK'){fillK=t.checked;render();return}
   if(t.id==='kMapTab'){kMapTab=t.checked;render();return}
   if(t.dataset.f){const path=t.dataset.f.split('.');let o=S;path.slice(0,-1).forEach(k=>o=o[k]);const k=path[path.length-1];let v=t.value;
-    if(t.type==='number')v=v===''?'':+v;if(t.type==='datetime-local')v=Date.parse(v)||Date.now();if(k==='carry')v=v==='true';if(['model'].includes(k)){}else if(['size','R','nm','passPct'].includes(k)&&t.tagName==='SELECT')v=+v;
-    o[k]=v;const b=S.batch;
+    if(t.type==='number')v=v===''?'':+v;if(t.type==='datetime-local')v=Date.parse(v)||Date.now();if(k==='carry')v=v==='true';if(!['model'].includes(k)&&['size','R','nm','passPct'].includes(k)&&t.tagName==='SELECT')v=+v;
+    const b=S.batch,old=o[k],flowKeys=['size','R','q3'],hasData=Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length);
+    if(flowKeys.includes(k)&&hasData&&v!==old&&!confirm('การเปลี่ยนขนาด / คลาส R / Q3 จะสร้างแผนอัตราการไหลใหม่ และล้างผลที่อ่านไว้ของ Batch นี้\nดำเนินการต่อหรือไม่?')){t.value=old;return}
+    o[k]=v;
     if(k==='size'&&Q3T[b.size])b.q3=Q3T[b.size];
     if(k==='nm'){while(S.meters.length<b.nm)S.meters.push({id:'',size:null,k:null});while(S.meters.length>b.nm&&!S.meters[S.meters.length-1].id)S.meters.pop()}
-    if(['size','R','q3','limLow','limHigh'].includes(k)&&!Object.keys(S.rd).length){S.plan=buildPlan()}
+    if(flowKeys.includes(k)&&v!==old){S.plan=buildPlan();S.rd={};S.pt={};S.cur=0;toast('ปรับแผนอัตราการไหลตาม '+MODEL(b.model)+' '+b.size+' mm · R'+b.R+' แล้ว ('+S.plan.length+' จุด)',3600)}
+    if(k==='limLow'||k==='limHigh'){const Q=qs(b.q3,b.R);S.plan.forEach(p=>p.lim=p.f<Q.q2*0.995?b.limLow:b.limHigh)}
     save();render();return}
   if(t.dataset.pp){const[i,k]=t.dataset.pp.split('.');S.plan[+i][k]=k==='l'?t.value:+t.value;if(k==='f'||k==='v')S.plan[+i].lim=S.plan[+i].lim;save();render();return}
   if(t.dataset.tpl){S.tpl[t.dataset.tpl]=t.value;save();render()}});
