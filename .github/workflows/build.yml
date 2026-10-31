@@ -1065,7 +1065,7 @@ jobs:
                   val eStart = field("Start address (ใช้เมื่อเลือก \"กำหนดเอง\")", cfgInt("start", 0).toString(), true)
                   val eLen = field("Number of Bytes (ใช้เมื่อเลือก \"กำหนดเอง\")", cfgInt("len", 8192).toString(), true)
                   val eName = field("ชื่อไฟล์ที่บันทึก", cfgName(), false)
-                  val eFrac = field("โหมดกลไก: จำนวนหลักสีแดง (ทศนิยม m³) บนหน้าปัด", cfgInt("frac", 3).toString(), true)
+                  val eFrac = field("โหมดกลไก: จำนวนทศนิยม m³ บนหน้าปัด (0–5 · LCD SMCV4 = 5)", cfgInt("frac", 3).toString(), true)
                   val sv = ScrollView(this)
                   sv.addView(box)
                   AlertDialog.Builder(this)
@@ -1078,7 +1078,7 @@ jobs:
                               .putInt("start", eStart.text.toString().toIntOrNull() ?: 0)
                               .putInt("len", (eLen.text.toString().toIntOrNull() ?: 8192).coerceAtLeast(1))
                               .putString("name", eName.text.toString().trim().ifEmpty { "data.bin" })
-                              .putInt("frac", (eFrac.text.toString().toIntOrNull() ?: 3).coerceIn(0, 4))
+                              .putInt("frac", (eFrac.text.toString().toIntOrNull() ?: 3).coerceIn(0, 5))
                               .apply()
                           refreshSaveLabel()
                           refreshModeLabel()
@@ -1231,7 +1231,10 @@ jobs:
                       iv.scaleType = ImageView.ScaleType.FIT_CENTER
                       box.addView(iv, LinearLayout.LayoutParams(MATCH_PARENT, dp(170)))
                   }
-                  val msg = if (r.reading.isEmpty()) "อ่านตัวเลขจากภาพไม่ได้ — พิมพ์เองได้เลย" else "ตรวจตัวเลขให้ตรงกับหน้าปัดก่อนส่ง (ตัวเลขสีแดงคือเศษของ m³)"
+                  val dcount = r.reading.count { it.isDigit() }
+                  val msg = if (r.reading.isEmpty()) "อ่านตัวเลขจากภาพไม่ได้ — พิมพ์เองได้เลย"
+                      else if (dcount < cfgInt("frac", 3) + 2) "⚠ ตัวเลขอาจตกหล่น (เช่น เลขหน้าสุดหรือจุดทศนิยม) — เทียบกับหน้าปัดจริงแล้วแก้ก่อนส่ง"
+                      else "ตรวจตัวเลขให้ตรงกับหน้าปัดก่อนส่ง (ตัวเลขสีแดงคือเศษของ m³)"
                   box.addView(label(msg, 12f, slate).apply { setPadding(0, dp(8), 0, 0) })
                   box.addView(label("ค่าที่อ่านจากหน้าปัด (m³)", 12f, slate).apply { setPadding(0, dp(8), 0, 0) })
                   val eVal = EditText(this)
@@ -1562,6 +1565,8 @@ jobs:
 
               private fun cleanId(v: String): String {
                   var s = v.trim()
+                  // Meter ID ของ SMCV4 เป็นเลขฐานสิบ 8 หลัก (เช่น HW04RND150-69050015 → 69050015)
+                  Regex("(?<!\\d)\\d{8}(?!\\d)").findAll(s).lastOrNull()?.let { return it.value }
                   if (s.contains("=") || s.contains("/")) s = s.split('=', '/', '&', '?').last { it.isNotBlank() }
                   s = s.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.uppercase()
                   return if (s.length > 24) s.takeLast(24) else s
@@ -1705,11 +1710,11 @@ jobs:
                   n++;
                   var x = find(window, 0);
                   if (x) { clearInterval(t); try { x.benchMech(d); rep('OK'); } catch (e) { rep('ERR:' + e.message); } }
-                  else if (n > 80) { clearInterval(t); rep('ERR: รอ Test Bench ในหน้า Dashboard นานเกินไป'); }
+                  else if (n > 80) { clearInterval(t); rep('ERR: หน้าเว็บบนมือถือยังเป็นรุ่นเก่า (ไม่มี benchMech) — กด ↻ โหลดเว็บใหม่ หรือรอ GitHub Pages อัปเดต 1–2 นาที แล้วส่งซ้ำ'); }
                 }, 250);
                 return 'WAIT:เปิดแท็บ bench แล้ว';
               }
-              return 'ERR: ไม่พบ Test Bench ในหน้า ' + location.pathname;
+              return 'ERR: ไม่พบ Test Bench ในหน้า ' + location.pathname + ' (ต้องอัปโหลด index.html รุ่นล่าสุด)';
             } catch (e) { return 'ERR:' + e.message; }
           }
           EOF_FILE
