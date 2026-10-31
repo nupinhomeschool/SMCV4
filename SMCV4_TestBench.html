@@ -159,7 +159,17 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 #mon .mft{margin-top:1.2vh}
 @media(max-width:900px){#mon{overflow:auto}#mon .mmain{grid-template-columns:1fr}}
 .card.cfgd{padding:12px 16px;margin-bottom:14px}.cfgd summary{cursor:pointer;font-size:1rem}.cfgd summary small{color:var(--mut)}.cfgr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}@media(max-width:700px){.cfgr{grid-template-columns:1fr 1fr}}
-#rlchip{cursor:pointer}.lcd.rv{font-size:.82rem;margin-top:4px;min-height:1.7em;padding:2px 34px 1px 8px}.lcd.rv .gh{top:2px;right:34px}.lcd.rv i{top:1px;right:6px;font-size:.58rem}#mon .mt{padding-right:8vw}
+#rlchip{cursor:pointer}
+.odo{display:flex;align-items:stretch;justify-content:center;gap:2px;padding:6px 8px;background:#1b2530;border-radius:8px;border:2px solid #0a2a43;box-shadow:inset 0 2px 6px #0008;margin-top:4px}
+.odo b{min-width:1.05em;text-align:center;font:700 1.3rem/1.4 ui-monospace,Menlo,Consolas,monospace;padding:0 3px;border-radius:3px}
+.odo b.bk{background:linear-gradient(#0c0c0c,#2e2e2e 50%,#0a0a0a);color:#f4f4f4}.odo b.rd{background:linear-gradient(#e6e6e6,#fff 50%,#d4d4d4);color:#c1121f}
+.odo i{font-style:normal;color:#9db6c8;align-self:flex-end;margin-left:6px;font-size:.72rem;padding-bottom:3px}
+.dial .odo b{font-size:1.1rem}#mon .odo b{font-size:clamp(.9rem,2vw,1.9rem)}#mon .mmain .dial .odo b{font-size:1.5rem}
+body.mech .kx{display:none}
+.keybar .kbr{display:grid;grid-template-columns:1fr 1.2fr 1.4fr auto;gap:10px;align-items:end}.keybar .fld{margin:0}.keybar input,.keybar select{width:100%}
+#kbVal{font:700 1.4rem ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px}
+@media(max-width:820px){.keybar .kbr{grid-template-columns:1fr 1fr}}.sl .bt{font-size:.84rem;margin-top:5px;padding:2px 8px;border-radius:10px;background:#eef5f9;display:inline-block}.sl .bt.ok{background:#e0f7ec;color:#047857}.sl .bt.warn{background:#fef3c7;color:#b45309}.sl .bt.bad{background:#ffe4e6;color:#be123c}.sl .bt small{opacity:.8}
+.dial .pl{display:flex;gap:6px;justify-content:center}.dial .szp{padding:2px 9px;font-size:.62rem}.szp.bat.ok{background:#047857}.szp.bat.warn{background:#b45309}.szp.bat.bad{background:#be123c}.lcd.rv{font-size:.82rem;margin-top:4px;min-height:1.7em;padding:2px 34px 1px 8px}.lcd.rv .gh{top:2px;right:34px}.lcd.rv i{top:1px;right:6px;font-size:.58rem}#mon .mt{padding-right:8vw}
 #mon .mmulti{flex:1;min-height:0;display:flex;flex-direction:column;gap:1.4vh;margin-top:1.4vh}
 #mon .mdg{flex:1;min-height:0;display:grid;gap:1.6vh 1.2vw;align-content:center;justify-items:center}
 #mon .md{text-align:center;border-radius:2vh;padding:1vh .6vw;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);width:100%}
@@ -258,15 +268,15 @@ function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||windo
 const SENT=[];
 function rlPost(m){return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
 function rlSend(r){
-  if(!r||!r.id||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
-  const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,issues:r.issues||[],meta:r.meta||null,ts:Date.now()};
+  if(!r||(!r.id&&!r.mech)||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
+  const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,issues:r.issues||[],meta:r.meta||null,mech:r.mech?1:0,ts:Date.now()};
   const e={r,t:Date.now(),ok:null};SENT.unshift(e);SENT.length=Math.min(SENT.length,30);RL.sent++;beep('ok');
   rlPost(m).then(()=>{e.ok=true;render()},er=>{e.ok=false;RL.err=er.message||'ส่งไม่สำเร็จ';render()});
   render();return true}
 function rlRecv(m){
   if(!m||m.v!==1)return;
   if(m.t==='ping'){RL.last=Date.now();toast('✔ ได้รับสัญญาณทดสอบจากมือถือ — การเชื่อมต่อใช้งานได้',3200);beep('ok');rlChip();return}
-  if(m.t!=='read'||!m.id||m.seq&&RL.seen.has(m.seq))return;if(m.seq){RL.seen.add(m.seq);if(RL.seen.size>200)RL.seen.delete(RL.seen.values().next().value)}
+  if(m.t!=='read'||(!m.id&&!m.mech)||m.seq&&RL.seen.has(m.seq))return;if(m.seq){RL.seen.add(m.seq);if(RL.seen.size>200)RL.seen.delete(RL.seen.values().next().value)}
   RL.last=Date.now();RL.n++;
   applyRead(Object.assign({},m,{k8:m.k?m.k.map(k8):null,ts:Date.now(),issues:m.issues||[]}),'phone')}
 function rlConnect(){
@@ -333,9 +343,11 @@ function calc(pi,id){
     if(ks){let b=0;ks.forEach((k,i)=>{if(Math.abs(k-o.kObs)<Math.abs(ks[b]-o.kObs))b=i});o.idxObs=b;o.kUsed=ks[o.idxF];o.devObs=(o.kObs/Math.min.apply(null,[ks[b]])-1)*100;
       if(Math.abs(o.devObs)>3)o.flags.push('K ที่มิเตอร์ใช้ไม่ตรง K1–K20 (รอบ/ปริมาตรไม่สอดคล้อง)')}
     }
-  else if(o.dRev===0)o.flags.push('จำนวนรอบไม่เปลี่ยน');else o.flags.push('ไม่มีข้อมูลจำนวนรอบ');
+  else if(o.dRev===0)o.flags.push('จำนวนรอบไม่เปลี่ยน');else if(!r.s.mech)o.flags.push('ไม่มีข้อมูลจำนวนรอบ');
   if((r.e.rvol||0)-(r.s.rvol||0)>0)o.flags.push('มีน้ำไหลย้อน');
-  if(r.e.bat!=null&&r.e.bat<2.7)o.flags.push('แบตต่ำ');
+  if(r.e.bat!=null&&r.e.bat<BAT_LOW)o.flags.push('แบตต่ำ');
+  if(r.s.bat!=null&&r.e.bat!=null){o.bat0=r.s.bat;o.bat1=r.e.bat;o.dBat=r.e.bat-r.s.bat;if(o.dBat<=-0.05)o.flags.push('แรงดันแบตตก '+o.dBat.toFixed(2)+' V ในจุดนี้')}
+  if(r.s.mech||r.e.mech){o.mech=1;const rs=Math.pow(10,-mfracN())*1000;o.resL=rs;o.unc=rs/vref*100;if(o.unc>o.lim/2)o.flags.push('ความละเอียดหน้าปัด '+fx(rs,rs<1?1:0)+' L หยาบเกินไปสำหรับน้ำ '+fx(vref,1)+' L (คลาดเคลื่อนจากการปัดเศษได้ ±'+o.unc.toFixed(2)+'%) — เพิ่มปริมาตรทดสอบ หรืออ่านทศนิยมละเอียดขึ้น')}
   const un=[r.s,r.e].some(x=>x.meta&&x.meta.verify&&x.meta.verified===false);if(un)o.flags.push('การอ่านยังไม่ยืนยัน');
   if(r.s.carried)o.carried=true;
   return o}
@@ -376,6 +388,12 @@ function enterPoint(j){S.cur=j;const st=pointState(j);
     if(pr&&pr.e&&!rd.s)rd.s=Object.assign({},pr.e,{carried:true})});
   save()}
 function applyRead(r,src){
+  if(r&&(!!r.mech!==MECH())){const has=Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length);
+    if(!has){S.batch.mtype=r.mech?'mech':'nfc';toast('สลับประเภทมิเตอร์เป็น '+(r.mech?'แมคคานิค':'ดิจิทัล NFC')+' ตามค่าที่รับเข้ามา',3200)}
+    else{toast('ค่าที่รับเป็นมิเตอร์'+(r.mech?'แมคคานิค':'ดิจิทัล')+' แต่ Batch นี้เป็นแบบ'+(MECH()?'แมคคานิค':'ดิจิทัล')+' — เปลี่ยนที่แท็บ ① ตั้งค่า',4200);beep('bad');return false}}
+  if(r&&r.mech&&!r.id&&S.plan.length){const pi0=Math.min(S.cur,S.plan.length-1);let i=SELSLOT!=null?SELSLOT:nextSlot(pi0,pointState(pi0));
+    if(i==null){toast('ช่องมิเตอร์เต็มแล้ว — เพิ่มจำนวนช่อง หรือใส่ Meter ID',3600);return false}
+    while(S.meters.length<=i)S.meters.push({id:'',size:null,k:null});r.id=S.meters[i].id||('POS'+String(i+1).padStart(2,'0'));SELSLOT=i}
   if(!r||!r.id){toast('ไม่พบ Meter ID ในข้อมูลที่อ่าน');return false}
   if(r.bad||r.vol==null){toast('ข้อมูลล่าสุดไม่สมบูรณ์ — แตะอ่านใหม่',3600);beep('bad');S.log.unshift({t:Date.now(),id:r.id,msg:'อ่านไม่สมบูรณ์',bad:1});save();render();return false}
   if(!S.plan.length){toast('ยังไม่มีแผนทดสอบ — ไปที่แท็บ ② แผนทดสอบ');return false}
@@ -392,9 +410,9 @@ function applyRead(r,src){
   const c=calc(pi,r.id);
   S.log.unshift({t:Date.now(),id:r.id,msg:role+' · '+fx(r.vol/1e5,5)+' m³'+(r.rev!=null?' · '+fx(r.rev)+' รอบ':'')+(c&&c.valid?' · '+sg(c.err)+'%':''),bad:c&&c.valid&&!c.pass?1:0,src});S.log=S.log.slice(0,60);
   if(had)role+=' (อ่านซ้ำตัวเดิม)';
-  if(r.rev==null)beep('warn');
+  if(r.rev==null&&!r.mech)beep('warn');
   LAST={r,id:r.id,role,slot:S.meters.indexOf(m),pi,t:Date.now()};if(!(r.issues&&r.issues[0]&&/ขนาดมิเตอร์/.test(r.issues[0])))beep(c&&c.valid&&!c.pass?'bad':'ok');
-  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³'+(had?' — ⚠ ทับค่าเดิม ถ้าเป็นคนละตัวแต่ Meter ID ซ้ำกัน ระบบแยกไม่ได้ ต้องแก้ ID ไม่ให้ซ้ำ':'')+(r.rev==null?' — ⚠ ไม่ได้อ่านจำนวนรอบ: ในแอป SMCV4 Reader กดปุ่มโหมดเป็น “แท่นเทส” แล้วแตะใหม่':''),(had||r.rev==null)?6000:2400);
+  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³'+(had?' — ⚠ ทับค่าเดิม ถ้าเป็นคนละตัวแต่ Meter ID ซ้ำกัน ระบบแยกไม่ได้ ต้องแก้ ID ไม่ให้ซ้ำ':'')+(r.rev==null&&!r.mech?' — ⚠ ไม่ได้อ่านจำนวนรอบ: ในแอป SMCV4 Reader กดปุ่มโหมดเป็น “แท่นเทส” แล้วแตะใหม่':''),(had||r.rev==null)?6000:2400);
   r.issues&&r.issues.length&&toast(r.id+': '+r.issues[0],3600);
   save();render();return true}
 function ingest(u,part,meta,src){const r=parseNfc(u,part,meta);if(RL.role==='send'&&RL.code&&src==='app')return rlSend(r);return applyRead(r,src)}
@@ -403,7 +421,8 @@ function hexToBytes(h){h=h.replace(/[^0-9a-fA-F]/g,'');const u=new Uint8Array(h.
 function benchLoad(buffer,name){const part=(window.NFC_PART&&window.NFC_PART.length)?window.NFC_PART:null,meta=window.NFC_META||null;window.NFC_PART=null;window.NFC_META=null;ingest(new Uint8Array(buffer),part,meta,'app')}
 window.load=benchLoad;
 window.benchFeed=function(p){if(p&&p.hex)ingest(hexToBytes(p.hex),p.partial&&p.ranges?p.ranges:null,p.verify?{verify:true,verified:!!p.verified,attempts:p.attempts,same:p.same}:null,'app')};
-addEventListener('message',e=>{const d=e.data;if(d&&d.type==='nfc-dump'&&d.hex)window.benchFeed(d)});
+window.benchMech=function(p){if(p)mechIn(p,'app')};
+addEventListener('message',e=>{const d=e.data;if(d&&d.type==='nfc-dump'&&d.hex)window.benchFeed(d);if(d&&d.type==='mech-read')window.benchMech(d)});
 
 /* ---------- นำเข้า/ส่งออก Excel รูปแบบ Batch (ตรงกับ Web App) ---------- */
 let kMapTab=false;let XL=null;const needXL=()=>window.XLSX?Promise.resolve(window.XLSX):new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>ok(window.XLSX);s.onerror=()=>no(new Error('โหลดตัวอ่าน Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ต)'));document.head.appendChild(s)});
@@ -453,11 +472,14 @@ const VD={pass:['ok','ผ่าน PASS'],fail:['bad','ไม่ผ่าน FAI
 let fillK=true;
 
 function render(){
+  if(!S.batch.mtype)S.batch.mtype='nfc';if(S.batch.mfrac==null)S.batch.mfrac=3;
   if(IS_MON){renderMon();return}
+  const kb={id:($('#kbId')||{}).value,val:($('#kbVal')||{}).value,f:document.activeElement&&/^kb(Id|Val)$/.test(document.activeElement.id)?document.activeElement.id:null};
   const A=agg();
   $('#tabs').innerHTML=TABS.map((t,i)=>`<button class="tab ${TAB===t[0]?'on':''} ${t[0]==='run'&&A.nm&&A.pend?'warn':''}" data-a="tab" data-v="${t[0]}"><i>${i+1}</i>${t[1]}<span class="dot"></span></button>`).join('');
-  const b=S.batch;$('#hdBatch').textContent=b.id;$('#hdMeter').textContent=MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · '+A.nm+'/'+S.meters.length+' มิเตอร์';
+  const b=S.batch;$('#hdBatch').textContent=b.id;$('#hdMeter').textContent=MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · '+A.nm+'/'+S.meters.length+' มิเตอร์'+(MECH()?' · แมคคานิค':'');document.body.classList.toggle('mech',MECH());
   $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep}[TAB])(A);rlChip();
+  if($('#kbVal')){if(!KBCLR){if(kb.val)$('#kbVal').value=kb.val;if(kb.id)$('#kbId').value=kb.id}const ff=KBFOCUS||kb.f;if(ff&&$('#'+ff))$('#'+ff).focus();KBFOCUS=null;KBCLR=false}
   if(MON)renderMon(A)}
 
 /* ---------- ① ตั้งค่า ---------- */
@@ -481,6 +503,7 @@ function vSetup(A){const b=S.batch;
    ${fld('รุ่นฮาร์ดแวร์ / หมายเหตุรุ่น','batch.hw','text','placeholder="เช่น SMCV4 rev.C"')}
    <div class="fld"><label>หมายเหตุ</label><textarea rows="2" data-f="batch.note">${esc(b.note)}</textarea></div></div>
   <div class="card"><h2><em>🔧</em>มิเตอร์ที่ทดสอบ</h2><p class="sub">ขนาดอ่านจาก NFC (Addr 76) ได้อัตโนมัติ — เลือกเองได้ถ้ายังไม่อ่าน</p>
+   <div class="fr">${sel('ประเภทมิเตอร์','batch.mtype',[['nfc','ดิจิทัล SMCV4 (อ่าน NFC)'],['mech','แมคคานิค (ถ่ายภาพ/คีย์ค่าหน้าปัด)']])}${MECH()?sel('ทศนิยมบนหน้าปัด (ตัวเลขสีแดง)','batch.mfrac',[[0,'0 หลัก · ละเอียด 1 m³'],[1,'1 หลัก · 100 L'],[2,'2 หลัก · 10 L'],[3,'3 หลัก · 1 L'],[4,'4 หลัก · 0.1 L']]):'<div class="fld"><label>&nbsp;</label><p class="hint" style="margin:0">อ่านค่า ID · K · รอบ · แบตเตอรี่ ผ่าน NFC</p></div>'}</div>
    <div class="fr3">${sel('ชนิด','batch.model',[['MJ','Multijet'],['SJ','Single Jet']])}${sel('ขนาด (mm)','batch.size',SIZES.map(s=>[s,s+' mm']))}${sel('คลาส R','batch.R',RCL.map(r=>[r,'R'+r]))}</div>
    <div class="fr3">${fld('Q3 (L/h)','batch.q3','number','min="1" step="any"')}${fld('จำนวนช่องมิเตอร์','batch.nm','number','min="1" max="40"')}${fld('Batch ผ่านเมื่อมาตรผ่านครบ ≥ (%)','batch.passPct','number','min="1" max="100"')}</div>
    <div id="qchips" class="grid g4" style="gap:10px;margin:6px 0 12px">${qchips()}</div>
@@ -529,14 +552,75 @@ function vPlan(A){const b=S.batch,Q=qs(b.q3,b.R),tw=S.plan.reduce((a,p)=>a+p.v,0
 /* ---------- ③ ทดสอบ ---------- */
 /* ---------- ③ ทดสอบ (ใช้งานง่าย: ผังแท่น + จอ LCD + บอกว่าต้องทำอะไรต่อ) ---------- */
 let LAST=null,SELSLOT=null;
-const lcdRev=rev=>`<div class="lcd rv"><span class="gh">888888</span><span class="vv" ${rev==null?'title="ไม่ได้อ่านจำนวนรอบ"':''}>${pad6(rev)}</span><i>รอบ</i></div>`;
-const lcd=(vol,cls='')=>{const t=vol==null?'':Math.floor(vol/1e5)+'.'+String(vol%1e5).padStart(5,'0');return`<div class="lcd ${cls}"><span class="gh">8888888.88888</span><span class="vv">${t||'&nbsp;'}</span><i>m³</i></div>`};
+/* ===== มาตรแมคคานิค (ไม่มี NFC) : อ่านค่าหน้าปัดด้วยกล้องในแอป หรือคีย์เอง ===== */
+const MECH=()=>S.batch.mtype==='mech';
+const mfracN=()=>S.batch.mfrac==null?3:+S.batch.mfrac;
+function parseReading(s,frac){s=String(s==null?'':s).trim().replace(/\s+/g,'').replace(/,/g,'.');if(!s)return null;
+  if(/^\d+\.\d*$|^\.\d+$/.test(s))return parseFloat(s);
+  if(/^\d+$/.test(s))return parseInt(s,10)/Math.pow(10,frac);return null}
+function odo(vol,cls=''){const f=mfracN(),ni=5;let ds=null;if(vol!=null)ds=String(Math.floor(vol/1e5*Math.pow(10,f)+1e-6)).padStart(ni+f,'0');
+  const cell=(c,red)=>`<b class="${red?'rd':'bk'}">${c}</b>`;
+  const hh=ds==null?Array.from({length:ni+f},(_,i)=>cell('–',i>=ni)).join(''):[...ds].map((c,i)=>cell(c,i>=ds.length-f)).join('');
+  return`<div class="odo ${cls}" title="มาตรแมคคานิค · ตัวเลขสีดำ = m³ · สีแดง = เศษ m³">${hh}<i>m³</i></div>`}
+let KEYSLOT=null,KBFOCUS=null,KBCLR=false;
+function nextSlot(pi,st){const key=st.step==='start'?'s':'e',N=Math.max(S.batch.nm,S.meters.length);
+  for(let i=0;i<N;i++){const m=S.meters[i];if(!m||!m.id)return i;const rd=((S.rd[pi]||{})[m.id])||{};if(!rd[key])return i}return null}
+function renameMeter(i,nid){const m=S.meters[i],old=m&&m.id;if(!old||old===nid)return;Object.keys(S.rd).forEach(pi=>{const o=S.rd[pi];if(o&&o[old]&&!o[nid]){o[nid]=o[old];delete o[old]}});m.id=nid}
+function mechIn(p,src){
+  const m3=parseReading(p.reading,mfracN());
+  if(m3==null){toast('อ่านค่าหน้าปัดไม่ได้ — ใส่ตัวเลข เช่น 00123.456 หรือ 00123456',3400);beep('bad');return false}
+  let id=String(p.id||'').trim().toUpperCase().replace(/\s+/g,''),i=(p.slot!=null&&p.slot!=='')?+p.slot:null;
+  if(i!=null){while(S.meters.length<=i)S.meters.push({id:'',size:null,k:null});if(id&&S.meters[i].id&&S.meters[i].id!==id&&!S.meters.some(x=>x.id===id))renameMeter(i,id);SELSLOT=i}
+  const r={id,size:p.size||null,vol:Math.round(m3*1e5),mech:1,rev:null,k:null,bat:null,ts:Date.now(),issues:[],raw:String(p.reading),by:p.by||src};
+  if(RL.role==='send'&&RL.code&&src==='app')return rlSend(r);
+  return applyRead(r,src)}
+function kbSave(){const pi=Math.min(S.cur,S.plan.length-1),st=pointState(pi);
+  if(st.step!=='start'&&st.step!=='end'){toast('ตอนนี้อยู่ขั้นปล่อยน้ำ — กด ■ หยุดน้ำ ก่อน แล้วจึงคีย์ค่าสิ้นสุด',3200);return}
+  const i=+$('#kbSlot').value,id=$('#kbId').value.trim(),val=$('#kbVal').value.trim();
+  if(!val){toast('ใส่ค่าที่อ่านจากหน้าปัดก่อน');$('#kbVal').focus();return}
+  KEYSLOT=null;KBCLR=true;KBFOCUS='kbVal';
+  if(!mechIn({id,reading:val,slot:i},'web')){KBCLR=false}}
+function keyBar(pi,st,N){if(!MECH())return'';
+  if(st.step!=='start'&&st.step!=='end')return`<div class="card keybar"><h2><em>⌨</em>คีย์ / รับค่าหน้าปัดมาตรแมคคานิค</h2><p class="sub">${st.step==='run'?'กำลังปล่อยน้ำ — เมื่อกด ■ หยุดน้ำ จะเริ่มอ่านค่าสิ้นสุดได้':'จุดนี้ยืนยันแล้ว'}</p></div>`;
+  const i=KEYSLOT!=null?KEYSLOT:nextSlot(pi,st),m=i!=null?S.meters[i]:null,key=st.step==='start'?'s':'e';
+  const opt=Array.from({length:N},(_,k)=>{const mm=S.meters[k]||{id:''},rd=mm.id?(((S.rd[pi]||{})[mm.id])||{}):{};return`<option value="${k}" ${k===i?'selected':''}>#${k+1} ${mm.id?esc(mm.id):'(ว่าง)'} ${rd[key]?'✔':''}</option>`}).join('');
+  const idv=m&&m.id&&!/^POS\d+$/.test(m.id)?m.id:'';
+  return`<div class="card keybar"><h2><em>⌨</em>คีย์ / รับค่าหน้าปัดมาตรแมคคานิค</h2>
+   <p class="sub">${st.step==='start'?'อ่านค่าเริ่มต้น':'อ่านค่าสิ้นสุด'} · พิมพ์ตัวเลขที่เห็นบนหน้าปัด (เช่น <b>00123.456</b> หรือ <b>00123456</b> — ใช้ทศนิยม ${mfracN()} หลักตามที่ตั้งไว้) แล้วกด Enter ระบบจะข้ามไปตำแหน่งถัดไปให้ · หรือถ่ายหน้าปัดด้วยแอป SMCV4 Reader โหมด “กลไก (กล้อง)” ค่าจะเข้ามาที่นี่เอง</p>
+   <div class="kbr"><div class="fld"><label>ตำแหน่ง</label><select id="kbSlot">${opt}</select></div>
+   <div class="fld"><label>Meter ID / เลขซีเรียล (ไม่บังคับ)</label><input id="kbId" type="text" value="${esc(idv)}" placeholder="${m&&m.id?esc(m.id):'เว้นว่างได้'}" autocomplete="off"></div>
+   <div class="fld"><label>ค่าที่อ่านจากหน้าปัด (m³)</label><input id="kbVal" type="text" inputmode="decimal" placeholder="00123.456" autocomplete="off"></div>
+   <button class="btn p" data-a="kbsave">บันทึก ⏎</button></div></div>`}
+const BAT_WARN=2.9,BAT_LOW=2.7;
+const batCls=v=>v==null?'':v<BAT_LOW?'bad':v<BAT_WARN?'warn':'ok';
+const batT=v=>v==null?'—':v.toFixed(2)+' V';
+function batSeries(id){const pts=[];Object.keys(S.rd).forEach(pi=>{const rd=(S.rd[pi]||{})[id];if(!rd)return;[rd.s,rd.e].forEach(r=>{if(r&&r.bat!=null&&!r.carried)pts.push({t:r.ts||0,v:r.bat,pi:+pi})})});
+  const seen=new Set();return pts.filter(p=>{const k=p.t+'|'+p.v;if(seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>a.t-b.t)}
+function batStat(id){const s=batSeries(id);if(!s.length)return null;const f=s[0],l=s[s.length-1],mn=Math.min(...s.map(x=>x.v)),dv=l.v-f.v,hrs=(l.t-f.t)/3600e3,rate=hrs>0.05?dv/hrs*1000:null;
+  return{s,first:f.v,last:l.v,min:mn,dv,hrs,rate,st:mn<BAT_LOW?'bad':(dv<=-0.05||mn<BAT_WARN)?'warn':'ok'}}
+function batSpark(s,w=120,hh=30){if(!s||s.length<2)return'';const vs=s.map(x=>x.v),mn=Math.min(...vs)-.02,mx=Math.max(...vs)+.02,t0=s[0].t,t1=s[s.length-1].t||1,X=t=>t1>t0?4+(t-t0)/(t1-t0)*(w-8):w/2,Y=v=>hh-4-(v-mn)/(mx-mn)*(hh-8);
+  return`<svg width="${w}" height="${hh}" viewBox="0 0 ${w} ${hh}"><polyline fill="none" stroke="#0b7ea4" stroke-width="2" points="${s.map(p=>X(p.t).toFixed(1)+','+Y(p.v).toFixed(1)).join(' ')}"/>${s.map(p=>`<circle cx="${X(p.t).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="2.4" fill="#0b7ea4"/>`).join('')}</svg>`}
+function batTable(A){const rows=A.mids.map(id=>{const b=batStat(id);if(!b)return`<tr><td class="l mono">${esc(id)}</td><td colspan="7" class="hint">ไม่มีค่าแบตเตอรี่</td></tr>`;
+    return`<tr><td class="l mono">${esc(id)}</td><td>${batT(b.first)}</td><td>${batT(b.last)}</td><td>${batT(b.min)}</td><td class="${b.dv<=-0.05?'h3':b.dv<=-0.02?'h1':'h0'}">${b.dv>0?'+':''}${b.dv.toFixed(2)} V</td><td>${b.hrs>0?fx(b.hrs*60,0)+' นาที':'—'}</td><td>${b.rate==null?'—':(b.rate>0?'+':'')+fx(b.rate,0)+' mV/ชม.'}</td><td>${batSpark(b.s,100,26)}</td><td><span class="pill ${b.st==='ok'?'ok':b.st==='warn'?'warn':'bad'}">${b.st==='ok'?'ปกติ':b.st==='warn'?'เฝ้าระวัง':'ต่ำ'}</span></td></tr>`}).join('');
+  return`<div class="tw"><table><thead><tr><th class="l">มิเตอร์</th><th>แรงดันแรก</th><th>ล่าสุด</th><th>ต่ำสุด</th><th>เปลี่ยน</th><th>ช่วงเวลา</th><th>อัตราตก</th><th>แนวโน้ม</th><th>สถานะ</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <p class="hint">วัดได้เป็น <b>แรงดันแบตเตอรี่</b> (ละเอียด 0.01 V จาก Addr 211) ไม่ใช่กระแสโดยตรง — ใช้ดูว่าบอร์ดมิเตอร์ทำให้แรงดันตกเร็วแค่ไหนระหว่างทดสอบ (เฝ้าระวังเมื่อต่ำกว่า ${BAT_WARN} V หรือตก ≥ 0.05 V · ต่ำเมื่อต่ำกว่า ${BAT_LOW} V) · แรงดันขณะอ่านด้วย NFC อาจต่างจากตอนมิเตอร์ว่างเล็กน้อย ควรเทียบทุกตัวด้วยวิธีอ่านเดียวกัน · ถ้าต้องการกระแสจริงต้องวัดด้วยมิเตอร์กระแสต่อภายนอก</p>`}
+const batCard=A=>`<div class="card"><h2><em>🔋</em>แบตเตอรี่ระหว่างทดสอบ</h2><p class="sub">แรงดันแบตเตอรี่ของมิเตอร์แต่ละตัวทุกครั้งที่อ่าน — ดูว่าบอร์ดภายในกินแบตเร็วผิดปกติหรือไม่</p>${batTable(A)}</div>`;
+const lcdRev=rev=>MECH()?'':`<div class="lcd rv"><span class="gh">888888</span><span class="vv" ${rev==null?'title="ไม่ได้อ่านจำนวนรอบ"':''}>${pad6(rev)}</span><i>รอบ</i></div>`;
+const lcd=(vol,cls='')=>{if(MECH())return odo(vol,cls);const t=vol==null?'':Math.floor(vol/1e5)+'.'+String(vol%1e5).padStart(5,'0');return`<div class="lcd ${cls}"><span class="gh">8888888.88888</span><span class="vv">${t||'&nbsp;'}</span><i>m³</i></div>`};
 function dial(r,prog){const C=2*Math.PI*118,p=Math.max(0,Math.min(1,prog||0));
   return`<div class="dial"><svg viewBox="0 0 280 280" aria-hidden="true"><circle cx="140" cy="140" r="134" fill="#eef3f6" stroke="#cfdbe3" stroke-width="4"/><circle cx="140" cy="140" r="118" fill="none" stroke="#0a2a43" stroke-width="20"/><circle cx="140" cy="140" r="118" fill="none" stroke="#34d399" stroke-width="13" stroke-linecap="round" stroke-dasharray="${C*.75*p} ${C}" transform="rotate(135 140 140)"/></svg>
   <div class="dc"><b class="dt">SMCV.4</b><small class="mut">WATER METER</small><small class="mut" style="margin-top:4px">TOTAL VOLUME</small>${lcd(r?r.vol:null)}
   <div class="did"><small>METER ID</small><b class="mono">${r?esc(r.id):'—'}</b></div><small class="mono">${r&&r.time?esc(r.time.replace('.',':')):'&nbsp;'}${r&&r.rev!=null?' · รอบ '+pad6(r.rev):''}</small>
-  <span class="szp">SIZE <b>${r&&r.size?r.size:'–'}</b> mm</span></div></div>`}
-function guideSteps(){const b=S.batch,N=Math.max(b.nm,S.meters.filter(m=>m.id).length),p=S.plan,tw=p.reduce((a,x)=>a+x.v,0),tm=p.reduce((a,x)=>a+x.v/x.f*60,0),f0=p[0];
+  <div class="pl"><span class="szp">SIZE <b>${r&&r.size?r.size:'–'}</b> mm</span>${MECH()?'<span class="szp bat ok">MECHANICAL</span>':`<span class="szp bat ${batCls(r&&r.bat)}">BAT <b>${r&&r.bat!=null?r.bat.toFixed(2):'–'}</b> V</span>`}</div></div></div>`}
+function guideSteps(){if(MECH())return mechSteps();return guideSteps0()}
+function mechSteps(){const b=S.batch,N=Math.max(b.nm,S.meters.filter(m=>m.id).length),f0=S.plan[0];return[
+  ['ตั้งค่าแท่น',`แท็บ ① ตั้ง <b>ประเภทมิเตอร์ = แมคคานิค</b> เลือก ${MODEL(b.model)} · ${b.size} mm · R${b.R} จำนวน <b>${N} ตัว</b> และ <b>ทศนิยมบนหน้าปัด ${mfracN()} หลัก</b> (ตัวเลขสีแดง) ให้ตรงกับมาตรที่ทดสอบ`],
+  ['วางมิเตอร์ตามตำแหน่ง',`เรียงมิเตอร์บนแท่นเป็น <b>#1 → #${N}</b> ตามผังในหน้านี้ — ตำแหน่งตรงกับช่อง #1…#${N} ที่ใช้คีย์/ถ่ายภาพ`],
+  ['อ่านค่าเริ่มต้น',`<b>วิธี ก:</b> เปิดแอป SMCV4 Reader → กดปุ่มโหมดเป็น <b>“กลไก (กล้อง)”</b> → 📷 ถ่ายหน้าปัด → ตรวจ/แก้ตัวเลข → ส่ง (ถ้ามีบาร์โค้ด/QR/ซีเรียลในรูปเดียวกัน แอปดึง Meter ID ให้) · <b>วิธี ข:</b> คีย์ที่แถบ ⌨ บนหน้านี้ แล้วกด Enter ระบบข้ามไปตำแหน่งถัดไปให้ · อ่านครบแล้วกด ▶ เริ่มปล่อยน้ำ`],
+  ['ปล่อยน้ำ แล้วหยุด',`ตั้งอัตราไหลที่แท่นให้ได้ <b>${f0?flowT(f0.f):'–'} L/h</b> ปล่อยจนครบปริมาตรอ้างอิง แล้วกด ■ หยุดน้ำ`],
+  ['อ่านค่าสิ้นสุด แล้วยืนยัน',`อ่านหน้าปัดทุกตัวอีกรอบ (ถ่ายภาพหรือคีย์) ระบบคำนวณ <b>% error = (ปริมาตรที่เพิ่ม − ปริมาตรอ้างอิง) ÷ ปริมาตรอ้างอิง</b> แล้วกด ✔ ยืนยัน → จุดถัดไป (ค่าสิ้นสุดเป็นค่าเริ่มต้นของจุดถัดไปอัตโนมัติ)`],
+  ['ดูผลและออกรายงาน',`ไปแท็บ ④ ผลสรุป (PASS/FAIL, กราฟ) และ ⑤ รายงาน PDF/Excel — มาตรแมคคานิคไม่มีค่า K / รอบ / แบตเตอรี่ · ระบบเตือนถ้าความละเอียดหน้าปัดหยาบเกินไปเมื่อเทียบกับปริมาตรทดสอบ`]]}
+function guideSteps0(){const b=S.batch,N=Math.max(b.nm,S.meters.filter(m=>m.id).length),p=S.plan,tw=p.reduce((a,x)=>a+x.v,0),tm=p.reduce((a,x)=>a+x.v/x.f*60,0),f0=p[0];
   return[
   ['ตั้งค่าแท่น',`แท็บ ① เลือก <b>${MODEL(b.model)} · ${b.size} mm · R${b.R}</b> และจำนวนมิเตอร์ <b>${N} ตัว</b> — ระบบสร้างแผนอัตราไหลให้เองใน ② (${p.length} จุด: ${p.map(x=>flowT(x.f)).join(' / ')} L/h) ใช้น้ำรวมประมาณ ${fx(tw)} L · ใช้เวลาประมาณ ${fx(tm,0)} นาที ${p.length?'(ยังไม่รวมเวลาแตะอ่าน)':''}`],
   ['วางมิเตอร์ตามตำแหน่ง',`เรียงมิเตอร์บนแท่นเป็น <b>#1 → #${N}</b> ตามผังในหน้านี้ (แถวซ้ายบนลงล่าง แล้วแถวขวา) <b>ลำดับที่แตะอ่านครั้งแรก = ตำแหน่งของมิเตอร์</b> ดังนั้นแตะเรียงตามแท่น จะได้ผลตรงตำแหน่งจริง`],
@@ -566,6 +650,7 @@ function vRun(A){
     todo=`<b>ขั้นที่ 3 · อ่านค่าสิ้นสุด</b> — แตะมิเตอร์ทีละตัว (อ่านแล้ว <b>${hasE}/${hasS}</b>)${missRd('e').length?' · ยังไม่อ่าน: <b>'+missRd('e').join(' ')+'</b>':' · <b>ครบแล้ว กด ✔ ยืนยันได้เลย</b>'}`}
   else{ctl=`<button class="btn" data-a="redo">↩ แก้ไข / อ่านใหม่</button> ${pi<np-1?`<button class="btn p" data-a="goto" data-v="${pi+1}">จุดถัดไป →</button>`:`<button class="btn p" data-a="tab" data-v="res">ดูผลสรุป →</button>`}`;
     todo=`<b>จุดนี้ยืนยันแล้ว</b> ✔ — ${pi<np-1?'ไปจุดถัดไป: ตั้งอัตราไหล '+flowT(S.plan[pi+1].f)+' L/h':'ครบทุกจุดแล้ว ไปดูผลสรุปได้เลย'}`}
+  if(MECH())todo=todo.replace('ใช้แอป SMCV4 Reader แตะมิเตอร์ทีละตัว','ถ่ายหน้าปัดด้วยแอป SMCV4 Reader (โหมดกลไก) หรือคีย์ค่าที่แถบ ⌨ ด้านล่าง').replace('แตะมิเตอร์ทีละตัว','ถ่ายหน้าปัด/คีย์ค่าทีละตัว');
   const tmv=st.t0?dur((st.t1||Date.now())-st.t0):'00:00';
   const card=(m,i)=>{
     if(!m.id)return`<div class="sl empty ${SELSLOT===i?'sel':''}" data-a="selslot" data-v="${i}"><div class="sh"><span class="no">${i+1}</span><span class="pill mut">ว่าง</span></div>${lcd(null)}<div class="sm">${SELSLOT===i?'▶ แตะมิเตอร์ แล้วค่าจะเข้าช่องนี้':'รออ่านมิเตอร์ตัวที่ '+(i+1)+' <small>(แตะเพื่อกำหนดช่อง)</small>'}</div></div>`;
@@ -575,13 +660,13 @@ function vRun(A){
     const lab=c&&c.valid?(c.pass?'<span class="pill ok">PASS</span>':'<span class="pill bad">FAIL</span>'):rd.e?'<span class="pill ok">อ่านสิ้นสุดแล้ว</span>':rd.s?(st.step==='start'?`<span class="pill ok">อ่านเริ่มต้นแล้ว${rd.s.carried?' (ต่อ)':''}</span>`:`<span class="pill warn">รออ่านสิ้นสุด</span>`):'<span class="pill warn">ยังไม่อ่านจุดนี้</span>';
     const pr=c&&c.valid?Math.min(130,c.dVol/c.vref*100):0;
     return`<div class="sl ${cls} ${j?'just':''}" data-a="slotdet" data-v="${i}"><div class="sh"><span class="no">${i+1}</span>${lab}</div>${lcd(shown)}${lcdRev(rd.e?rd.e.rev:rd.s?rd.s.rev:null)}
-    <div class="idr"><b class="mono">${esc(m.id)}</b><span class="szp2">${m.size?m.size+' mm':'? mm'}</span></div>
+    ${MECH()?'':(()=>{const r0=rd.e||rd.s,b1=r0?r0.bat:null,b0=rd.s?rd.s.bat:null;return`<div class="bt ${batCls(b1)}">🔋 ${rd.s&&rd.e&&b0!=null&&b1!=null&&rd.s!==rd.e?b0.toFixed(2)+' → '+b1.toFixed(2)+' V <small>('+((b1-b0)>0?'+':'')+(b1-b0).toFixed(2)+')</small>':batT(b1)}</div>`})()}<div class="idr"><b class="mono">${esc(m.id)}</b><span class="szp2">${m.size?m.size+' mm':'? mm'}</span></div>
     <div class="er ${c&&c.valid?(c.pass?'p':'f'):'n'}">${c&&c.valid?sg(c.err)+'%':'—'}</div>
     <div class="pb"><i style="width:${pr}%"></i></div><div class="sm">${c&&c.valid?'ใช้น้ำ '+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L'+(c.dRev!=null?' · Δรอบ '+fx(c.dRev)+(c.wrap?' ↻วนรอบ':'')+' · K'+(c.idx+1):''):rd.s&&!rd.e?'รอค่าสิ้นสุด · อ้างอิง '+p.v+' L':'อ้างอิง '+p.v+' L'}${(c?c.flags:[]).length?' · ⚠ '+esc(c.flags[0]):''}</div></div>`};
   const rows=Math.ceil(N/2),lr=LAST&&LAST.r,lc=lr&&LAST.pi===pi?calc(pi,lr.id):null;
   const doneP=A.P.filter(x=>x.state==='done'||x.state==='fail').length;
   const cfg=`<details class="card cfgd" ${anyData?'':'open'}><summary>🔧 <b>ตั้งค่าการทดสอบ</b> · ${MODEL(S.batch.model)} · ${S.batch.size} mm · R${S.batch.R} · ${N} ตัวบนแท่น <small>(แตะเพื่อแก้ไข)</small></summary><div class="cfgr">${sel('ชนิดมิเตอร์','batch.model',[['SJ','Single Jet'],['MJ','Multijet']])}${sel('ขนาด (mm)','batch.size',SIZES.map(s=>[s,s+' mm']))}${sel('คลาส R','batch.R',RCL.map(r=>[r,'R'+r]))}${fld('จำนวนมิเตอร์บนแท่น','batch.nm','number','min="1" max="40"')}</div>${q3Info()}<p class="hint" style="margin-top:8px">เปลี่ยนขนาด / คลาส R แล้วระบบปรับอัตราการไหลและแผนทดสอบให้อัตโนมัติ · ข้อมูลอื่น (ผู้ทดสอบ เกณฑ์ ความดัน อุณหภูมิ) อยู่ที่แท็บ ①</p></details>`;
-  return`${cfg}${anyData?'':`<div class="card guide"><h2><em>📖</em>เริ่มใช้งานใน 6 ขั้น</h2>${guideHtml()}</div>`}
+  return`${cfg}${keyBar(pi,st,N)}${anyData?'':`<div class="card guide"><h2><em>📖</em>เริ่มใช้งานใน 6 ขั้น</h2>${guideHtml()}</div>`}
   <div class="steps">${S.plan.map((q,i)=>`<div class="pt ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}" data-a="goto" data-v="${i}"><span class="st">${A.P[i].state==='done'?'✅':A.P[i].state==='fail'?'⚠️':''}</span><b>${esc(q.l)}</b><small>${flowT(q.f)} L/h · ${q.v} L</small><small>±${q.lim}% · ${A.P[i].n?A.P[i].pass+'/'+A.P[i].n+' ผ่าน':'รอทดสอบ'}</small></div>`).join('')}</div>
   <div class="banner"><div><div style="opacity:.8;font-size:.9rem">จุดทดสอบที่ ${pi+1} / ${np} · ยืนยันแล้ว ${doneP} จุด</div><h3>${esc(p.l)} <small>· ${flowT(p.f)} L/h · ${p.v} L</small></h3>
    <div class="k"><span>เกณฑ์ ±${p.lim}%</span><span>เวลาโดยประมาณ ${fx(p.v/p.f*60,1)} นาที</span><span>${regs.length}/${N} มิเตอร์</span>${fa?`<span style="${devBad?'background:#fb7185;color:#fff':''}">อัตราไหลจริง ${fx(fa,fa<100?1:0)} L/h (${sg(dev,1)}%)</span>`:''}</div>
@@ -617,9 +702,10 @@ function vRes(A){const v=VD[A.verdict],pts=S.plan;
    <div class="kpi" style="--c:var(--acc)"><small>จุดทดสอบที่ผ่าน (ทุกมิเตอร์)</small><b>${A.cellsPass}/${A.cellsAll}</b><em>${A.cellsAll?fx(A.cellsPass/A.cellsAll*100,1):0}% · ${A.ptsDone}/${pts.length} อัตราไหล</em></div>
    <div class="kpi" style="--c:#f59e0b"><small>error เฉลี่ย / สูงสุด</small><b>${sg(A.mean)} / ${sg(A.worst)}</b><em>% (สูงสุดคือค่าที่ห่างศูนย์มากสุด)</em></div></div>
   <div class="card"><h2><em>🧮</em>ตารางผล % error รายมิเตอร์</h2><p class="sub">สีเขียว ≤ 50% ของเกณฑ์ · เหลือง 50–80% · ส้ม 80–100% · แดง เกินเกณฑ์</p>${matrix(A)}</div>
+  ${MECH()?'':batCard(A)}
   <div class="grid g2"><div class="card"><h2><em>📈</em>% error เทียบอัตราการไหล</h2><p class="sub">เส้นฟ้า = ผ่าน · เส้นแดง = มีจุดเกินเกณฑ์</p>${pts.length?chartSvg({series:ser}):''}</div>
-  <div class="card"><h2><em>🔩</em>ค่า K รายจุดทดสอบ</h2><p class="sub">ค่า K ที่ต้องใช้ ณ อัตราไหลที่ทดสอบ — ใช้เป็นข้อมูลปรับ K1–K20</p>${kPtsTable(A)}</div></div>
-  <div class="card"><h2><em>🔧</em>ค่าคงที่ K1–K20 ที่แนะนำ</h2><p class="sub">K = ปริมาตรต่อ 1 รอบใบพัด (µL/รอบ) · K ใหม่ = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ (ค่ากลางของมิเตอร์ทั้ง Batch) · ช่องฟ้า = ดัชนีที่ทดสอบจริง</p>
+  <div class="card kx"><h2><em>🔩</em>ค่า K รายจุดทดสอบ</h2><p class="sub">ค่า K ที่ต้องใช้ ณ อัตราไหลที่ทดสอบ — ใช้เป็นข้อมูลปรับ K1–K20</p>${kPtsTable(A)}</div></div>
+  <div class="card kx"><h2><em>🔧</em>ค่าคงที่ K1–K20 ที่แนะนำ</h2><p class="sub">K = ปริมาตรต่อ 1 รอบใบพัด (µL/รอบ) · K ใหม่ = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ (ค่ากลางของมิเตอร์ทั้ง Batch) · ช่องฟ้า = ดัชนีที่ทดสอบจริง</p>
    <label class="hint"><input type="checkbox" id="fillK" ${fillK?'checked':''}> สอดแทรกดัชนีที่ไม่ได้ทดสอบ</label> &nbsp; <label class="hint"><input type="checkbox" id="kMapTab" ${kMapTab?'checked':''}> จับคู่ดัชนีจากค่า K ที่ใกล้ที่สุด (ไม่เลือก = จัดตามอัตราไหลของรุ่น/ขนาดนี้)</label>${A.kRec.some(r=>r.prop!=null)?kGrid(A):'<p class="hint">ยังไม่มีข้อมูลจำนวนรอบ (Addr 184–186) — ใช้โหมด “แท่นเทส” หรืออ่านส่วนหัว 0–211 ในแอป หรือไฟล์ .bin เต็ม</p>'}
    <div style="margin-top:10px"><button class="btn sm" data-a="kcopy">📋 คัดลอกค่า K (BCD 8 หลัก)</button></div></div>`}
 
@@ -633,7 +719,8 @@ function reportHtml(A){const b=S.batch,v=VD[A.verdict],pts=S.plan,Q=qs(b.q3,b.R)
    <div class="kg"><div class="kpi"><small>มิเตอร์ผ่านครบ</small><b>${A.full}/${A.nm}</b><em>${fx(A.pct,1)}%</em></div><div class="kpi" style="--c:var(--ok)"><small>จุดทดสอบที่ผ่าน</small><b>${A.cellsPass}/${A.cellsAll}</b><em>${A.cellsAll?fx(A.cellsPass/A.cellsAll*100,1):0}%</em></div><div class="kpi" style="--c:#f59e0b"><small>error เฉลี่ย</small><b>${sg(A.mean)}%</b><em>ค่ากลางทั้ง Batch</em></div><div class="kpi" style="--c:var(--bad)"><small>error สูงสุด</small><b>${sg(A.worst)}%</b><em>ห่างศูนย์มากสุด</em></div></div>
    <h3>ผล % error รายมิเตอร์</h3>${matrix(A)}
    <h3>กราฟ % error เทียบอัตราการไหล</h3>${pts.length?chartSvg({series:ser,w:900,h:300}):''}
-   <h3>ค่า K รายจุดทดสอบ</h3>${kPtsTable(A)}<h3>ค่าคงที่ K1–K20 ที่แนะนำ (µL/รอบ)</h3>${A.kRec.some(r=>r.prop!=null)?kGrid(A):'<p class="hint">ไม่มีข้อมูลจำนวนรอบ</p>'}
+   ${MECH()?'':`<h3>ค่า K รายจุดทดสอบ</h3>${kPtsTable(A)}<h3>ค่าคงที่ K1–K20 ที่แนะนำ (µL/รอบ)</h3>${A.kRec.some(r=>r.prop!=null)?kGrid(A):'<p class="hint">ไม่มีข้อมูลจำนวนรอบ</p>'}`}
+   ${MECH()?'':`<h3>แบตเตอรี่ระหว่างทดสอบ</h3>${batTable(A)}`}
    <h3>ตรวจสอบคุณภาพข้อมูล</h3>${qcList(A)}
    ${b.note?`<h3>หมายเหตุ</h3><p>${esc(b.note)}</p>`:''}
    <div class="sg"><div>ผู้ทดสอบ<br><b>${esc(b.tester||'')}</b></div><div>ผู้ตรวจสอบ<br><b>${esc(b.checker||'')}</b></div><div>ผู้อนุมัติ</div></div></div>`}
@@ -675,7 +762,7 @@ function monHtml(A){
   const tiles=Array.from({length:N},(_,i)=>{const m=S.meters[i]||{id:''};
     if(!m.id)return`<div class="t empty"><span class="n">${i+1}</span>${lcd(null)}<div class="r2"><span class="ti">รอแตะมิเตอร์</span></div></div>`;
     const rd=rdOf(m),c=np?calc(pi,m.id):null,ok=c&&c.valid,shown=rd.e?rd.e.vol:rd.s?rd.s.vol:null,need=(st.step==='start'&&!rd.s)||(st.step==='end'&&!rd.e);
-    return`<div class="t ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''} ${LAST&&LAST.id===m.id&&fresh?'flash':''}"><span class="n">${i+1}</span>${lcd(shown)}<div class="r2"><span class="ti mono">${esc(m.id)} · ${m.size||'?'} mm<br>รอบ ${pad6((rd.e||rd.s||{}).rev)}</span><span class="te mono">${ok?sg(c.err)+'%':rd.e?'อ่านแล้ว':rd.s?(st.step==='start'?'พร้อม':'รอสิ้นสุด'):'รออ่าน'}</span></div></div>`}).join('');
+    return`<div class="t ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''} ${LAST&&LAST.id===m.id&&fresh?'flash':''}"><span class="n">${i+1}</span>${lcd(shown)}<div class="r2"><span class="ti mono">${esc(m.id)} · ${m.size||'?'} mm<br>${MECH()?'แมคคานิค':'รอบ '+pad6((rd.e||rd.s||{}).rev)+' · 🔋'+batT((rd.e||rd.s||{}).bat)}</span><span class="te mono">${ok?sg(c.err)+'%':rd.e?'อ่านแล้ว':rd.s?(st.step==='start'?'พร้อม':'รอสิ้นสุด'):'รออ่าน'}</span></div></div>`}).join('');
   const chips=S.plan.map((q,i)=>`<span class="pc ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}">${esc(q.l)} <small>${flowT(q.f)}</small></span>`).join('');
   const hd=`<div class="mhd"><div><div style="opacity:.75;font-size:2.1vh">${np?'จุดที่ '+(pi+1)+' / '+np:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div><div class="tim mono" id="mtm"></div></div>
     <div class="pcs">${chips}</div>`;
@@ -722,6 +809,7 @@ async function wbReport(){const X=await needXL(),A=agg(),b=S.batch,wb=X.utils.bo
   const KRx=kRef(S.batch.model,S.batch.size),kr=[['ดัชนี','ช่วง RPM','อัตราไหลที่ใช้ดัชนี (L/h)','K ปัจจุบัน (µL/รอบ)','K ที่ต้องใช้ (ค่ากลาง)','จำนวนค่า','K แนะนำ','K แนะนำ (สอดแทรก)','BCD 8 หลักสำหรับเขียนกลับ']],fill=kFill(A.kRec);
   A.kRec.forEach((r,i)=>kr.push(['K'+(i+1),i===0?'≤'+RPM_MAP[0]:i===19?'>'+RPM_MAP[18]:RPM_MAP[i-1]+'–'+RPM_MAP[i],+KRx.q[i].toFixed(1)+(KRx.est[i]?'*':''),r.cur||'',r.need==null?'':+r.need.toFixed(1),r.n,r.prop||'',fill[i]||'',k8(fill[i])]));
   X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(kr),'K1-K20');
+  {const bt=[['มิเตอร์','แรงดันแรก (V)','ล่าสุด (V)','ต่ำสุด (V)','เปลี่ยน (V)','ช่วงเวลา (นาที)','อัตราตก (mV/ชม.)','สถานะ']];A.mids.forEach(id=>{const b=batStat(id);bt.push(b?[id,b.first,b.last,b.min,+b.dv.toFixed(2),+(b.hrs*60).toFixed(0),b.rate==null?'':+b.rate.toFixed(0),b.st==='ok'?'ปกติ':b.st==='warn'?'เฝ้าระวัง':'ต่ำ']:[id,'','','','','','','ไม่มีข้อมูล'])});X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(bt),'แบตเตอรี่')}
   S.plan.forEach((p,i)=>{if(A.P[i].n)X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(batchAoa(i)),('F'+flowT(p.f)).replace(/[^\w.]/g,'_').slice(0,28))});
   return X.writeFile(wb,'TestBench_'+b.id+'.xlsx')}
 async function batchFiles(){const X=await needXL();let n=0;for(let i=0;i<S.plan.length;i++){if(!agg().P[i].n)continue;const wb=X.utils.book_new(),ws=X.utils.aoa_to_sheet(batchAoa(i));X.utils.book_append_sheet(wb,ws,'Batch');X.writeFile(wb,'Batch_'+hash6(S.batch.id+'#'+i)+'.xlsx');n++;await new Promise(r=>setTimeout(r,450))}toast(n?'ดาวน์โหลดไฟล์ Batch '+n+' ไฟล์ — นำเข้าที่ Web App ได้ทันที':'ยังไม่มีผลทดสอบให้ส่งออก')}
@@ -755,7 +843,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='howto')modal('<h3>📖 วิธีใช้ Test Bench</h3><p class="hint" style="margin-bottom:6px">ตัวอย่างตามการตั้งค่าปัจจุบัน: '+esc(MODEL(S.batch.model))+' · '+S.batch.size+' mm · R'+S.batch.R+' · '+Math.max(S.batch.nm,S.meters.length)+' ตัว</p>'+guideHtml()+'<button class="btn p" data-a="mclose" style="margin-top:12px">เข้าใจแล้ว</button>');
   else if(a==='selslot'){SELSLOT=SELSLOT===+v?null:+v;render()}
   else if(a==='slotdet'){const m=S.meters[+v];if(!m||!m.id)return;const pi=S.cur,rd=((S.rd[pi]||{})[m.id])||{},c=calc(pi,m.id),L=x=>x?fx(x.vol/1e5,5)+' m³'+(x.rev!=null?' · '+fx(x.rev)+' รอบ':''):'—';
-    modal('<h3>ตำแหน่ง #'+(+v+1)+' · <span class="mono">'+esc(m.id)+'</span></h3><div class="log" style="max-height:none"><div>ขนาด: <b>'+(m.size?m.size+' mm':'ไม่ทราบ')+'</b></div><div>จุด: <b>'+esc(S.plan[pi].l)+'</b> · '+flowT(S.plan[pi].f)+' L/h · '+S.plan[pi].v+' L</div><div>เริ่มต้น'+(rd.s&&rd.s.carried?' (ต่อจากจุดก่อน)':'')+': <b>'+L(rd.s)+'</b></div><div>สิ้นสุด: <b>'+L(rd.e)+'</b></div>'+(c&&c.valid?'<div>ปริมาตรมิเตอร์ / อ้างอิง: <b>'+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L</b></div><div>% Error: <b>'+sg(c.err)+'%</b> (เกณฑ์ ±'+c.lim+'%)</div>'+(c.dRev!=null?'<div>จำนวนรอบ: <b class="mono">'+pad6(rd.s&&rd.s.rev)+' → '+pad6(rd.e&&rd.e.rev)+'</b> · Δ = <b>'+fx(c.dRev)+'</b>'+(c.wrap?' (วนรอบ 999999→000000 แล้ว คิดต่อให้ถูกต้อง)':'')+' · '+fx(c.rpm,1)+' รอบ/นาที</div><div>ดัชนี K ตามอัตราไหล: <b>K'+(c.idx+1)+'</b>'+(c.idxObs!=null?' · K ที่ใกล้สุด: K'+(c.idxObs+1):'')+' · K ที่ต้องใช้ '+fx(c.kNeed)+' µL/รอบ</div>':'')+(c.flags.length?'<div>⚠ '+c.flags.map(esc).join(' · ')+'</div>':''):'<div class="hint">ยังคำนวณไม่ได้ — ต้องมีค่าเริ่มต้นและสิ้นสุด</div>')+'</div><button class="btn" data-a="mclose" style="margin-top:12px">ปิด</button>')}
+    modal('<h3>ตำแหน่ง #'+(+v+1)+' · <span class="mono">'+esc(m.id)+'</span></h3><div class="log" style="max-height:none"><div>ขนาด: <b>'+(m.size?m.size+' mm':'ไม่ทราบ')+'</b></div><div>จุด: <b>'+esc(S.plan[pi].l)+'</b> · '+flowT(S.plan[pi].f)+' L/h · '+S.plan[pi].v+' L</div><div>เริ่มต้น'+(rd.s&&rd.s.carried?' (ต่อจากจุดก่อน)':'')+': <b>'+L(rd.s)+'</b></div><div>สิ้นสุด: <b>'+L(rd.e)+'</b></div><div>🔋 แบตเตอรี่: <b>'+batT(rd.s&&rd.s.bat)+' → '+batT(rd.e&&rd.e.bat)+'</b>'+(c&&c.dBat!=null?' (เปลี่ยน '+(c.dBat>0?'+':'')+c.dBat.toFixed(2)+' V)':'')+'</div>'+(c&&c.valid?'<div>ปริมาตรมิเตอร์ / อ้างอิง: <b>'+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L</b></div><div>% Error: <b>'+sg(c.err)+'%</b> (เกณฑ์ ±'+c.lim+'%)</div>'+(c.dRev!=null?'<div>จำนวนรอบ: <b class="mono">'+pad6(rd.s&&rd.s.rev)+' → '+pad6(rd.e&&rd.e.rev)+'</b> · Δ = <b>'+fx(c.dRev)+'</b>'+(c.wrap?' (วนรอบ 999999→000000 แล้ว คิดต่อให้ถูกต้อง)':'')+' · '+fx(c.rpm,1)+' รอบ/นาที</div><div>ดัชนี K ตามอัตราไหล: <b>K'+(c.idx+1)+'</b>'+(c.idxObs!=null?' · K ที่ใกล้สุด: K'+(c.idxObs+1):'')+' · K ที่ต้องใช้ '+fx(c.kNeed)+' µL/รอบ</div>':'')+(c.flags.length?'<div>⚠ '+c.flags.map(esc).join(' · ')+'</div>':''):'<div class="hint">ยังคำนวณไม่ได้ — ต้องมีค่าเริ่มต้นและสิ้นสุด</div>')+'</div><button class="btn" data-a="mclose" style="margin-top:12px">ปิด</button>')}
   else if(a==='relay'){if(RL.role==='off'&&rlBridge())RL.role='send';modal(relayHtml())}
   else if(a==='rlnew'){const c=$('#rlCode');if(c)c.value=rlGen().toUpperCase()}
   else if(a==='rlcopy'){const c=($('#rlCode')||{}).value||RL.code;(navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toast('คัดลอกรหัสแล้ว'),()=>toast('รหัส: '+c,6000))}
@@ -781,13 +869,16 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='cfok'){closeModal();const f=CFN;CFN=null;f&&f()}
   else if(a==='q3keep'){S.batch.q3Custom=true;save();render()}
   else if(a==='q3std'){const s=q3Std();if(!s)return;const go=()=>{S.batch.q3=s;S.batch.q3Custom=false;S.plan=buildPlan();S.rd={};S.pt={};S.cur=0;save();render();toast('ใช้ Q3 มาตรฐาน '+fx(s)+' L/h และสร้างแผนใหม่แล้ว',3200)};Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length)?askConfirm('จะสร้างแผนอัตราการไหลใหม่ตาม Q3 มาตรฐาน และล้างผลที่อ่านไว้ของ Batch นี้\nดำเนินการต่อหรือไม่?',go):go()}});
-document.addEventListener('change',e=>{const t=e.target;
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-a="kbsave"]'))kbSave()});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&(e.target.id==='kbVal'||e.target.id==='kbId')){e.preventDefault();kbSave()}});
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='kbSlot'){KEYSLOT=+t.value;KBCLR=true;KBFOCUS='kbVal';render();return}
   if(t.id==='file'){handleFiles([...t.files]);t.value='';return}
   if(t.id==='fillK'){fillK=t.checked;render();return}
   if(t.id==='kMapTab'){kMapTab=t.checked;render();return}
   if(t.dataset.f){const path=t.dataset.f.split('.');let o=S;path.slice(0,-1).forEach(k=>o=o[k]);const k=path[path.length-1];let v=t.value;
-    if(t.type==='number')v=v===''?'':+v;if(t.type==='datetime-local')v=Date.parse(v)||Date.now();if(k==='carry')v=v==='true';if(!['model'].includes(k)&&['size','R','nm','passPct'].includes(k)&&t.tagName==='SELECT')v=+v;
+    if(t.type==='number')v=v===''?'':+v;if(t.type==='datetime-local')v=Date.parse(v)||Date.now();if(k==='carry')v=v==='true';if(!['model'].includes(k)&&['size','R','nm','passPct','mfrac'].includes(k)&&t.tagName==='SELECT')v=+v;
     const b=S.batch,old=o[k],hasData=Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length);
+    if(k==='mtype'&&v!==old&&hasData){t.value=old;askConfirm('เปลี่ยนประเภทมิเตอร์จะล้างค่าที่อ่านไว้ทั้งหมดของ Batch นี้\nดำเนินการต่อหรือไม่?',()=>{apply();S.rd={};S.pt={};S.cur=0;S.meters.forEach(m=>{m.id='';m.k=null});save();render()});return}
     if(k==='q3'&&!(v>0)){t.value=old;toast('Q3 ต้องเป็นตัวเลขมากกว่า 0',2800);return}
     let nq=b.q3;if(k==='size'||k==='model'){const s=q3Of(k==='model'?v:b.model,k==='size'?v:b.size);if(s)nq=s}else if(k==='q3')nq=v;
     const eff=['size','R','q3','model'].includes(k)&&v!==old&&((k==='R')||nq!==b.q3||k==='size');
