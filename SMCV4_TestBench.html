@@ -159,7 +159,12 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 #mon .mft{margin-top:1.2vh}
 @media(max-width:900px){#mon{overflow:auto}#mon .mmain{grid-template-columns:1fr}}
 .card.cfgd{padding:12px 16px;margin-bottom:14px}.cfgd summary{cursor:pointer;font-size:1rem}.cfgd summary small{color:var(--mut)}.cfgr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}@media(max-width:700px){.cfgr{grid-template-columns:1fr 1fr}}
-#rlchip{cursor:pointer}#mon .dialw .flash{border-radius:50%}
+#rlchip{cursor:pointer}#mon .mt{padding-right:8vw}
+#mon .mmulti{flex:1;min-height:0;display:flex;flex-direction:column;gap:1.4vh;margin-top:1.4vh}
+#mon .mdg{flex:1;min-height:0;display:grid;gap:1.6vh 1.2vw;align-content:center;justify-items:center}
+#mon .md{text-align:center;border-radius:2vh;padding:1vh .6vw;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);width:100%}
+#mon .md.pass{border-color:#34d399;background:rgba(16,185,129,.18)}#mon .md.fail{border-color:#fb7185;background:rgba(244,63,94,.24)}#mon .md.need{border-color:#fbbf24;background:rgba(251,191,36,.14)}#mon .md.got{border-color:#93c5fd}#mon .md.empty{opacity:.5;border-style:dashed}
+#mon .md .dialw{display:flex;justify-content:center;border-radius:50%;margin:0 auto}#mon .mdn{font-size:2.1vh;opacity:.9}#mon .mde{font-size:5vh;font-weight:700;line-height:1.1}#mon .mde.ok{color:#6ee7b7}#mon .mde.bad{color:#fb7185}#mon .dialw .flash{border-radius:50%}
 #mon .dial{color:#0a2a43}#mon .r2{display:flex;justify-content:space-between;align-items:center;gap:.8vw}#mon .t .ti{font-size:1.7vh;line-height:1.25}#mon .t .te{font-size:3.6vh;white-space:nowrap}#mon .t .lcd{font-size:min(2.3vh,1.3vw)}
 </style>
 </head>
@@ -369,6 +374,7 @@ function applyRead(r,src){
   const m=slotFor(r.id,SELSLOT);SELSLOT=null;m.id=r.id;if(r.size)m.size=r.size;if(r.k)m.k=r.k;
   const pi=S.cur,st=pointState(pi),rd=((S.rd[pi]=S.rd[pi]||{})[r.id]=(S.rd[pi]||{})[r.id]||{});let role;
   if(st.step==='done'){toast('จุดนี้ยืนยันแล้ว — กด “แก้ไข/อ่านใหม่” ก่อน');return false}
+  const had=st.step==='start'?!!rd.s&&!rd.s.carried:!!rd.e;
   if(st.step==='start'){rd.s=r;delete rd.e;role='เริ่มต้น'}
   else{if(st.step==='run'){st.t1=Date.now();st.step='end'}
     if(!rd.s&&S.batch.carry&&pi>0){const pr=(S.rd[pi-1]||{})[r.id];if(pr&&pr.e)rd.s=Object.assign({},pr.e,{carried:true})}
@@ -376,8 +382,9 @@ function applyRead(r,src){
     rd.e=r;role='สิ้นสุด'}
   const c=calc(pi,r.id);
   S.log.unshift({t:Date.now(),id:r.id,msg:role+' · '+fx(r.vol/1e5,5)+' m³'+(r.rev!=null?' · '+fx(r.rev)+' รอบ':'')+(c&&c.valid?' · '+sg(c.err)+'%':''),bad:c&&c.valid&&!c.pass?1:0,src});S.log=S.log.slice(0,60);
+  if(had)role+=' (อ่านซ้ำตัวเดิม)';
   LAST={r,id:r.id,role,slot:S.meters.indexOf(m),pi,t:Date.now()};if(!(r.issues&&r.issues[0]&&/ขนาดมิเตอร์/.test(r.issues[0])))beep(c&&c.valid&&!c.pass?'bad':'ok');
-  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³',2400);
+  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³'+(had?' — ⚠ ทับค่าเดิม ถ้าเป็นคนละตัวแต่ Meter ID ซ้ำกัน ระบบแยกไม่ได้ ต้องแก้ ID ไม่ให้ซ้ำ':''),had?5200:2400);
   r.issues&&r.issues.length&&toast(r.id+': '+r.issues[0],3600);
   save();render();return true}
 function ingest(u,part,meta,src){const r=parseNfc(u,part,meta);if(RL.role==='send'&&RL.code&&src==='app')return rlSend(r);return applyRead(r,src)}
@@ -647,7 +654,7 @@ function relayHtml(){const o=(v,t)=>`<option value="${v}" ${RL.role===v?'selecte
   <p class="hint" id="rlst" style="margin-top:8px">${esc(rlText())}</p>`}
 
 /* ---------- Monitor จอใหญ่: หน้าปัดมิเตอร์เสมือนจริง + ผังแท่น ---------- */
-let MONH='';
+let MONH='',MONV='auto';
 function monHtml(A){
   const np=S.plan.length,pi=Math.min(S.cur,Math.max(0,np-1)),p=S.plan[pi],st=np?pointState(pi):{step:'start'},b=S.batch,v=VD[A.verdict],N=Math.max(1,b.nm,S.meters.length),cols=N>12?4:N>6?2:2,rows=Math.ceil(N/cols);
   const stT={start:'① อ่านค่าเริ่มต้น',run:'② กำลังปล่อยน้ำ',end:'③ อ่านค่าสิ้นสุด',done:'✔ จุดนี้เสร็จแล้ว'}[st.step];
@@ -659,13 +666,19 @@ function monHtml(A){
     const rd=rdOf(m),c=np?calc(pi,m.id):null,ok=c&&c.valid,shown=rd.e?rd.e.vol:rd.s?rd.s.vol:null,need=(st.step==='start'&&!rd.s)||(st.step==='end'&&!rd.e);
     return`<div class="t ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''} ${LAST&&LAST.id===m.id&&fresh?'flash':''}"><span class="n">${i+1}</span>${lcd(shown)}<div class="r2"><span class="ti mono">${esc(m.id)}<br>${m.size||'?'} mm</span><span class="te mono">${ok?sg(c.err)+'%':rd.e?'อ่านแล้ว':rd.s?(st.step==='start'?'พร้อม':'รอสิ้นสุด'):'รออ่าน'}</span></div></div>`}).join('');
   const chips=S.plan.map((q,i)=>`<span class="pc ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}">${esc(q.l)} <small>${flowT(q.f)}</small></span>`).join('');
+  const hd=`<div class="mhd"><div><div style="opacity:.75;font-size:2.1vh">${np?'จุดที่ '+(pi+1)+' / '+np:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div><div class="tim mono" id="mtm"></div></div>
+    <div class="pcs">${chips}</div>`;
+  const multi=MONV==='dials'||(MONV==='auto'&&N<=6),mcols=N<=3?N:N<=6?3:4,mrows=Math.ceil(N/mcols),zz=Math.max(.55,Math.min((innerWidth*.94/mcols)/310,(innerHeight*.5/mrows)/300)).toFixed(2);
+  const dials=Array.from({length:N},(_,i)=>{const m=S.meters[i]||{id:''};if(!m.id)return`<div class="md empty"><div class="dialw" style="zoom:${zz}">${dial(null,0)}</div><div class="mdn">#${i+1} · รอแตะมิเตอร์</div></div>`;
+    const rd=rdOf(m),c=np?calc(pi,m.id):null,ok=c&&c.valid,r0=rd.e||rd.s,rr=r0?Object.assign({},r0,{id:m.id,size:r0.size||m.size}):null,need=(st.step==='start'&&!rd.s)||(st.step==='end'&&!rd.e);
+    return`<div class="md ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''}"><div class="dialw ${LAST&&LAST.id===m.id&&fresh?'flash':''}" style="zoom:${zz}">${dial(rr,ok?c.dVol/c.vref:0)}</div><div class="mdn">#${i+1} · ${rd.e?'อ่านสิ้นสุดแล้ว':rd.s?(st.step==='start'?'อ่านเริ่มต้นแล้ว':'รออ่านสิ้นสุด'):'ยังไม่อ่าน'}</div><div class="mde ${ok?(c.pass?'ok':'bad'):''}">${ok?sg(c.err)+'%':'—'}</div></div>`}).join('');
+  const multiHtml=`<div class="mmulti">${hd}<div class="mdg" style="grid-template-columns:repeat(${mcols},minmax(0,1fr))">${dials}</div></div>`;
   return`<button class="btn g x" data-a="closemon">✕ ปิด (Esc)</button>
-  <div class="mt"><h2>SMCV4 Test Bench</h2><span class="c">${esc(b.id)}</span><span class="c">${MODEL(b.model)} · ${b.size} mm · R${b.R} · ${N} ตัว</span><span class="c">ผู้ทดสอบ ${esc(b.tester||'—')}</span><span class="c" id="mrl">${esc(rlText())}</span><span class="c" id="mclk" style="margin-left:auto"></span></div>
-  <div class="mmain"><div class="mleft"><div class="dialw" style="zoom:${z}"><div class="${fresh?'flash':''}">${dial(lr||null,lc&&lc.valid?lc.dVol/lc.vref:0)}</div></div>
+  <div class="mt"><h2>SMCV4 Test Bench</h2><span class="c">${esc(b.id)}</span><span class="c">${MODEL(b.model)} · ${b.size} mm · R${b.R} · ${N} ตัว</span><span class="c">ผู้ทดสอบ ${esc(b.tester||'—')}</span><span class="c" id="mrl">${esc(rlText())}</span><button class="btn g sm" data-a="monmode">${multi?'🔳 ผังแท่น':'🔲 หน้าปัดทุกตัว'}</button><span class="c" id="mclk" style="margin-left:auto"></span></div>
+  ${multi?multiHtml:`<div class="mmain"><div class="mleft"><div class="dialw" style="zoom:${z}"><div class="${fresh?'flash':''}">${dial(lr||null,lc&&lc.valid?lc.dVol/lc.vref:0)}</div></div>
     <div class="mst">${lr?`<div class="ml">ตำแหน่ง <b>#${LAST.slot+1}</b> · ${esc(LAST.role||'')}</div>${lc&&lc.valid?`<div class="mbig ${lc.pass?'ok':'bad'}">${sg(lc.err)}%</div><div class="mv ${lc.pass?'ok':'bad'}">${lc.pass?'PASS':'FAIL'} · ใช้น้ำ ${fx(lc.dVol,2)} / ${fx(lc.vref,2)} L</div>`:`<div class="mv">ค่าปริมาตรรับเข้าแล้ว · รออ่านสิ้นสุด</div>`}`:'<div class="ml">📡 รอรับค่าจากแอป SMCV4 Reader…</div><div class="mv">แตะมิเตอร์ด้วยมือถือ หน้าปัดจะขึ้นที่นี่</div>'}</div></div>
-   <div class="mright"><div class="mhd"><div><div style="opacity:.75;font-size:2.1vh">${np?'จุดที่ '+(pi+1)+' / '+np:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div><div class="tim mono" id="mtm"></div></div>
-    <div class="pcs">${chips}</div>
-    <div class="mgrid" style="grid-template-columns:repeat(${cols},minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr));grid-auto-flow:column">${tiles}</div></div></div>
+   <div class="mright">${hd}
+    <div class="mgrid" style="grid-template-columns:repeat(${cols},minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr));grid-auto-flow:column">${tiles}</div></div></div>`}
   <div class="mft"><div class="bar"><i style="width:${A.cellsAll?A.cellsPass/A.cellsAll*100:0}%;background:#34d399"></i><i style="width:${A.cellsAll?(A.cellsAll-A.cellsPass)/A.cellsAll*100:0}%;background:#fb7185"></i></div>
    <div style="font-size:2.3vh;margin-top:.8vh;display:flex;gap:2vw;flex-wrap:wrap"><span>ผ่าน <b style="color:#6ee7b7">${A.cellsPass}</b> / ${A.cellsAll} จุด</span><span>มิเตอร์ผ่านครบ <b>${A.full}</b>/${A.nm}</span><span style="color:${A.verdict==='fail'?'#fb7185':'#6ee7b7'}">${v[1]}</span></div></div>`}
 function monTick(){const c=$('#mclk');if(c)c.textContent=new Date().toLocaleTimeString('th-TH');const t=$('#mtm');if(t&&S.plan.length){const st=pointState(Math.min(S.cur,S.plan.length-1));t.textContent=st.t0?dur((st.t1||Date.now())-st.t0):'00:00'}rlChip()}
@@ -739,6 +752,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
     if(role!=='off'&&code.length<6){toast('รหัสจับคู่ต้องยาวอย่างน้อย 6 ตัว');return}
     RL.role=role;if(role!=='off')RL.code=code;RL.server=srv;RL.beep=$('#rlBeep').value==='1';rlSave();rlConnect();closeModal();if(role==='send')TAB='run';render();toast(role==='recv'?'พร้อมรับค่าจากมือถือ · รหัส '+RL.code.toUpperCase():role==='send'?'พร้อมส่งค่าขึ้นจอ · รหัส '+RL.code.toUpperCase():'ปิดการเชื่อมต่อแล้ว (ใช้เครื่องเดียว)',3200)}
   else if(a==='rltest'){if(RL.role!=='send'||!RL.code){toast('ตั้งค่าเครื่องนี้เป็น “มือถือ” และใส่รหัสก่อน',3200);return}rlPost({v:1,t:'ping',ts:Date.now()}).then(()=>toast('ส่งสัญญาณทดสอบแล้ว — ดูที่จอคอมพิวเตอร์',3000),e=>toast('✖ ส่งไม่สำเร็จ: '+e.message,4200))}
+  else if(a==='monmode'){const N=Math.max(S.batch.nm,S.meters.length),cur=MONV==='dials'||(MONV==='auto'&&N<=6);MONV=cur?'tiles':'dials';MONH='';renderMon()}
   else if(a==='mclose')closeModal();
   else if(a==='demo'){demo()}
   else if(a==='kcopy'){const A=agg(),f=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),txt=f.map((k,i)=>`K${i+1}\t${k||''}\t${k8(k)}`).join('\n');(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('คัดลอกค่า K แล้ว'),()=>modal('<h3>ค่า K</h3><pre class="mono">'+esc(txt)+'</pre><button class="btn" data-a="mclose">ปิด</button>'))}
