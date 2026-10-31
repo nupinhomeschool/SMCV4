@@ -242,7 +242,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v14"
+                  private const val VERSION = "v15"
                   private const val REQ_FILE = 4711
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
@@ -491,7 +491,7 @@ jobs:
                       webViewClient = object : WebViewClient() {
                           override fun onPageFinished(view: WebView?, url: String?) {
                               pageLoaded = true
-                              view?.evaluateJavascript("($openNfcJs)()", null)       // เปิดแท็บ Tool NFC ให้อัตโนมัติ
+                              view?.evaluateJavascript("($openNfcJs)('${effectiveMode()}')", null)       // เปิดแท็บ Tool NFC / Test Bench ตามโหมด
                               if (undelivered) pendingDump?.let { push(it) }
                           }
                       }
@@ -619,6 +619,7 @@ jobs:
                           .put("length", hexEnd)
                           .put("hex", res.full.copyOf(hexEnd).toHex())          // เติม 00 ให้ address ตรงกับแอป ST25 (ตัดส่วนท้ายที่ไม่ได้อ่านทิ้ง)
                           .put("mode", if (escalated) "full" else mode)
+                          .put("target", mode)                                   // แท็บปลายทาง: bench → SMCV4 Test Bench, อื่นๆ → Tool NFC
                           .put("partial", partial)
                           .put("verify", ver != null)
                           .put("verified", ver?.confirmed ?: false)
@@ -687,6 +688,7 @@ jobs:
                   val next = when (effectiveMode()) { "quick" -> "bench"; "bench" -> "full"; else -> "quick" }
                   prefs.edit().putString("mode", next).apply()
                   refreshModeLabel()
+                  if (pageLoaded) webView.evaluateJavascript("($openNfcJs)('$next')", null)   // สลับแท็บตามโหมดทันที
                   toast(when (next) {
                       "quick" -> "อ่านเร็ว: ID · ขนาด · ข้อมูลล่าสุด"
                       "bench" -> "แท่นเทส: ID · ขนาด · K1–K20 · จำนวนรอบ · ค่าล่าสุด"
@@ -1293,8 +1295,9 @@ jobs:
               var h = d.hex, u = new Uint8Array(h.length / 2);
               for (var i = 0; i < u.length; i++) u[i] = parseInt(h.substr(i * 2, 2), 16);
 
-              function isReader(w) {
-                try { return typeof w.load === 'function' && w.load.length === 2 && !!w.document.getElementById('file'); }
+              var wantBench = (d.target || d.mode) === 'bench', tab = wantBench ? 'bench' : 'nfc';
+            function isReader(w) {
+              try { return typeof w.load === 'function' && w.load.length === 2 && !!w.document.getElementById('file') && (typeof w.benchFeed === 'function') === wantBench; }
                 catch (e) { return false; }
               }
               function find(w, depth) {
@@ -1312,20 +1315,23 @@ jobs:
               function feed(w) { w.NFC_PART = (d.partial && d.ranges) ? d.ranges : null; w.NFC_META = d.verify ? { verify: true, verified: !!d.verified, attempts: d.attempts || 0, same: d.same || 0, escalated: !!d.escalated, note: d.note || '', unread: d.unreadableBlocks || [] } : { verify: false, unread: d.unreadableBlocks || [] }; w.load(u.buffer, 'nfc.bin'); rep('OK: เว็บประมวลผลข้อมูลจากมิเตอร์แล้ว' + (d.partial ? ' (อ่านเร็ว)' : '')); }
 
               var w = find(window, 0);
-              if (w) { feed(w); return 'OK:direct'; }
+              function show() {
+                if (typeof ui !== 'undefined' && typeof render === 'function' && ui.tab !== tab) {
+                  var b = document.querySelector('[data-a="tab"][data-v="' + tab + '"]');
+                  if (b) b.click(); else { ui.tab = tab; render(); }
+                }
+              }
+              if (w) { show(); feed(w); return 'OK:direct'; }
 
               if (typeof ui !== 'undefined' && typeof render === 'function') {
-                if (ui.tab !== 'nfc') {
-                  var b = document.querySelector('[data-a="tab"][data-v="nfc"]');
-                  if (b) b.click(); else { ui.tab = 'nfc'; render(); }
-                }
+                show();
                 var n = 0, t = setInterval(function () {
                   n++;
                   var x = find(window, 0);
                   if (x) { clearInterval(t); try { feed(x); } catch (e) { rep('ERR:' + e.message); } }
-                  else if (n > 80) { clearInterval(t); rep('ERR: รอเครื่องมือ NFC ในหน้า Dashboard นานเกินไป'); }
+                  else if (n > 80) { clearInterval(t); rep('ERR: รอเครื่องมือ ' + (wantBench ? 'Test Bench' : 'NFC') + ' ในหน้า Dashboard นานเกินไป'); }
                 }, 250);
-                return 'WAIT:เปิดแท็บ NFC แล้ว';
+                return 'WAIT:เปิดแท็บ ' + tab + ' แล้ว';
               }
               return 'ERR: ไม่พบเครื่องมืออ่าน NFC ในหน้า ' + location.pathname;
             } catch (e) { return 'ERR:' + e.message; }
@@ -1333,11 +1339,12 @@ jobs:
           EOF_FILE
           mkdir -p 'app/src/main/assets'
           cat > 'app/src/main/assets/opennfc.js' << 'EOF_FILE'
-          function () {
+          function (mode) {
             try {
-              if (typeof ui !== 'undefined' && typeof render === 'function' && ui.tab !== 'nfc') {
-                var b = document.querySelector('[data-a="tab"][data-v="nfc"]');
-                if (b) b.click(); else { ui.tab = 'nfc'; render(); }
+              var tab = mode === 'bench' ? 'bench' : 'nfc';
+              if (typeof ui !== 'undefined' && typeof render === 'function' && ui.tab !== tab) {
+                var b = document.querySelector('[data-a="tab"][data-v="' + tab + '"]');
+                if (b) b.click(); else { ui.tab = tab; render(); }
               }
             } catch (e) {}
           }
