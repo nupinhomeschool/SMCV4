@@ -242,7 +242,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v15"
+                  private const val VERSION = "v16"
                   private const val REQ_FILE = 4711
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
@@ -661,7 +661,7 @@ jobs:
               }
 
               /** ช่วงที่อ่านในโหมด "อ่านเร็ว": Addr 68–83 (Command · Meter ID · ขนาด · เวลา · วันที่) และ 188–211 (ค่าล่าสุด 24 ไบต์) = 10 blocks */
-              private val QUICK_RANGES: List<IntArray> = listOf(intArrayOf(68, 16), intArrayOf(188, 24))
+              private val QUICK_RANGES: List<IntArray> = listOf(intArrayOf(68, 16), intArrayOf(184, 28))
 
               /** โหมดแท่นเทส: Addr 68–211 = Meter ID · ขนาด · K1–K20 · จำนวนรอบ (184–186) · ค่าล่าสุด = 36 blocks */
               private val BENCH_RANGES: List<IntArray> = listOf(intArrayOf(68, 144))
