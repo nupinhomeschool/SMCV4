@@ -195,6 +195,14 @@ tr.ptoff td{opacity:.45}tr.ptoff td:first-child{opacity:1}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.tile{position:relative;text-align:left;border:2px solid #d6e4ec;background:#fff;border-radius:16px;padding:14px 14px 34px;cursor:pointer;font:inherit;color:#334155}
 .tile i{font-style:normal;font-size:1.7rem;display:block}.tile b{display:block;font-size:1.05rem;margin:2px 0}.tile small{color:#64748b;line-height:1.5}.tile em{position:absolute;right:12px;bottom:10px;font-style:normal;font-size:.8rem;font-weight:600;color:#64748b}
 .tile.on{border-color:#0ea5a4;background:#f0fdfa;box-shadow:0 4px 14px #0ea5a433}.tile.on em{color:#0f766e}.tgsum{margin:12px 0 0;padding:10px 12px;background:#f8fafc;border-radius:12px;color:#334155}
+.pvh{background:linear-gradient(120deg,#7c2d12,#c2410c 45%,#f59e0b)!important}
+.idrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 12px}.idf{display:flex;flex-direction:column;align-items:center;text-align:center;background:#f8fafc;border:1px solid #d6e4ec;border-radius:16px;padding:10px 6px}
+.idf input{width:100%;max-width:90px;text-align:center;font:700 1.7rem/1.1 'JetBrains Mono',ui-monospace,monospace;border:0;background:transparent;color:#0f172a;outline:none}.idf b{margin-top:4px}.idf small{color:#64748b}
+.stp2{display:flex;align-items:center;gap:4px}.stp2 button{width:34px;height:34px;border-radius:50%;border:0;background:#0ea5a4;color:#fff;font-size:1.2rem;cursor:pointer}.stp2 input{max-width:62px}
+.idbig{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(120deg,#0f172a,#134e4a);color:#fff;border-radius:18px;padding:14px 18px}.idbig span{opacity:.8}.idbig b{font-size:2.3rem;letter-spacing:.12em;font-weight:700}.idbig b i{font-style:normal;color:#fcd34d}.idbig b u{text-decoration:none;color:#5eead4}
+.nxt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.nxt span{font:600 .85rem 'JetBrains Mono',monospace;background:#f1f5f9;color:#64748b;border-radius:99px;padding:3px 10px}.nxt span.on{background:#0ea5a4;color:#fff}
+.pvg{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.kbox{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-radius:14px;padding:12px 14px;border:1px solid}.kbox small{display:block;margin-top:2px;line-height:1.45}.kbox.real{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}.kbox.dummy{background:#fffbeb;border-color:#fcd34d;color:#78350f}
 .vfh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .stp{display:flex;gap:0;margin:14px 0 6px;flex-wrap:wrap}.stp>div{flex:1;min-width:150px;position:relative;padding:10px 12px 10px 46px;border-radius:14px;background:#f1f5f9;margin:0 6px 6px 0;color:#64748b;font-size:.88rem;line-height:1.35}
 .stp>div b{display:block;color:#334155}.stp>div i{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:#cbd5e1;color:#fff;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:.85rem}
@@ -317,6 +325,7 @@ function rlRecv(m){
   if(!m||m.v!==1)return;
   if(RL.role==='send'){if(m.t==='meters'&&Array.isArray(m.ids)&&(!RL.peer||m.ts>=RL.peer.ts)){RL.peer={ids:m.ids,ts:m.ts};if(TAB==='wr')render()}return}
   if(m.t==='hello'){rlPush(true);return}
+  if(m.t==='prov'&&m.id){S.pvlog=S.pvlog||[];if(!S.pvlog.some(x=>x.id===m.id&&x.t===m.ts)){S.pvlog.unshift({t:m.ts||Date.now(),id:m.id,size:m.size,model:m.model,dir:1,logMin:0,real:m.real!==false,k:m.k||null,from:'phone'});save();render();toast('📱 มือถือลงทะเบียนมิเตอร์ '+m.id+' แล้ว',3200);beep('ok')}return}
   if(m.t==='ping'){RL.last=Date.now();toast('✔ ได้รับสัญญาณทดสอบจากมือถือ — การเชื่อมต่อใช้งานได้',3200);beep('ok');rlChip();return}
   if(m.t!=='read'||(!m.id&&!m.mech)||m.seq&&RL.seen.has(m.seq))return;if(m.seq){RL.seen.add(m.seq);if(RL.seen.size>200)RL.seen.delete(RL.seen.values().next().value)}
   RL.last=Date.now();RL.n++;
@@ -508,7 +517,7 @@ function addImported(im,reset){
 </script>
 <script>
 /* ============ SMCV4 Test Bench · UI ============ */
-const TABS=[['setup','ตั้งค่า'],['plan','แผนทดสอบ'],['run','ทดสอบ'],['res','ผลสรุป'],['rep','รายงาน'],['wr','เขียนค่า NFC']];
+const TABS=[['setup','ตั้งค่า'],['plan','แผนทดสอบ'],['run','ทดสอบ'],['res','ผลสรุป'],['rep','รายงาน'],['wr','เขียนค่า NFC'],['pv','ลงทะเบียนมิเตอร์ใหม่']];
 const MODEL=m=>m==='MJ'?'Multijet':'Single Jet';
 const heat=(e,l)=>{if(e==null)return'hn';const u=Math.abs(e)/l;return u>1?'h3':u>.8?'h2':u>.5?'h1':'h0'};
 const flowT=f=>f==null?'–':fx(f,f<100?(f%1?1:0):0);
@@ -517,7 +526,7 @@ let fillK=true;
 
 function render(){
   if(S.plan.length&&S.plan[S.cur]&&S.plan[S.cur].off){const n=nextOn(S.cur),pv=prevOn(S.cur);S.cur=n!=null?n:pv!=null?pv:S.cur}
-  S.wr=Object.assign(defWr(),S.wr||{});if(!S.cfglog)S.cfglog=[];if(!S.cfg)S.cfg={};
+  S.wr=Object.assign(defWr(),S.wr||{});S.pv=Object.assign(defPv(),S.pv||{});if(!S.pvlog)S.pvlog=[];if(!S.cfglog)S.cfglog=[];if(!S.cfg)S.cfg={};
   if(!S.batch.mtype)S.batch.mtype='nfc';if(S.batch.mfrac==null)S.batch.mfrac=3;
   if(IS_MON){renderMon();return}
   const kb={id:($('#kbId')||{}).value,val:($('#kbVal')||{}).value,f:document.activeElement&&/^kb(Id|Val)$/.test(document.activeElement.id)?document.activeElement.id:null};
@@ -525,7 +534,7 @@ function render(){
   $('#tabs').innerHTML=TABS.map((t,i)=>`<button class="tab ${TAB===t[0]?'on':''} ${t[0]==='run'&&A.nm&&A.pend?'warn':''}" data-a="tab" data-v="${t[0]}"><i>${i+1}</i>${t[1]}<span class="dot"></span></button>`).join('');
   const b=S.batch;$('#hdBatch').textContent=b.id;$('#hdMeter').textContent=MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · '+A.nm+'/'+S.meters.length+' มิเตอร์'+(MECH()?' · แมคคานิค':'');document.body.classList.toggle('mech',MECH());
   try{rlPush()}catch(e){}
-  $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep,wr:vWr}[TAB])(A);rlChip();
+  $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep,wr:vWr,pv:vPv}[TAB])(A);rlChip();
   if($('#kbVal')){if(!KBCLR){if(kb.val)$('#kbVal').value=kb.val;if(kb.id)$('#kbId').value=kb.id}const ff=KBFOCUS||kb.f;if(ff&&$('#'+ff))$('#'+ff).focus();KBFOCUS=null;KBCLR=false}
   if(MON)renderMon(A)}
 
@@ -805,7 +814,7 @@ function wrGo(){const b=wrBuild();if(b.errs.length){toast(b.errs[0],3800);return
 function wrCancel(){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}WR={state:'idle',job:null,res:null};VF={state:'idle',res:null,cmp:null};render()}
 window.benchWriteResult=function(r){if(!r)return;const job=WR.job||{},id=r.id||job.id||'';WR.state=r.ok?'ok':'err';WR.res=r;
   S.cfglog=S.cfglog||[];S.cfglog.unshift({t:Date.now(),id,ok:!!r.ok,label:r.label||job.label||'',err:r.error||'',cmd:r.cmd||'',time:r.time||''});S.cfglog=S.cfglog.slice(0,100);
-  if(r.ok&&id){S.cfg=S.cfg||{};S.cfg[id]=Object.assign({},S.cfg[id]||{},r.after||{},{t:Date.now()});S.wrLast={id,t:Date.now(),patches:job.patches||[],cmd:r.cmd||job.cmd||'',time:r.time||'',label:r.label||job.label||''};VF={state:'idle',res:null,cmp:null}}
+  if(r.ok&&id){S.cfg=S.cfg||{};S.cfg[id]=Object.assign({},S.cfg[id]||{},r.after||{},{t:Date.now()});S.wrLast={id,t:Date.now(),patches:job.patches||[],cmd:r.cmd||job.cmd||'',time:r.time||'',label:r.label||job.label||''};if(WR.kind==='prov')pvAfter(r,job);VF={state:'idle',res:null,cmp:null}}
   save();render();toast(r.ok?'✔ เขียนค่าลงมิเตอร์ '+id+' สำเร็จ — ต่อไป: แตะอ่านกลับเพื่อตรวจ แล้วค่อยกดทัชสวิตช์ 6 วินาที':'✗ เขียนไม่สำเร็จ: '+(r.error||''),5200);beep(r.ok?'ok':'bad')};
 let VF={state:'idle',res:null,cmp:null};
 function wrBcd(h){return /^\d+$/.test(h)?h:null}
@@ -814,7 +823,7 @@ function wrCompare(r,last){
   const pat=(last&&last.patches)||[],exp=(a,n)=>{let o='';for(let i=0;i<n;i++){let f=null;for(const p of pat){const off=a+i-p.a;if(off>=0&&off<p.h.length/2){f=p.h.substr(off*2,2).toUpperCase();break}}if(f==null)return null;o+=f}return o};
   const items=[];const add=(a,n,label,fmt)=>{const act=seg(a,n);if(act.length!==n*2)return;const e=exp(a,n);items.push({a,n,label,act,e,ok:e==null?null:e===act,txt:fmt(act)})};
   const iv=h=>parseInt(h,16);
-  add(72,4,'Meter ID',h=>h);
+  add(72,4,'Meter ID',h=>h);add(76,1,'ขนาดมิเตอร์',h=>parseInt(h,16)+' mm');
   if(last&&(last.time||last.adhoc))add(78,6,'เวลา/วันที่ในมิเตอร์',h=>{const b=h.match(/../g);return b[0]+':'+b[1]+' · '+b[2]+'/'+b[3]+'/'+b[4]+b[5]});
   add(84,80,'ค่าคงที่ K1–K20',h=>{const k=[];for(let i=0;i<20;i++){const t=h.substr(i*8,8);k.push(/^\d{8}$/.test(t)?parseInt(t,10):null)}return k[0]==null?h.slice(0,16)+'…':'K1 '+fx(k[0])+' … K10 '+fx(k[9])+' … K20 '+fx(k[19])});
   add(164,2,'ช่วงเก็บลง NFC',h=>fmtMin(iv(h)));add(166,2,'ช่วงบันทึกในมิเตอร์',h=>fmtMin(iv(h)));
@@ -897,7 +906,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
-  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v17</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v18</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
    <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
@@ -921,6 +930,88 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
   <div class="card" style="margin-top:14px"><h2><em>📲</em>เขียนลงมิเตอร์</h2>${stat}</div>${vfCard()}
   <div class="card" style="margin-top:14px"><h2><em>🗂</em>ค่าตั้งของมิเตอร์ใน Batch นี้</h2><p class="sub">สถานะล่าสุดที่อ่านจาก NFC ระหว่างทดสอบน้ำ — บันทึกไว้ในรายงานและ Excel</p>${cfgTable(A)}</div>
   <div class="card" style="margin-top:14px"><h2><em>🧾</em>ประวัติการเขียน</h2>${log?`<div class="tw"><table><thead><tr><th>เวลา</th><th>มิเตอร์</th><th class="l">รายการ</th><th>ผล</th></tr></thead><tbody>${log}</tbody></table></div><div style="margin-top:8px"><button class="btn sm" data-a="wrclr">ล้างประวัติ</button></div>`:'<p class="hint">ยังไม่มีการเขียน</p>'}</div>`}
+/* ---------- ⑦ ลงทะเบียน/ตั้งค่ามิเตอร์ดิจิทัลใหม่ ---------- */
+const defPv=()=>{const d=new Date();return{yy:(d.getFullYear()+543)%100,mo:d.getMonth()+1,lot:1,sn:1,model:'MJ',size:25,kSrc:'auto',kPaste:'',dir:1,uart:0,calc:1,logVal:15,logUnit:'min',nfcOn:false,guard:false}};
+const pvN=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(+v||0)));
+const pvId=(p)=>{p=p||S.pv;return p2(pvN(p.yy,0,99))+p2(pvN(p.mo,1,12))+p2(pvN(p.lot,0,99))+p2(pvN(p.sn,0,99))};
+function pvKvals(){const p=S.pv;
+  if(p.kSrc==='rec'){const A=agg();if(!A.kRec.some(r=>r.prop!=null))return{err:'ยังไม่มีค่า K แนะนำจากผลทดสอบ — ต้องทดสอบน้ำและอ่านจำนวนรอบก่อน (หรือใช้ชุดมาตรฐาน)'};const f=kFill(A.kRec);if(f.some(x=>!(x>0)))return{err:'ค่า K แนะนำยังไม่ครบ 20 ค่า'};return{k:f,src:'แนะนำจากผลทดสอบ Batch ปัจจุบัน',real:true}}
+  if(p.kSrc==='paste'){const k=parseKText(p.kPaste);if(!k)return{err:'ต้องวางค่า K ให้ครบ 20 ค่า (ตัวเลขฐานสิบ) หรือรหัส BCD 160 หลัก'};return{k,src:'ค่าที่วางเอง',real:true}}
+  const R=kRef(p.model,p.size);
+  if(R.k)return{k:R.k.slice(),src:'ชุดมาตรฐาน '+MODEL(p.model)+' '+p.size+' mm · ผ่านการทดสอบ R160',real:true};
+  const base=(p.model==='SJ'?KREF.SJ15:KREF.MJ15).k;return{k:base.slice(),src:'DUMMY · ยืมค่าจาก '+(p.model==='SJ'?'Single Jet':'Multijet')+' 15 mm (ยังไม่มีชุดจริงของขนาดนี้)',real:false}}
+function pvBuild(){const p=S.pv,errs=[],rows=[],patches=[];const id=pvId(p);
+  if(!(p.size>0&&p.size<=255))errs.push('ขนาดมิเตอร์ไม่ถูกต้อง');
+  const idh=id;patches.push({a:72,h:idh});rows.push(['72–75',idh,'Meter ID = '+id+' (ปี พ.ศ. 25'+id.slice(0,2)+' · เดือน '+id.slice(2,4)+' · Lot '+id.slice(4,6)+' · ลำดับ '+id.slice(6,8)+')']);
+  patches.push({a:76,h:hex2(p.size)});rows.push(['76',hex2(p.size),'ขนาดมิเตอร์ = '+p.size+' mm']);
+  const kr=pvKvals();if(kr.err)errs.push(kr.err);else if(!kr.k.every(x=>Number.isInteger(x)&&x>0&&x<=99999999))errs.push('ค่า K ต้องเป็นจำนวนเต็ม 1 – 99,999,999');else{patches.push({a:84,h:kr.k.map(k8).join('')});rows.push(['84–163','K1…K20 · 80 ไบต์',kr.src+' · K1 = '+fx(kr.k[0])+' … K20 = '+fx(kr.k[19])])}
+  const lm=p.logUnit==='h'?pvN(p.logVal,1,1092)*60:pvN(p.logVal,1,65535);if(!(lm>=1&&lm<=65535))errs.push('ช่วงเวลาบันทึกต้องอยู่ระหว่าง 1 – 65,535 นาที');else{patches.push({a:166,h:hex4(lm)});rows.push(['166–167',hex4(lm),'ช่วงบันทึกค่า = '+fmtMin(lm)]);if(p.nfcOn){patches.push({a:164,h:hex4(lm)});rows.push(['164–165',hex4(lm),'ช่วงเก็บลง NFC = '+fmtMin(lm)])}}
+  patches.push({a:168,h:hex2(p.dir)});rows.push(['168',hex2(p.dir),'ทิศทางใบพัด = '+dirW(+p.dir)]);
+  patches.push({a:169,h:hex2(p.uart)});rows.push(['169',hex2(p.uart),'Log UART = '+uartW(+p.uart)]);
+  patches.push({a:170,h:hex2(p.calc)});rows.push(['170',hex2(p.calc),'โหมดคำนวณ = '+calcW(+p.calc)]);
+  rows.splice(2,0,['78–83','BCD · hh mm dd MM yyyy','ตั้งเวลา/วันที่ให้เท่าเวลาปัจจุบันของมือถือ ('+nowTxt()+')']);
+  rows.push(['68–71',WR_CMD,'คำสั่งให้มิเตอร์โหลดค่า — เขียนเป็นลำดับสุดท้าย']);
+  return{errs,rows,kr,id,job:{v:1,id:'',time:true,patches,cmd:WR_CMD,prov:true,guardId:!!p.guard,label:'ลงทะเบียนมิเตอร์ใหม่ '+id+' · '+p.size+' mm'}}}
+function pvGo(){const b=pvBuild();if(b.errs.length){toast(b.errs[0],3800);return}const br=wrBridge();
+  if(!br){toast('ต้องเปิดหน้านี้จากแอป SMCV4 Reader บนมือถือ (เวอร์ชัน v21)',4200);return}
+  let r;try{r=String(br.queueWrite(JSON.stringify(b.job)))}catch(e){r='ERR:'+e.message}
+  if(r.indexOf('OK')!==0){toast(/ไม่อนุญาต/.test(r)?'แอปมือถือเป็นเวอร์ชันเก่า (ต้อง v21 ขึ้นไป) — ต้อง Build และติดตั้งแอปใหม่':'ส่งงานให้แอปไม่สำเร็จ: '+r,6000);return}
+  WR={state:'wait',job:b.job,res:null,kind:'prov',kr:b.kr};render()}
+function pvAfter(r,job){const p=S.pv,kr=WR.kr||{};S.pvlog=S.pvlog||[];
+  const e={t:Date.now(),id:r.id,prev:r.prevId||'',size:p.size,model:p.model,dir:p.dir,logMin:p.logUnit==='h'?p.logVal*60:p.logVal,real:kr.real!==false,ksrc:kr.src||'',k:kr.k||null,uid:r.uid||''};
+  S.pvlog.unshift(e);S.pvlog=S.pvlog.slice(0,300);
+  if(r.id===pvId(p)&&p.sn<99)p.sn++;
+  if(RL.role==='send'&&RL.code){try{rlPost({v:1,t:'prov',id:e.id,size:e.size,model:e.model,real:e.real,k:e.k,ts:e.t}).catch(()=>{})}catch(x){}}}
+function pvImport(){S.pvlog=S.pvlog||[];const seen=new Set(),list=[];S.pvlog.slice().reverse().forEach(e=>{if(e.id&&!seen.has(e.id)){seen.add(e.id);list.push(e)}});
+  if(!list.length){toast('ยังไม่มีมิเตอร์ที่ลงทะเบียน');return}
+  let n=0;list.forEach(e=>{if(S.meters.some(m=>m.id===e.id))return;let m=S.meters.find(x=>!x.id);if(!m){m={id:'',size:null,k:null};S.meters.push(m);S.batch.nm=S.meters.length}m.id=e.id;m.size=e.size;m.k=e.k?e.k.slice():null;n++});
+  const f=list[list.length-1];if(f&&!Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length)){S.batch.size=f.size;S.batch.model=f.model}
+  save();render();toast('นำเข้า '+n+' มิเตอร์เข้า Batch ทดสอบแล้ว — ไปแท็บ “แผนทดสอบ/ทดสอบ”',4200)}
+function pvSpark(k){const mx=Math.max(...k),mn=Math.min(...k),w=240,h=46,pts=k.map((v,i)=>[6+i*(w-12)/19,h-6-(mx===mn?.5:(v-mn)/(mx-mn))*(h-12)]);
+  return`<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="max-width:300px"><polyline fill="none" stroke="#0ea5a4" stroke-width="2.5" stroke-linejoin="round" points="${pts.map(x=>x[0].toFixed(1)+','+x[1].toFixed(1)).join(' ')}"/>${pts.map(x=>`<circle cx="${x[0].toFixed(1)}" cy="${x[1].toFixed(1)}" r="2.3" fill="#0f766e"/>`).join('')}</svg>`}
+function pvInp(k,label,lo,hi,hint){const p=S.pv;return`<div class="idf"><input type="number" inputmode="numeric" min="${lo}" max="${hi}" data-pv="${k}" value="${p2(p[k])}"><b>${label}</b><small>${hint}</small></div>`}
+function vPv(A){const p=S.pv=Object.assign(defPv(),S.pv||{}),b=pvBuild(),br=wrBridge(),id=b.id,kr=b.kr,log=(S.pvlog||[]).slice(0,10);
+  const kBody=`<div class="seg" style="margin:8px 0">${[['auto','ชุดมาตรฐาน (ผ่านทดสอบ R160)'],['rec','แนะนำจากผลทดสอบ'],['paste','วางเอง']].map(o=>`<button data-a="pvset" data-k="kSrc" data-v="${o[0]}" class="${p.kSrc===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>
+    ${p.kSrc==='paste'?`<textarea rows="3" data-pv="kPaste" placeholder="วาง K1–K20 (20 ค่า คั่นด้วยเว้นวรรค/บรรทัดใหม่) หรือรหัส BCD 160 หลัก" style="width:100%">${esc(p.kPaste)}</textarea>`:''}
+    ${kr&&kr.err?`<p class="pill warn" style="white-space:normal">⚠ ${esc(kr.err)}</p>`:kr?`<div class="kbox ${kr.real?'real':'dummy'}"><div><b>${kr.real?'✅ ค่า K จริง':'⚠ ค่า K แบบ DUMMY'}</b><small>${esc(kr.src)}</small>${kr.real?'':'<small>เขียนลงมิเตอร์ได้เลย แล้วไปปรับค่าจริงตอนทดสอบน้ำที่ Test Bench (แท็บ “เขียนค่า NFC”)</small>'}<small class="mono">K1 ${fx(kr.k[0])} · K10 ${fx(kr.k[9])} · K20 ${fx(kr.k[19])} µL/รอบ</small></div><div>${pvSpark(kr.k)}</div></div>`:''}`;
+  const stat=WR.kind==='prov'&&WR.state==='wait'?`<div class="wst"><div class="nfcring">📲</div><div><h3>รอแตะมิเตอร์ใหม่…</h3><p>จะเขียน Meter ID <b class="mono">${esc(id)}</b> ขนาด ${p.size} mm ลงมิเตอร์ที่แตะ · แตะมือถือที่มิเตอร์แล้วถือนิ่งจนแอปแจ้งผล</p><button class="btn bad" data-a="wrcancel">ยกเลิก</button></div></div>`
+   :WR.kind==='prov'&&WR.state==='ok'?`<div class="wst ok"><div class="nfcring okr">✔</div><div><h3>ลงทะเบียนสำเร็จ · <span class="mono">${esc((WR.res&&WR.res.id)||'')}</span></h3><p>${WR.res&&WR.res.prevId&&WR.res.prevId!==WR.res.id?'ID เดิมในมิเตอร์: <span class="mono">'+esc(WR.res.prevId)+'</span> → ID ใหม่ · ':''}ขนาด ${WR.res&&WR.res.size!=null?WR.res.size:p.size} mm · อ่านกลับตรงทุกไบต์ — <b>ตรวจเลขให้ตรงกับป้ายมิเตอร์</b></p><button class="btn p wbig" data-a="pvnext">▶ ตัวถัดไป ${esc(pvId())}</button></div></div>`
+   :WR.kind==='prov'&&WR.state==='err'?`<div class="wst err"><div class="nfcring errr">✗</div><div><h3>เขียนไม่สำเร็จ</h3><p>${esc((WR.res&&WR.res.error)||'')}</p><button class="btn p" data-a="pvgo">ลองใหม่</button> <button class="btn" data-a="wrreset">ปิด</button></div></div>`
+   :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="pvgo" ${b.errs.length?'disabled':''}>📲 เขียนมิเตอร์ ${esc(id)} แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}</div>`;
+  const nextIds=Array.from({length:5},(_,i)=>p.sn+i<=99?pvId(Object.assign({},p,{sn:p.sn+i})):null).filter(Boolean);
+  const showVf=WR.kind==='prov'&&WR.state==='ok';
+  return`<div class="wrh pvh"><h2>🏭 ลงทะเบียนมิเตอร์ดิจิทัลใหม่ <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">v21</small></h2><p>ตั้งรหัสมิเตอร์ · ขนาด · ค่า K · ทิศทาง · เวลา แล้วเขียนลงมิเตอร์เครื่องใหม่ทีละตัวด้วยมือถือ</p>
+   <div class="wsteps"><div><b>① ตั้งรหัสรุ่น/Lot</b>ปี · เดือน · Lot · ลำดับ + ขนาด</div><div><b>② ตรวจค่าที่จะเขียน</b>K · ทิศทาง · ช่วงบันทึก · เวลา</div><div><b>③ แตะมือถือที่มิเตอร์ใหม่</b>แอปเขียน → อ่านกลับยืนยัน</div><div><b>④ ตรวจสอบ → ทัชสวิตช์ 6 วินาที</b>แล้วไปตัวถัดไป ลำดับเพิ่มเอง</div></div></div>
+  ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>เขียนมิเตอร์ใหม่ได้จากหน้านี้ · มิเตอร์ที่ลงทะเบียนแล้วจะส่งไปแสดงที่จอคอม (ถ้าจับคู่ไว้)</small></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>ใช้ดูรายการมิเตอร์ที่ลงทะเบียนแล้ว (รับจากมือถือที่จับคู่) และ “นำเข้าสู่ Batch ทดสอบ” · การเขียนต้องทำบนมือถือ</small></div></div>`}
+  <div class="card" style="margin-top:14px"><h2><em>🔢</em>รหัสมิเตอร์ (Meter ID)</h2><p class="sub">8 หลัก = ปี พ.ศ. (2 หลัก) · เดือนที่ผลิต · Lot ที่ผลิต · ลำดับเครื่องใน Lot — ลำดับจะเพิ่มให้เองหลังเขียนสำเร็จ</p>
+   <div class="idrow">${pvInp('yy','ปี พ.ศ.',0,99,'25'+p2(p.yy))}${pvInp('mo','เดือนผลิต',1,12,'1–12')}${pvInp('lot','Lot',0,99,'00–99')}<div class="idf sn"><div class="stp2"><button data-a="pvstep" data-v="-1">−</button><input type="number" inputmode="numeric" min="0" max="99" data-pv="sn" value="${p2(p.sn)}"><button data-a="pvstep" data-v="1">＋</button></div><b>ลำดับ</b><small>00–99</small></div></div>
+   <div class="idbig"><span>เครื่องถัดไปที่จะเขียน</span><b class="mono">${id.slice(0,2)}<i>${id.slice(2,4)}</i>${id.slice(4,6)}<u>${id.slice(6,8)}</u></b></div>
+   <div class="nxt">${nextIds.map((x,i)=>`<span class="${i===0?'on':''}">${x}</span>`).join('')}</div>
+   <div class="fr" style="margin-top:14px"><div class="fld"><label>รุ่น</label><div class="seg">${[['MJ','Multijet'],['SJ','Single Jet']].map(o=>`<button data-a="pvset" data-k="model" data-v="${o[0]}" class="${p.model===o[0]?'on':''}">${o[1]}</button>`).join('')}</div></div></div>
+   <label class="hint" style="margin-top:10px;display:block">ขนาดมิเตอร์ (mm) → เก็บที่ตำแหน่ง 76</label><div class="chips">${SIZES.map(z=>`<button data-a="pvset" data-k="size" data-v="${z}" class="${p.size===z?'on':''}">${z} mm</button>`).join('')}</div></div>
+  <div class="card" style="margin-top:14px"><h2><em>⚙</em>ค่าเริ่มต้นที่จะเขียน</h2><p class="sub">ค่าเริ่มต้น: ทิศทาง Backward · ช่วงบันทึก 15 นาที · เวลา = เวลาปัจจุบันของมือถือ · แก้ไขทีหลังได้ที่แท็บ “เขียนค่า NFC”</p>
+   <div class="pvg"><div><label class="hint">🧭 ทิศทางใบพัด</label>${(()=>{const o=[[1,'⬅ Backward'],[0,'➡ Forward']];return`<div class="seg">${o.map(x=>`<button data-a="pvset" data-k="dir" data-v="${x[0]}" class="${+p.dir===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>`})()}</div>
+   <div><label class="hint">📟 Log UART</label><div class="seg">${[[0,'ปิด'],[1,'เปิด']].map(x=>`<button data-a="pvset" data-k="uart" data-v="${x[0]}" class="${+p.uart===x[0]?'on':''}">${x[1]}</button>`).join('')}</div></div>
+   <div><label class="hint">🧮 โหมดคำนวณ</label><div class="seg">${[[0,'Cal &gt; FW'],[1,'Cal FW or BR']].map(x=>`<button data-a="pvset" data-k="calc" data-v="${x[0]}" class="${+p.calc===x[0]?'on':''}">${x[1]}</button>`).join('')}</div></div></div>
+   <label class="hint" style="display:block;margin-top:12px">⏱ ช่วงเวลาบันทึกค่า (166–167)</label><div class="seg" style="max-width:260px">${[['min','นาที'],['h','ชั่วโมง']].map(x=>`<button data-a="pvset" data-k="logUnit" data-v="${x[0]}" class="${p.logUnit===x[0]?'on':''}">${x[1]}</button>`).join('')}</div>
+   <div class="chips">${(p.logUnit==='h'?[1,2,3,4,6,8,12,24]:[1,2,3,5,10,15,20,30,45]).map(v=>`<button data-a="pvset" data-k="logVal" data-v="${v}" class="${+p.logVal===v?'on':''}">${v} ${p.logUnit==='h'?'ชม.':'นาที'}</button>`).join('')}</div>
+   <label class="hint" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" data-pv="nfcOn" ${p.nfcOn?'checked':''}> เขียนช่วงเก็บลง NFC (164–165) เท่ากับช่วงบันทึกด้วย</label>
+   <h3 style="margin:16px 0 0">🔧 ค่าคงที่ K1–K20</h3>${kBody}
+   <label class="hint" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" data-pv="guard" ${p.guard?'checked':''}> กันเขียนทับมิเตอร์ที่มี ID อยู่แล้ว (ใช้เมื่อมิเตอร์ใหม่ว่างเปล่า ID = 00000000 หรือ FFFFFFFF)</label></div>
+  <div class="card" style="margin-top:14px"><h2><em>📋</em>สิ่งที่จะเขียนลงมิเตอร์ตัวนี้</h2><div class="tw"><table><thead><tr><th>ตำแหน่ง</th><th>ค่า</th><th class="l">ความหมาย</th></tr></thead><tbody>${b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1].length>24?r[1].slice(0,24)+'…':r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')}</tbody></table></div></div>
+  <div class="card" style="margin-top:14px"><h2><em>📲</em>เขียนลงมิเตอร์</h2>${stat}</div>
+  ${showVf?vfCard():''}
+  <div class="card" style="margin-top:14px"><div class="vfh"><h2 style="margin:0"><em>🧾</em>มิเตอร์ที่ลงทะเบียนแล้ว (${(S.pvlog||[]).length})</h2><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="pvimport">⤵ นำเข้าสู่ Batch ทดสอบ</button><button class="btn sm" data-a="pvclr">ล้างรายการ</button></span></div>
+   ${log.length?`<div class="tw" style="margin-top:8px"><table><thead><tr><th>เวลา</th><th>Meter ID</th><th>ขนาด</th><th>รุ่น</th><th>ทิศทาง</th><th>ช่วงบันทึก</th><th>K</th></tr></thead><tbody>${log.map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono"><b>${esc(e.id)}</b></td><td>${e.size} mm</td><td>${MODEL(e.model)}</td><td>${dirW(e.dir)}</td><td>${fmtMin(e.logMin)}</td><td>${e.real?'<span class="pill ok">จริง</span>':'<span class="pill warn">dummy</span>'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="hint" style="margin-top:8px">ยังไม่มีมิเตอร์ที่ลงทะเบียน</p>'}</div>`}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v;
+  if(a==='pvset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc','size','logVal'].includes(k))x=+v;S.pv[k]=x;if(k==='logUnit')S.pv.logVal=x==='h'?1:15;save();render()}
+  else if(a==='pvstep'){S.pv.sn=pvN(S.pv.sn+(+v),0,99);save();render()}
+  else if(a==='pvgo')pvGo();
+  else if(a==='pvnext'){WR={state:'idle',job:null,res:null};VF={state:'idle',res:null,cmp:null};render();window.scrollTo&&0}
+  else if(a==='pvimport')pvImport();
+  else if(a==='pvclr')askConfirm('ล้างรายการมิเตอร์ที่ลงทะเบียนทั้งหมดในเครื่องนี้?',()=>{S.pvlog=[];save();render();closeModal()})});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||t.dataset.pv==null)return;const k=t.dataset.pv;
+  if(t.type==='checkbox')S.pv[k]=t.checked;else if(k==='kPaste')S.pv[k]=t.value;else{const lim={yy:[0,99],mo:[1,12],lot:[0,99],sn:[0,99]}[k];S.pv[k]=lim?pvN(t.value,lim[0],lim[1]):t.value}save();render()});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v;
   if(a==='wrsw'){S.wr[v]=!S.wr[v];save();render()}
   else if(a==='wrset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc'].includes(k))x=+v;if(/Val$/.test(k))x=+v;if(k==='tid'){S.wr.any=false}S.wr[k]=x;if(/Unit$/.test(k)){S.wr[k.replace('Unit','Val')]=x==='h'?1:15}save();render()}
