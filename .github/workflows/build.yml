@@ -165,6 +165,7 @@ jobs:
           import com.google.mlkit.vision.common.InputImage
           import com.google.mlkit.vision.text.TextRecognition
           import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+          import java.util.Calendar
           import org.json.JSONArray
           import org.json.JSONObject
           import java.io.ByteArrayOutputStream
@@ -260,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v17"
+                  private const val VERSION = "v18"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -299,6 +300,11 @@ jobs:
               private lateinit var camRow: View
               private var camUri: Uri? = null
               private var pendingMech: String? = null
+              @Volatile private var writeJob: JSONObject? = null
+              @Volatile private var writing = false
+              private lateinit var writeBox: View
+              private lateinit var tvWrite: TextView
+              private lateinit var btnWc: Button
               @Volatile private var attemptNo = 1
 
               private var nfc: NfcAdapter? = null
@@ -315,6 +321,7 @@ jobs:
               private val feedJs: String by lazy { assets.open("feed.js").bufferedReader().readText() }
               private val openNfcJs: String by lazy { assets.open("opennfc.js").bufferedReader().readText() }
               private val feedMechJs: String by lazy { assets.open("feedmech.js").bufferedReader().readText() }
+              private val benchCallJs: String by lazy { assets.open("benchcall.js").bufferedReader().readText() }
               private val tfReg: Typeface by lazy {
                   try { Typeface.createFromAsset(assets, "prompt_regular.ttf") } catch (e: Exception) { Typeface.DEFAULT }
               }
@@ -332,6 +339,21 @@ jobs:
                           setSendStatus(if (bad) "✗ $msg" else "✓ เว็บประมวลผลข้อมูลแล้ว", !bad)
                           toast(msg)
                       }
+                  }
+
+                  /** เว็บสั่งให้แอปรอแตะมิเตอร์เพื่อเขียนค่า (ตรวจที่อยู่/รูปแบบก่อน) */
+                  @JavascriptInterface
+                  fun queueWrite(json: String): String {
+                      val j = try { JSONObject(json) } catch (e: Exception) { return "ERR:รูปแบบงานเขียนไม่ถูกต้อง" }
+                      val err = validateJob(j)
+                      if (err != null) return "ERR:$err"
+                      runOnUiThread { startWriteJob(j) }
+                      return "OK"
+                  }
+
+                  @JavascriptInterface
+                  fun cancelWrite() {
+                      runOnUiThread { cancelWriteJob(false) }
                   }
 
                   @JavascriptInterface
@@ -441,6 +463,17 @@ jobs:
                   cbSave.setOnCheckedChangeListener { _, c -> prefs.edit().putBoolean("save", c).apply() }
                   refreshSaveLabel()
 
+                  tvWrite = label("", 13f, Color.WHITE, true)
+                  btnWc = pill("ยกเลิก", false) { cancelWriteJob(true) }
+                  writeBox = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      background = rounded(Color.argb(70, 251, 191, 36), 18, cAmber, 2)
+                      setPadding(dp(14), dp(12), dp(14), dp(12))
+                      addView(tvWrite, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                      addView(btnWc, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+                      visibility = View.GONE
+                  }
+                  val btnWriteTab = pill("✍  เขียนค่าลงมิเตอร์  (K · ทิศทาง · ช่วงบันทึก · เวลา)", false) { openWriteTab() }
                   val btnCam = pill("📷  ถ่ายหน้าปัดมิเตอร์", true) { openCamera() }
                   val btnPick = pill("🖼 เลือกรูป", false) { openGallery() }
                   camRow = LinearLayout(this).apply {
@@ -475,6 +508,7 @@ jobs:
                       setPadding(dp(18), dp(16), dp(18), dp(20))
                       addView(logo, LinearLayout.LayoutParams(MATCH_PARENT, dp(34)))
                       addView(titleRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
+                      addView(writeBox, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
                       addView(progCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
                       addView(infoCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(14) })
                       addView(cbSave, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
@@ -482,6 +516,7 @@ jobs:
                       addView(btnMode, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row1, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
                       addView(row2, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+                      addView(btnWriteTab, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
                       addView(footer, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
                   }
                   return ScrollView(this).apply {
@@ -612,6 +647,8 @@ jobs:
               // =====================================================================  NFC (background thread)
 
               override fun onTagDiscovered(tag: Tag) {
+                  val wj = writeJob
+                  if (wj != null) { if (!writing) doWrite(tag, wj); return }
                   if (effectiveMode() == "mech") { runOnUiThread { toast("โหมดกลไก: ใช้ปุ่ม 📷 ถ่ายหน้าปัด (กดปุ่มโหมดเพื่อกลับไปอ่าน NFC)") }; return }
                   if (reading) return
                   reading = true
@@ -1143,6 +1180,180 @@ jobs:
                       toast("ไม่รองรับการดาวน์โหลดจากลิงก์นี้")
                   }
               }
+
+              // =====================================================================  เขียนค่าลงมิเตอร์ (K · ทิศทาง · ช่วงบันทึก · เวลา · คำสั่ง)
+
+              private class WriteMismatch(msg: String) : Exception(msg)
+
+              private fun hexBytes(h: String): ByteArray = ByteArray(h.length / 2) { i -> h.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+
+              /** อนุญาตเฉพาะ 78–83 (เวลา) · 84–163 (K) · 166–170 (ช่วงบันทึก/ทิศทาง/UART/โหมดคำนวณ) และคำสั่ง 68–71 */
+              private fun validateJob(j: JSONObject): String? {
+                  try {
+                      val ps = j.getJSONArray("patches")
+                      for (i in 0 until ps.length()) {
+                          val p = ps.getJSONObject(i)
+                          val a = p.getInt("a")
+                          val hx = p.getString("h")
+                          if (hx.isEmpty() || hx.length % 2 != 0 || !Regex("^[0-9A-Fa-f]+$").matches(hx)) return "ข้อมูลเขียนไม่ถูกต้องที่ตำแหน่ง $a"
+                          val n = hx.length / 2
+                          val ok = (a >= 78 && a + n <= 84) || (a >= 84 && a + n <= 164) || (a >= 166 && a + n <= 171)
+                          if (!ok) return "ไม่อนุญาตให้เขียนตำแหน่ง $a (+$n ไบต์)"
+                      }
+                      val c = j.optString("cmd", "")
+                      if (c.isNotEmpty() && !Regex("^[0-9A-Fa-f]{8}$").matches(c)) return "รหัสคำสั่งต้องเป็น 4 ไบต์"
+                      val id = j.optString("id", "")
+                      if (id.isNotEmpty() && !Regex("^\\d{8}$").matches(id)) return "Meter ID ต้องเป็นเลข 8 หลัก"
+                      if (ps.length() == 0 && !j.optBoolean("time", false)) return "ไม่มีรายการที่จะเขียน"
+                  } catch (e: Exception) {
+                      return "รูปแบบงานเขียนไม่ถูกต้อง"
+                  }
+                  return null
+              }
+
+              private fun startWriteJob(j: JSONObject) {
+                  writeJob = j
+                  writing = false
+                  showReaderScreen()
+                  writeBox.visibility = View.VISIBLE
+                  btnWc.text = "ยกเลิก"
+                  val id = j.optString("id", "")
+                  tvWrite.text = "✍ รอแตะมิเตอร์เพื่อเขียนค่า\n" + (if (id.isEmpty()) "ไม่ตรวจ Meter ID" else "Meter ID $id") + "\n" + j.optString("label", "")
+                  tvWrite.setTextColor(Color.WHITE)
+              }
+
+              private fun cancelWriteJob(fromUi: Boolean) {
+                  writeJob = null
+                  writing = false
+                  writeBox.visibility = View.GONE
+                  if (fromUi) toast("ยกเลิกการเขียนแล้ว")
+              }
+
+              private fun bcdByte(n: Int): Byte = (((n / 10) shl 4) or (n % 10)).toByte()
+
+              /** เวลา/วันที่ปัจจุบันของมือถือ → Addr 78–83 (BCD: hh mm dd MM yy-hi yy-lo) */
+              private fun timeBytes(c: Calendar): ByteArray {
+                  val y = c.get(Calendar.YEAR)
+                  return byteArrayOf(
+                      bcdByte(c.get(Calendar.HOUR_OF_DAY)), bcdByte(c.get(Calendar.MINUTE)),
+                      bcdByte(c.get(Calendar.DAY_OF_MONTH)), bcdByte(c.get(Calendar.MONTH) + 1),
+                      bcdByte(y / 100), bcdByte(y % 100)
+                  )
+              }
+
+              private fun writeBlock(v: NfcV, blk: Int, data: ByteArray, ext: Boolean): Boolean {
+                  val lo = blk.toByte()
+                  val hi = (blk shr 8).toByte()
+                  val cmd = if (ext) byteArrayOf(0x02, 0x31, lo, hi) + data else byteArrayOf(0x02, 0x21, lo) + data
+                  repeat(3) {
+                      try {
+                          val r = v.transceive(cmd)
+                          if (r.isNotEmpty() && (r[0].toInt() and 1) == 0) return true
+                      } catch (_: Exception) { /* ลองใหม่ */ }
+                  }
+                  return false
+              }
+
+              private fun summary(a: ByteArray, base: Int): JSONObject {
+                  val o = JSONObject()
+                  o.put("dir", a[168 - base].toInt() and 0xFF)
+                  o.put("uart", a[169 - base].toInt() and 0xFF)
+                  o.put("calc", a[170 - base].toInt() and 0xFF)
+                  o.put("logMin", ((a[166 - base].toInt() and 0xFF) shl 8) or (a[167 - base].toInt() and 0xFF))
+                  o.put("cmd", a.copyOfRange(68 - base, 72 - base).toHex())
+                  val k = JSONArray()
+                  for (i in 0 until 20) k.put(a.copyOfRange(84 - base + i * 4, 88 - base + i * 4).toHex())
+                  o.put("k8", k)
+                  return o
+              }
+
+              private fun doWrite(tag: Tag, j: JSONObject) {
+                  writing = true
+                  runOnUiThread { tvWrite.text = "✍ กำลังเขียน… ห้ามเลื่อนโทรศัพท์ออกจากมิเตอร์"; tvWrite.setTextColor(Color.WHITE) }
+                  val res = JSONObject()
+                  var deliver = true
+                  try {
+                      val v = NfcV.get(tag) ?: error("แท็กไม่ใช่ NFC-V (ISO15693)")
+                      v.connect()
+                      try {
+                          val info = readMemoryInfo(v)
+                          val bs = info.blockSize
+                          if (bs != 4) error("ขนาดบล็อกไม่ใช่ 4 ไบต์ ($bs)")
+                          val b0 = 17
+                          val nb = 26                       // Addr 68–171
+                          val base = b0 * bs
+                          val orig = readBlocks(v, b0, nb, bs, info.extended) ?: error("อ่านค่าเดิมจากมิเตอร์ไม่สำเร็จ")
+                          val id = orig.copyOfRange(72 - base, 76 - base).toHex()
+                          val want = j.optString("id", "")
+                          if (want.isNotEmpty() && want != id) throw WriteMismatch("Meter ID ไม่ตรง: มิเตอร์ที่แตะคือ $id (ต้องการ $want) — แตะตัวที่ถูกต้อง")
+                          val img = orig.copyOf()
+                          val ps = j.getJSONArray("patches")
+                          for (i in 0 until ps.length()) {
+                              val p = ps.getJSONObject(i)
+                              val b = hexBytes(p.getString("h"))
+                              System.arraycopy(b, 0, img, p.getInt("a") - base, b.size)
+                          }
+                          val now = Calendar.getInstance()
+                          if (j.optBoolean("time", false)) {
+                              val tb = timeBytes(now)
+                              System.arraycopy(tb, 0, img, 78 - base, tb.size)
+                          }
+                          val cmd = j.optString("cmd", "")
+                          if (cmd.isNotEmpty()) System.arraycopy(hexBytes(cmd), 0, img, 68 - base, 4)
+                          // เขียนข้อมูลก่อน แล้วเขียนคำสั่ง (บล็อก 17) เป็นลำดับสุดท้าย เพื่อไม่ให้มิเตอร์เห็นข้อมูลไม่ครบ
+                          val changed = (0 until nb).filter { !img.copyOfRange(it * 4, it * 4 + 4).contentEquals(orig.copyOfRange(it * 4, it * 4 + 4)) }
+                          val order = changed.filter { it != 0 } + changed.filter { it == 0 }
+                          val wrote = JSONArray()
+                          for (bi in order) {
+                              val d = img.copyOfRange(bi * 4, bi * 4 + 4)
+                              if (!writeBlock(v, b0 + bi, d, info.extended)) error("เขียนบล็อก ${b0 + bi} (Addr ${(b0 + bi) * 4}) ไม่สำเร็จ — ตรวจว่าเมมโมรี่ไม่ถูกล็อก")
+                              wrote.put(JSONObject().put("a", (b0 + bi) * 4).put("h", d.toHex()))
+                          }
+                          val back = readBlocks(v, b0, nb, bs, info.extended) ?: error("อ่านกลับเพื่อตรวจสอบไม่สำเร็จ")
+                          if (!back.contentEquals(img)) error("ตรวจสอบหลังเขียนไม่ตรง — ลองเขียนใหม่")
+                          res.put("ok", true).put("id", id).put("uid", v.tag.id.toHex()).put("label", j.optString("label", ""))
+                              .put("wrote", wrote).put("cmd", cmd)
+                              .put("time", if (j.optBoolean("time", false)) SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US).format(now.time) else "")
+                              .put("before", summary(orig, base)).put("after", summary(back, base))
+                      } finally {
+                          try { v.close() } catch (_: Exception) {}
+                      }
+                  } catch (e: WriteMismatch) {
+                      deliver = false
+                      runOnUiThread { tvWrite.text = "⚠ ${e.message}"; tvWrite.setTextColor(Color.parseColor("#FDE68A")) }
+                  } catch (e: Exception) {
+                      res.put("ok", false).put("id", j.optString("id", "")).put("label", j.optString("label", "")).put("error", e.message ?: e.toString())
+                  }
+                  writing = false
+                  if (!deliver) return
+                  val ok = res.optBoolean("ok", false)
+                  if (ok) writeJob = null
+                  runOnUiThread {
+                      if (ok) {
+                          tvWrite.text = "✔ เขียนและตรวจสอบสำเร็จ · ${res.optString("id")}\nต่อไป: กดทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที"
+                          tvWrite.setTextColor(Color.parseColor("#6EE7B7"))
+                          btnWc.text = "ปิด"
+                          toast("เขียนค่าสำเร็จ")
+                      } else {
+                          tvWrite.text = "✗ เขียนไม่สำเร็จ: ${res.optString("error")}\nแตะมิเตอร์ใหม่เพื่อลองอีกครั้ง"
+                          tvWrite.setTextColor(Color.parseColor("#FCA5A5"))
+                      }
+                      callBench("benchWriteResult", res.toString())
+                  }
+              }
+
+              /** เรียกฟังก์ชันใน Test Bench (ค้นหาในหน้า/iframe, เปิดแท็บ Test Bench ให้ถ้ายังไม่เปิด) */
+              private fun callBench(name: String, argJson: String) {
+                  if (!pageLoaded) return
+                  webView.evaluateJavascript("($benchCallJs)('$name', $argJson)", null)
+              }
+
+              private fun openWriteTab() {
+                  if (!pageLoaded) { toast("หน้าเว็บยังโหลดไม่เสร็จ"); return }
+                  openWebScreen()
+                  callBench("benchOpenTab", "'wr'")
+              }
+
 
               // =====================================================================  โหมดกลไก (ถ่ายหน้าปัด + OCR ในเครื่อง)
 
@@ -1715,6 +1926,45 @@ jobs:
                 return 'WAIT:เปิดแท็บ bench แล้ว';
               }
               return 'ERR: ไม่พบ Test Bench ในหน้า ' + location.pathname + ' (ต้องอัปโหลด index.html รุ่นล่าสุด)';
+            } catch (e) { return 'ERR:' + e.message; }
+          }
+          EOF_FILE
+          cat > 'app/src/main/assets/benchcall.js' << 'EOF_FILE'
+          function (name, d) {
+            function rep(m) { try { NfcBridge.report(m); } catch (e) {} }
+            try {
+              function has(w) { try { return typeof w[name] === 'function'; } catch (e) { return false; } }
+              function find(w, depth) {
+                if (has(w)) return w;
+                if (depth > 3) return null;
+                var fr;
+                try { fr = w.document.querySelectorAll('iframe'); } catch (e) { return null; }
+                for (var k = 0; k < fr.length; k++) {
+                  var r = null;
+                  try { r = find(fr[k].contentWindow, depth + 1); } catch (e) {}
+                  if (r) return r;
+                }
+                return null;
+              }
+              function show() {
+                if (typeof ui !== 'undefined' && typeof render === 'function' && ui.tab !== 'bench') {
+                  var b = document.querySelector('[data-a="tab"][data-v="bench"]');
+                  if (b) b.click(); else { ui.tab = 'bench'; render(); }
+                }
+              }
+              var w = find(window, 0);
+              if (w) { show(); w[name](d); return 'OK:direct'; }
+              if (typeof ui !== 'undefined' && typeof render === 'function') {
+                show();
+                var n = 0, t = setInterval(function () {
+                  n++;
+                  var x = find(window, 0);
+                  if (x) { clearInterval(t); try { x[name](d); } catch (e) { rep('ERR:' + e.message); } }
+                  else if (n > 80) { clearInterval(t); rep('ERR: ไม่พบ Test Bench (หน้าเว็บอาจเป็นรุ่นเก่า กด ↻ โหลดใหม่)'); }
+                }, 250);
+                return 'WAIT';
+              }
+              return 'ERR: ไม่พบ Test Bench';
             } catch (e) { return 'ERR:' + e.message; }
           }
           EOF_FILE
