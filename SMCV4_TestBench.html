@@ -189,6 +189,11 @@ tr.ptoff td{opacity:.45}tr.ptoff td:first-child{opacity:1}
 .nfcring.okr{border-color:#10b981;color:#10b981;animation:none;font-weight:700}.nfcring.errr{border-color:#e11d48;color:#e11d48;animation:none;font-weight:700}
 @keyframes wpulse{0%{box-shadow:0 0 0 0 #14b8a688}100%{box-shadow:0 0 0 26px #14b8a600}}
 .after{background:#fff7e0;border:1px solid #f6d77a;border-radius:12px;padding:10px 12px;margin:0 0 10px;color:#6b4e00;line-height:1.55}
+.devb{display:flex;gap:12px;align-items:center;border-radius:16px;padding:12px 16px;margin-top:14px;border:1px solid}.devb>span{font-size:1.8rem}.devb b{display:block}.devb small{color:inherit;opacity:.85;line-height:1.5}
+.devb.ph{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}.devb.pc{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.tile{position:relative;text-align:left;border:2px solid #d6e4ec;background:#fff;border-radius:16px;padding:14px 14px 34px;cursor:pointer;font:inherit;color:#334155}
+.tile i{font-style:normal;font-size:1.7rem;display:block}.tile b{display:block;font-size:1.05rem;margin:2px 0}.tile small{color:#64748b;line-height:1.5}.tile em{position:absolute;right:12px;bottom:10px;font-style:normal;font-size:.8rem;font-weight:600;color:#64748b}
+.tile.on{border-color:#0ea5a4;background:#f0fdfa;box-shadow:0 4px 14px #0ea5a433}.tile.on em{color:#0f766e}.tgsum{margin:12px 0 0;padding:10px 12px;background:#f8fafc;border-radius:12px;color:#334155}
 .vfh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .stp{display:flex;gap:0;margin:14px 0 6px;flex-wrap:wrap}.stp>div{flex:1;min-width:150px;position:relative;padding:10px 12px 10px 46px;border-radius:14px;background:#f1f5f9;margin:0 6px 6px 0;color:#64748b;font-size:.88rem;line-height:1.35}
 .stp>div b{display:block;color:#334155}.stp>div i{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:#cbd5e1;color:#fff;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:.85rem}
@@ -755,7 +760,7 @@ function vRes(A){const v=VD[A.verdict],pts=S.plan;
 
 /* ---------- ⑥ เขียนค่าลงมิเตอร์ผ่าน NFC (ทำงานเมื่อเปิดจากแอป SMCV4 Reader บนมือถือ) ---------- */
 const WR_CMD='AAA10000';
-const defWr=()=>({tid:'',any:false,timeOn:true,kOn:false,kSrc:'std',kPaste:'',dirOn:false,dir:0,uartOn:false,uart:0,calcOn:false,calc:1,logOn:false,logUnit:'min',logVal:15,nfcOn:false,nfcUnit:'min',nfcVal:15,cmdOn:true});
+const defWr=()=>({tid:'',any:true,timeOn:true,kOn:false,kSrc:'std',kPaste:'',dirOn:false,dir:0,uartOn:false,uart:0,calcOn:false,calc:1,logOn:false,logUnit:'min',logVal:15,nfcOn:false,nfcUnit:'min',nfcVal:15,cmdOn:true});
 let WR={state:'idle',job:null,res:null};
 const hex2=n=>(n&255).toString(16).toUpperCase().padStart(2,'0'),hex4=n=>(n&65535).toString(16).toUpperCase().padStart(4,'0');
 const fmtMin=m=>m==null||!isFinite(m)?'—':m<60?m+' นาที':m%60===0?(m/60)+' ชั่วโมง':Math.floor(m/60)+' ชม. '+(m%60)+' นาที';
@@ -880,11 +885,14 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
   return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC</h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
-   <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>เลือกมิเตอร์ แล้วเปิดสวิตช์ของค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
-  <div class="card" style="margin-top:14px"><h2><em>🎯</em>มิเตอร์เป้าหมาย</h2><p class="sub">แอปจะอ่าน Meter ID (72–75) จากมิเตอร์ที่แตะ และเขียนเมื่อตรงกันเท่านั้น กันเขียนผิดตัว</p>
-   <div class="fr"><div class="fld"><label>Meter ID</label><input list="wrids" data-wr="tid" value="${esc(w.tid)}" placeholder="เช่น 69050015" ${w.any?'disabled':''}><datalist id="wrids">${ids.map(i=>`<option value="${esc(i)}">`).join('')}</datalist></div>
-   <div class="fld"><label>&nbsp;</label><label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-wr="any" ${w.any?'checked':''}> ไม่ตรวจ ID (เขียนให้มิเตอร์ที่แตะ)</label></div></div>
-   ${ids.length?`<div class="chips">${ids.map(i=>`<button data-a="wrset" data-k="tid" data-v="${esc(i)}" class="${w.tid===i&&!w.any?'on':''}">${esc(i)}</button>`).join('')}</div>`:''}</div>
+   <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
+  ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
+  <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
+   <div class="tiles"><button data-a="wrmode" data-v="touch" class="tile ${w.any?'on':''}"><i>📲</i><b>ตัวที่แตะ</b><small>เขียนให้มิเตอร์ที่เอามือถือไปแตะ<br>เหมาะกับหน้างาน — ไม่ต้องพิมพ์อะไร</small><em>${w.any?'✓ เลือกอยู่':'แนะนำ'}</em></button>
+   <button data-a="wrmode" data-v="id" class="tile ${!w.any?'on':''}"><i>🔒</i><b>ระบุเลขมิเตอร์</b><small>เขียนเฉพาะเลขที่ระบุ ถ้าแตะผิดตัวจะไม่เขียน<br>เหมาะกับการแก้มิเตอร์ตัวใดตัวหนึ่งโดยเฉพาะ</small><em>${!w.any?'✓ เลือกอยู่':'ปลอดภัยสุด'}</em></button></div>
+   ${w.any?'':`<div class="fr" style="margin-top:12px"><div class="fld"><label>Meter ID (8 หลัก) — ดูได้จากหน้าอ่าน NFC หรือป้ายมิเตอร์</label><input list="wrids" data-wr="tid" inputmode="numeric" value="${esc(w.tid)}" placeholder="เช่น 69050015"><datalist id="wrids">${ids.map(i=>`<option value="${esc(i)}">`).join('')}</datalist></div></div>
+   ${ids.length?`<div class="chips">${ids.map(i=>`<button data-a="wrset" data-k="tid" data-v="${esc(i)}" class="${w.tid===i?'on':''}">${esc(i)}</button>`).join('')}</div>`:''}`}
+   <p class="tgsum">${w.any?'✅ ระบบจะเขียนให้ <b>มิเตอร์ตัวที่คุณแตะ</b> แล้วแสดงเลขมิเตอร์ที่เขียนให้ดูทันที — ตรวจเลขให้ตรงกับป้ายมิเตอร์':String(w.tid||'').trim()?'🔒 ระบบจะเขียนเฉพาะมิเตอร์เลข <b class="mono">'+esc(w.tid)+'</b> เท่านั้น':'⚠ ยังไม่ได้ระบุเลขมิเตอร์'}</p></div>
   <div class="wgrid">${cards}</div>
   <div class="card" style="margin-top:14px"><h2><em>📋</em>แผนการเขียน</h2><p class="sub">ข้อมูลที่จะถูกเขียน (ที่เหลือคงค่าเดิมไว้) · อ่านกลับตรวจสอบทุกครั้ง</p>
    <div class="tw"><table><thead><tr><th>ตำแหน่ง</th><th>ค่า</th><th class="l">ความหมาย</th></tr></thead><tbody>${planRows}</tbody></table></div>
@@ -895,7 +903,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v;
   if(a==='wrsw'){S.wr[v]=!S.wr[v];save();render()}
   else if(a==='wrset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc'].includes(k))x=+v;if(/Val$/.test(k))x=+v;if(k==='tid'){S.wr.any=false}S.wr[k]=x;if(/Unit$/.test(k)){S.wr[k.replace('Unit','Val')]=x==='h'?1:15}save();render()}
-  else if(a==='wrgo')wrGo();else if(a==='wrcancel')wrCancel();else if(a==='vfgo')wrVerify();else if(a==='vfcancel'){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}VF={state:'idle',res:null,cmp:null};render()}else if(a==='wrreset'){WR={state:'idle',job:null,res:null};render()}
+  else if(a==='wrmode'){S.wr.any=(v==='touch');save();render()}else if(a==='wrgo')wrGo();else if(a==='wrcancel')wrCancel();else if(a==='vfgo')wrVerify();else if(a==='vfcancel'){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}VF={state:'idle',res:null,cmp:null};render()}else if(a==='wrreset'){WR={state:'idle',job:null,res:null};render()}
   else if(a==='wrclr'){S.cfglog=[];save();render()}
   else if(a==='ptuse'){const p=S.plan[+v];if(!p)return;p.off=!p.off;if(S.plan.every(q=>q.off))p.off=false;save();render()}
   else if(a==='ptall'){S.plan.forEach(p=>delete p.off);save();render()}
