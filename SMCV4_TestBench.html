@@ -166,6 +166,30 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 .odo i{font-style:normal;color:#9db6c8;align-self:flex-end;margin-left:6px;font-size:.72rem;padding-bottom:3px}
 .dial .odo b{font-size:1.1rem}#mon .odo b{font-size:clamp(.9rem,2vw,1.9rem)}#mon .mmain .dial .odo b{font-size:1.5rem}
 body.mech .kx{display:none}
+.ptsw{width:46px;height:26px;border-radius:20px;background:#cbd5e1;position:relative;cursor:pointer;display:inline-block;transition:.2s}.ptsw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #0004;transition:.2s}.ptsw.on{background:#10b981}.ptsw.on i{left:23px}
+tr.ptoff td{opacity:.45}tr.ptoff td:first-child{opacity:1}
+.ptbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0;padding:10px 12px;border-radius:14px;background:linear-gradient(90deg,#e6f7f1,#e8f3fb)}.ptbar span{flex:1;min-width:150px}
+.wrh{background:linear-gradient(135deg,#0b3a99,#0b7ea4 55%,#14b8a6);color:#fff;border-radius:22px;padding:22px 24px;box-shadow:0 14px 34px #0b3a9944}
+.wrh h2{margin:0 0 4px;font-size:1.45rem}.wrh p{margin:0;opacity:.92}
+.wsteps{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}.wsteps div{flex:1;min-width:190px;background:#ffffff1f;border:1px solid #ffffff44;border-radius:14px;padding:10px 12px;font-size:.9rem;line-height:1.45}.wsteps b{display:block;font-size:1rem}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:14px;align-items:start}
+.wc{border:2px solid #dbe7ee;border-radius:18px;padding:14px 16px;background:#fff;transition:.2s}
+.wc.on{border-color:#0b7ea4;box-shadow:0 8px 24px #0b7ea433;background:linear-gradient(#fff,#f0fafd)}
+.wc .wt{display:flex;align-items:center;gap:12px;cursor:pointer}
+.wc .wi{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:1.45rem;background:#e6f4f9;flex:none}
+.wc .wn{flex:1;min-width:0}.wc .wn b{display:block}.wc .wn small{color:#64748b;display:block;line-height:1.35}
+.sw{width:52px;height:30px;border-radius:20px;background:#cbd5e1;position:relative;flex:none;transition:.2s}.sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #0004;transition:.2s}
+.wc.on .sw{background:#0b7ea4}.wc.on .sw::after{left:25px}.sw.lock{opacity:.6}
+.wc .wb{margin-top:12px;padding-top:12px;border-top:1px dashed #bcd6e2}
+.seg{display:flex;background:#e6eef3;border-radius:13px;padding:3px;gap:3px}.seg button{flex:1;border:0;background:transparent;padding:9px 6px;border-radius:10px;font:inherit;cursor:pointer;color:#334155}.seg button.on{background:#0b7ea4;color:#fff;font-weight:700;box-shadow:0 2px 8px #0b7ea455}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chips button{border:1px solid #cfe0e8;background:#fff;border-radius:20px;padding:6px 12px;font:inherit;cursor:pointer}.chips button.on{background:#0b7ea4;color:#fff;border-color:#0b7ea4}
+.bytep{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0a2a43;color:#7ee0c3;border-radius:9px;padding:2px 9px;font-weight:700}
+.wst{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:6px 2px}.wst h3{margin:0 0 4px}.wst p{margin:0 0 10px;color:#475569}
+.nfcring{width:92px;height:92px;border-radius:50%;border:6px solid #14b8a6;display:grid;place-items:center;font-size:2.2rem;animation:wpulse 1.5s infinite;flex:none}
+.nfcring.okr{border-color:#10b981;color:#10b981;animation:none;font-weight:700}.nfcring.errr{border-color:#e11d48;color:#e11d48;animation:none;font-weight:700}
+@keyframes wpulse{0%{box-shadow:0 0 0 0 #14b8a688}100%{box-shadow:0 0 0 26px #14b8a600}}
+.after{background:#fff7e0;border:1px solid #f6d77a;border-radius:12px;padding:10px 12px;margin:0 0 10px;color:#6b4e00;line-height:1.55}
+.btn.wbig{font-size:1.1rem;padding:14px 22px;border-radius:16px}
 .keybar .kbr{display:grid;grid-template-columns:1fr 1.2fr 1.4fr auto;gap:10px;align-items:end}.keybar .fld{margin:0}.keybar input,.keybar select{width:100%}
 #kbVal{font:700 1.4rem ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px}
 @media(max-width:820px){.keybar .kbr{grid-template-columns:1fr 1fr}}.sl .bt{font-size:.84rem;margin-top:5px;padding:2px 8px;border-radius:10px;background:#eef5f9;display:inline-block}.sl .bt.ok{background:#e0f7ec;color:#047857}.sl .bt.warn{background:#fef3c7;color:#b45309}.sl .bt.bad{background:#ffe4e6;color:#be123c}.sl .bt small{opacity:.8}
@@ -269,7 +293,7 @@ const SENT=[];
 function rlPost(m){return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
 function rlSend(r){
   if(!r||(!r.id&&!r.mech)||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
-  const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,issues:r.issues||[],meta:r.meta||null,mech:r.mech?1:0,ts:Date.now()};
+  const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,logmin:r.logmin,cmd:r.cmd,issues:r.issues||[],meta:r.meta||null,mech:r.mech?1:0,ts:Date.now()};
   const e={r,t:Date.now(),ok:null};SENT.unshift(e);SENT.length=Math.min(SENT.length,30);RL.sent++;beep('ok');
   rlPost(m).then(()=>{e.ok=true;render()},er=>{e.ok=false;RL.err=er.message||'ส่งไม่สำเร็จ';render()});
   render();return true}
@@ -311,6 +335,8 @@ function parseNfc(u,part,meta){
   o.size=cov(76,77)?u[76]:null;
   if(cov(84,164)){o.k=[];o.k8=[];for(let i=0;i<20;i++){const s=hx(u,84+4*i,88+4*i);o.k8.push(s);o.k.push(isD(s)?parseInt(s,10):null)}
     if(o.k.some(x=>x==null))o.issues.push('ค่า K บางตัวไม่ใช่เลขฐานสิบ')}else o.issues.push('ไม่ได้อ่านค่า K1–K20 (Addr 84–163)');
+  if(cov(68,72))o.cmd=hx(u,68,72);
+  if(cov(164,168)){o.nfcT=hx(u,164,166);o.logmin=(u[166]<<8)|u[167]}
   if(cov(168,171)){o.dir=u[168];o.uart=u[169];o.calc=u[170]}
   if(cov(184,188)){const s=hx(u,184,187);o.rev=isD(s)?parseInt(s,10):null;o.revMark=u[187];if(o.rev==null)o.issues.push('จำนวนรอบ (Addr 184–186) ไม่ใช่เลขฐานสิบ');if(u[187]!==0xA5)o.issues.push('Addr 187 ไม่ใช่ A5 (ค่าตั้งต้น)')}
   else o.issues.push('ไม่ได้อ่านจำนวนรอบ (Addr 184–187)');
@@ -328,7 +354,7 @@ const revVolStr=d=>String(d||0).padStart(12,'0');
 
 /* ---------- คำนวณผลต่อมิเตอร์/จุดทดสอบ ---------- */
 function calc(pi,id){
-  const r=(S.rd[pi]||{})[id],p=S.plan[pi];if(!r||!r.s||!r.e||!p||r.s.vol==null||r.e.vol==null)return null;
+  const r=(S.rd[pi]||{})[id],p=S.plan[pi];if(!r||!r.s||!r.e||!p||p.off||r.s.vol==null||r.e.vol==null)return null;
   const vref=r.vref||p.v,dVol=(r.e.vol-r.s.vol)/100,o={dVol,vref,lim:p.lim,flags:[]};
   o.valid=dVol>0&&vref>0;
   if(!o.valid){o.flags.push(dVol<=0?'ปริมาตรสิ้นสุด ≤ เริ่มต้น':'ปริมาตรอ้างอิงไม่ถูกต้อง');return o}
@@ -354,13 +380,13 @@ function calc(pi,id){
 function flowAct(pi){const st=S.pt[pi]||{},p=S.plan[pi];if(!st.t0||!st.t1||st.t1<=st.t0||!p)return null;return p.v*3600/((st.t1-st.t0)/1000)}   // L/h จริงจากเวลา
 
 function agg(){
-  const mids=S.meters.filter(m=>m.id).map(m=>m.id),np=S.plan.length,A={mids,np,M:{},P:[],kRec:null};
+  const mids=S.meters.filter(m=>m.id).map(m=>m.id),np=S.plan.filter(p=>!p.off).length,A={mids,np,M:{},P:[],kRec:null};
   mids.forEach(id=>{const cells=S.plan.map((_,i)=>calc(i,id)),done=cells.filter(c=>c&&c.valid),f=done.filter(c=>!c.pass).length,
     verdict=!done.length?'none':done.length<np?(f?'fail':'pend'):(f?'fail':'pass');
     A.M[id]={id,cells,tested:done.length,fail:f,pass:done.length-f,worst:done.length?Math.max(...done.map(c=>Math.abs(c.err))):null,verdict}});
   S.plan.forEach((p,i)=>{const cs=mids.map(id=>A.M[id].cells[i]).filter(c=>c&&c.valid),e=cs.map(c=>c.err);
     A.P.push({i,n:cs.length,pass:cs.filter(c=>c.pass).length,mean:mean(e),min:e.length?Math.min(...e):null,max:e.length?Math.max(...e):null,fa:flowAct(i),
-      state:(S.pt[i]||{}).step==='done'?(cs.some(c=>!c.pass)?'fail':'done'):'pend'})});
+      state:p.off?'off':(S.pt[i]||{}).step==='done'?(cs.some(c=>!c.pass)?'fail':'done'):'pend'})});
   const ms=Object.values(A.M),full=ms.filter(m=>m.verdict==='pass').length,nf=ms.filter(m=>m.verdict==='fail').length,pn=ms.filter(m=>m.verdict==='pend'||m.verdict==='none').length;
   A.full=full;A.nfail=nf;A.pend=pn;A.nm=ms.length;A.pct=ms.length?full/ms.length*100:0;
   A.verdict=!ms.length?'none':pn?'pend':A.pct>=S.batch.passPct-1e-9?'pass':'fail';
@@ -464,7 +490,7 @@ function addImported(im,reset){
 </script>
 <script>
 /* ============ SMCV4 Test Bench · UI ============ */
-const TABS=[['setup','ตั้งค่า'],['plan','แผนทดสอบ'],['run','ทดสอบ'],['res','ผลสรุป'],['rep','รายงาน']];
+const TABS=[['setup','ตั้งค่า'],['plan','แผนทดสอบ'],['run','ทดสอบ'],['res','ผลสรุป'],['rep','รายงาน'],['wr','เขียนค่า NFC']];
 const MODEL=m=>m==='MJ'?'Multijet':'Single Jet';
 const heat=(e,l)=>{if(e==null)return'hn';const u=Math.abs(e)/l;return u>1?'h3':u>.8?'h2':u>.5?'h1':'h0'};
 const flowT=f=>f==null?'–':fx(f,f<100?(f%1?1:0):0);
@@ -472,13 +498,15 @@ const VD={pass:['ok','ผ่าน PASS'],fail:['bad','ไม่ผ่าน FAI
 let fillK=true;
 
 function render(){
+  if(S.plan.length&&S.plan[S.cur]&&S.plan[S.cur].off){const n=nextOn(S.cur),pv=prevOn(S.cur);S.cur=n!=null?n:pv!=null?pv:S.cur}
+  if(!S.wr)S.wr=defWr();if(!S.cfglog)S.cfglog=[];if(!S.cfg)S.cfg={};
   if(!S.batch.mtype)S.batch.mtype='nfc';if(S.batch.mfrac==null)S.batch.mfrac=3;
   if(IS_MON){renderMon();return}
   const kb={id:($('#kbId')||{}).value,val:($('#kbVal')||{}).value,f:document.activeElement&&/^kb(Id|Val)$/.test(document.activeElement.id)?document.activeElement.id:null};
   const A=agg();
   $('#tabs').innerHTML=TABS.map((t,i)=>`<button class="tab ${TAB===t[0]?'on':''} ${t[0]==='run'&&A.nm&&A.pend?'warn':''}" data-a="tab" data-v="${t[0]}"><i>${i+1}</i>${t[1]}<span class="dot"></span></button>`).join('');
   const b=S.batch;$('#hdBatch').textContent=b.id;$('#hdMeter').textContent=MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · '+A.nm+'/'+S.meters.length+' มิเตอร์'+(MECH()?' · แมคคานิค':'');document.body.classList.toggle('mech',MECH());
-  $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep}[TAB])(A);rlChip();
+  $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep,wr:vWr}[TAB])(A);rlChip();
   if($('#kbVal')){if(!KBCLR){if(kb.val)$('#kbVal').value=kb.val;if(kb.id)$('#kbId').value=kb.id}const ff=KBFOCUS||kb.f;if(ff&&$('#'+ff))$('#'+ff).focus();KBFOCUS=null;KBCLR=false}
   if(MON)renderMon(A)}
 
@@ -536,13 +564,14 @@ function chartSvg(o){o=o||{};const W=o.w||680,H=o.h||280,L=46,Rr=14,T=14,B=34,pl
     if(pts.length>1)s+=`<path d="M${pts.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join('L')}" fill="none" stroke="${c}" stroke-width="${ok?1.6:2.4}" opacity="${ok?.55:.95}"/>`;
     pts.forEach(q=>{s+=`<circle cx="${q[0]}" cy="${q[1]}" r="${q[2].ok?3.4:5}" fill="${q[2].ok?'#fff':'#e11d48'}" stroke="${c}" stroke-width="2"><title>${esc(se.id)} @ ${flowT(q[2].f)} L/h = ${sg(q[2].e)}%</title></circle>`})});
   return s+'</svg>'}
-function planWarn(){const Q=qs(S.batch.q3,S.batch.R),bad=S.plan.filter(p=>p.f<Q.q1*0.9||p.f>Q.q4*1.1);return bad.length?`<p class="pill bad" style="white-space:normal">⚠ มี ${bad.length} จุดอยู่นอกช่วง Q1–Q4 ของ ${MODEL(S.batch.model)} ${S.batch.size} mm · R${S.batch.R} (${flowT(rs3(Q.q1))}–${flowT(rs3(Q.q4))} L/h) — กด “สร้างแผนจากคลาส R” เพื่อให้ตรงกับขนาดที่ตั้งไว้</p>`:''}
-function vPlan(A){const b=S.batch,Q=qs(b.q3,b.R),tw=S.plan.reduce((a,p)=>a+p.v,0),tm=S.plan.reduce((a,p)=>a+p.v/p.f*60,0),loc=S.plan.some((p,i)=>Object.keys(S.rd[i]||{}).length);
-  const rows=S.plan.map((p,i)=>`<tr><td><b>${i+1}</b></td><td><input class="in" data-pp="${i}.l" value="${esc(p.l)}" style="width:76px"></td><td><input class="in" type="number" step="any" data-pp="${i}.f" value="${p.f}" style="width:96px"></td><td><input class="in" type="number" step="any" data-pp="${i}.v" value="${p.v}" style="width:84px"></td><td><input class="in" type="number" step="0.1" data-pp="${i}.lim" value="${p.lim}" style="width:70px"></td><td>${fx(p.v/p.f*60,1)} นาที</td><td><button class="btn sm" data-a="delpt" data-v="${i}">ลบ</button></td></tr>`).join('');
+function planWarn(){const Q=qs(S.batch.q3,S.batch.R),bad=S.plan.filter(p=>!p.off&&(p.f<Q.q1*0.9||p.f>Q.q4*1.1));return bad.length?`<p class="pill bad" style="white-space:normal">⚠ มี ${bad.length} จุดอยู่นอกช่วง Q1–Q4 ของ ${MODEL(S.batch.model)} ${S.batch.size} mm · R${S.batch.R} (${flowT(rs3(Q.q1))}–${flowT(rs3(Q.q4))} L/h) — กด “สร้างแผนจากคลาส R” เพื่อให้ตรงกับขนาดที่ตั้งไว้</p>`:''}
+function vPlan(A){const b=S.batch,Q=qs(b.q3,b.R),tw=S.plan.filter(p=>!p.off).reduce((a,p)=>a+p.v,0),tm=S.plan.filter(p=>!p.off).reduce((a,p)=>a+p.v/p.f*60,0),nOn=S.plan.filter(p=>!p.off).length,loc=S.plan.some((p,i)=>Object.keys(S.rd[i]||{}).length);
+  const rows=S.plan.map((p,i)=>`<tr class="${p.off?'ptoff':''}"><td><div class="ptsw ${p.off?'':'on'}" data-a="ptuse" data-v="${i}" title="${p.off?'ไม่ใช้จุดนี้ในการทดสอบ':'ใช้เป็นจุดทดสอบ'}"><i></i></div></td><td><b>${i+1}</b></td><td><input class="in" data-pp="${i}.l" value="${esc(p.l)}" style="width:76px"></td><td><input class="in" type="number" step="any" data-pp="${i}.f" value="${p.f}" style="width:96px"></td><td><input class="in" type="number" step="any" data-pp="${i}.v" value="${p.v}" style="width:84px"></td><td><input class="in" type="number" step="0.1" data-pp="${i}.lim" value="${p.lim}" style="width:70px"></td><td>${fx(p.v/p.f*60,1)} นาที</td><td><button class="btn sm" data-a="delpt" data-v="${i}">ลบ</button></td></tr>`).join('');
   return`<style>.in{border:1px solid var(--line);border-radius:9px;padding:6px 8px;background:var(--card2);text-align:center}</style>
-  <div class="grid g4" style="margin-bottom:18px"><div class="kpi"><small>จำนวนจุดทดสอบ / Batch</small><b>${S.plan.length}</b><em>อัตราการไหล (R${b.R})</em></div><div class="kpi" style="--c:var(--acc2)"><small>น้ำที่ใช้รวม</small><b>${fx(tw,0)} L</b><em>ต่อ 1 รอบทดสอบ</em></div><div class="kpi" style="--c:#7c3aed"><small>เวลาไหลรวมโดยประมาณ</small><b>${fx(tm,0)} นาที</b><em>ไม่รวมเวลาอ่าน NFC</em></div><div class="kpi" style="--c:#f59e0b"><small>มิเตอร์ต่อ Batch</small><b>${S.meters.length}</b><em>ช่อง</em></div></div>
-  <div class="grid g2"><div class="card"><h2><em>🧭</em>จุดทดสอบ (กำหนดจำนวนจุดตามคลาส R)</h2><p class="sub">${MODEL(b.model)} ${b.size} mm · R${b.R} · Q3 = ${fx(b.q3)} L/h — แก้ตัวเลขในตารางได้ทุกช่อง</p>${q3Info()}
-   <div class="tw"><table><thead><tr><th>#</th><th>ชื่อจุด</th><th>อัตราไหล (L/h)</th><th>ปริมาตร (L)</th><th>เกณฑ์ ±%</th><th>เวลาโดยประมาณ</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="7" class="hint">ยังไม่มีจุดทดสอบ — กด “สร้างแผนจากคลาส R”</td></tr>'}</tbody></table></div>
+  <div class="grid g4" style="margin-bottom:18px"><div class="kpi"><small>จุดทดสอบที่ใช้ / ทั้งหมด</small><b>${nOn} / ${S.plan.length}</b><em>อัตราการไหล (R${b.R})</em></div><div class="kpi" style="--c:var(--acc2)"><small>น้ำที่ใช้รวม</small><b>${fx(tw,0)} L</b><em>ต่อ 1 รอบทดสอบ</em></div><div class="kpi" style="--c:#7c3aed"><small>เวลาไหลรวมโดยประมาณ</small><b>${fx(tm,0)} นาที</b><em>ไม่รวมเวลาอ่าน NFC</em></div><div class="kpi" style="--c:#f59e0b"><small>มิเตอร์ต่อ Batch</small><b>${S.meters.length}</b><em>ช่อง</em></div></div>
+  <div class="grid g2"><div class="card"><h2><em>🧭</em>จุดทดสอบ (กำหนดจำนวนจุดตามคลาส R)</h2><p class="sub">${MODEL(b.model)} ${b.size} mm · R${b.R} · Q3 = ${fx(b.q3)} L/h — แก้ตัวเลขในตารางได้ทุกช่อง · <b>เปิด/ปิดสวิตช์ “ใช้ทดสอบ”</b> เพื่อเลือกว่าจุดไหนจะนำไปทดสอบจริง</p>${q3Info()}
+   <div class="ptbar"><span>🎯 ใช้ทดสอบ <b>${nOn}</b> จาก ${S.plan.length} จุด</span><button class="btn sm" data-a="ptall">เลือกทั้งหมด</button><button class="btn sm" data-a="ptq3">เฉพาะ Q1 · Q2 · Q3</button><button class="btn sm" data-a="ptq4">เฉพาะ Q1 · Q2 · Q3 · Q4</button></div>
+   <div class="tw"><table><thead><tr><th>ใช้ทดสอบ</th><th>#</th><th>ชื่อจุด</th><th>อัตราไหล (L/h)</th><th>ปริมาตร (L)</th><th>เกณฑ์ ±%</th><th>เวลาโดยประมาณ</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="hint">ยังไม่มีจุดทดสอบ — กด “สร้างแผนจากคลาส R”</td></tr>'}</tbody></table></div>
    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn p" data-a="mkplan">⚙ สร้างแผนจากคลาส R${b.R}</button><button class="btn" data-a="addpt">➕ เพิ่มจุด</button></div>
    ${planWarn()}${loc?'<p class="hint">⚠ มีข้อมูลทดสอบอยู่แล้ว — การสร้างแผนใหม่จะล้างผลที่อ่านไว้</p>':''}</div>
   <div class="card"><h2><em>📈</em>ตำแหน่งจุดทดสอบเทียบเกณฑ์</h2><p class="sub">แถบเหลือง = เกณฑ์ช่วงต่ำ · แถบเขียว = เกณฑ์ช่วงสูง</p>${S.plan.length?chartSvg():'<p class="hint">เพิ่มจุดทดสอบเพื่อดูกราฟ</p>'}
@@ -591,6 +620,11 @@ function keyBar(pi,st,N){if(!MECH())return'';
    <div class="fld"><label>Meter ID / เลขซีเรียล (ไม่บังคับ)</label><input id="kbId" type="text" value="${esc(idv)}" placeholder="${m&&m.id?esc(m.id):'เว้นว่างได้'}" autocomplete="off"></div>
    <div class="fld"><label>ค่าที่อ่านจากหน้าปัด (m³)</label><input id="kbVal" type="text" inputmode="decimal" placeholder="00123.456" autocomplete="off"></div>
    <button class="btn p" data-a="kbsave">บันทึก ⏎</button></div></div>`}
+/* ===== เลือกจุดทดสอบ (ใช้/ไม่ใช้) ===== */
+const onPts=()=>S.plan.map((p,i)=>p.off?null:i).filter(i=>i!=null);
+const nextOn=i=>{for(let j=i+1;j<S.plan.length;j++)if(!S.plan[j].off)return j;return null};
+const prevOn=i=>{for(let j=i-1;j>=0;j--)if(!S.plan[j].off)return j;return null};
+const ordOn=i=>S.plan.slice(0,i+1).filter(p=>!p.off).length;
 const BAT_WARN=2.9,BAT_LOW=2.7;
 const batCls=v=>v==null?'':v<BAT_LOW?'bad':v<BAT_WARN?'warn':'ok';
 const batT=v=>v==null?'—':v.toFixed(2)+' V';
@@ -631,7 +665,7 @@ function guideSteps0(){const b=S.batch,N=Math.max(b.nm,S.meters.filter(m=>m.id).
 function guideHtml(){return`<ol class="gd">${guideSteps().map(g=>`<li><b>${g[0]}</b><span>${g[1]}</span></li>`).join('')}</ol><p class="hint" style="margin-top:8px">💡 อ่านพลาด/ซ้ำ: แตะมิเตอร์ตัวนั้นใหม่ได้เลย ระบบทับค่าเดิม · ถ้าต้องการกำหนดตำแหน่งเอง ให้แตะ “ช่องว่าง” ก่อน แล้วค่อยแตะมิเตอร์</p>`}
 function vRun(A){
   if(!S.plan.length)return`<div class="card"><h2><em>⚠</em>ยังไม่มีแผนทดสอบ</h2><p class="sub">ไปที่แท็บ ② แผนทดสอบ แล้วกด “สร้างแผนจากคลาส R” หรือโหลดข้อมูลตัวอย่าง</p><button class="btn p" data-a="tab" data-v="plan">ไปที่แผนทดสอบ</button> <button class="btn" data-a="demo">โหลดข้อมูลตัวอย่าง (Demo)</button></div>`;
-  const pi=Math.min(S.cur,S.plan.length-1),p=S.plan[pi],st=pointState(pi),np=S.plan.length,P=A.P[pi],regs=S.meters.filter(m=>m.id),N=Math.max(S.batch.nm,S.meters.length);
+  const pi=Math.min(S.cur,S.plan.length-1),p=S.plan[pi],st=pointState(pi),np=S.plan.filter(q=>!q.off).length,nxt=nextOn(pi),P=A.P[pi],regs=S.meters.filter(m=>m.id),N=Math.max(S.batch.nm,S.meters.length);
   const rdOf=m=>(S.rd[pi]||{})[m.id]||{},hasS=regs.filter(m=>rdOf(m).s).length,hasE=regs.filter(m=>rdOf(m).e).length,anyData=Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length);
   const slots=Array.from({length:N},(_,i)=>S.meters[i]||{id:''});
   const miss=slots.map((m,i)=>m.id?null:i).filter(x=>x!=null).map(i=>'#'+(i+1));
@@ -646,10 +680,10 @@ function vRun(A){
       :`<b>ขั้นที่ 1 · อ่านค่าเริ่มต้น</b> — ใช้แอป SMCV4 Reader แตะมิเตอร์ทีละตัว (อ่านแล้ว <b>${hasS}/${N}</b>)${missRd('s').length&&regs.length?' · ยังไม่อ่าน: <b>'+missRd('s').join(' ')+'</b>':''}${miss.length&&regs.length<N?' · ช่องว่าง: '+miss.join(' '):''}<br><small>ครบแล้วตั้งอัตราไหลที่แท่นเป็น ${flowT(p.f)} L/h แล้วกด ▶</small>`}
   else if(st.step==='run'){ctl=`<button class="btn bad" data-a="stoprun">■ หยุดน้ำ แล้วอ่านค่าสิ้นสุด</button>`;
     todo=`<b>ขั้นที่ 2 · กำลังปล่อยน้ำ ${flowT(p.f)} L/h</b> — ถังอ้างอิงครบ <b>${p.v} L</b> (ประมาณ ${fx(p.v/p.f*60,1)} นาที) เมื่อครบ ให้ปิดน้ำแล้วกด ■ หยุดน้ำ`}
-  else if(st.step==='end'){ctl=`<button class="btn ok" data-a="confirm" ${hasE?'':'disabled'}>✔ ยืนยันจุดนี้ ${pi<np-1?'→ จุดถัดไป':'(จุดสุดท้าย)'} (${hasE}/${hasS})</button> <button class="btn" data-a="redo">↺ อ่านสิ้นสุดใหม่</button>`;
+  else if(st.step==='end'){ctl=`<button class="btn ok" data-a="confirm" ${hasE?'':'disabled'}>✔ ยืนยันจุดนี้ ${nxt!=null?'→ จุดถัดไป':'(จุดสุดท้าย)'} (${hasE}/${hasS})</button> <button class="btn" data-a="redo">↺ อ่านสิ้นสุดใหม่</button>`;
     todo=`<b>ขั้นที่ 3 · อ่านค่าสิ้นสุด</b> — แตะมิเตอร์ทีละตัว (อ่านแล้ว <b>${hasE}/${hasS}</b>)${missRd('e').length?' · ยังไม่อ่าน: <b>'+missRd('e').join(' ')+'</b>':' · <b>ครบแล้ว กด ✔ ยืนยันได้เลย</b>'}`}
-  else{ctl=`<button class="btn" data-a="redo">↩ แก้ไข / อ่านใหม่</button> ${pi<np-1?`<button class="btn p" data-a="goto" data-v="${pi+1}">จุดถัดไป →</button>`:`<button class="btn p" data-a="tab" data-v="res">ดูผลสรุป →</button>`}`;
-    todo=`<b>จุดนี้ยืนยันแล้ว</b> ✔ — ${pi<np-1?'ไปจุดถัดไป: ตั้งอัตราไหล '+flowT(S.plan[pi+1].f)+' L/h':'ครบทุกจุดแล้ว ไปดูผลสรุปได้เลย'}`}
+  else{ctl=`<button class="btn" data-a="redo">↩ แก้ไข / อ่านใหม่</button> ${nxt!=null?`<button class="btn p" data-a="goto" data-v="${nxt}">จุดถัดไป →</button>`:`<button class="btn p" data-a="tab" data-v="res">ดูผลสรุป →</button>`}`;
+    todo=`<b>จุดนี้ยืนยันแล้ว</b> ✔ — ${nxt!=null?'ไปจุดถัดไป: ตั้งอัตราไหล '+flowT(S.plan[nxt].f)+' L/h':'ครบทุกจุดแล้ว ไปดูผลสรุปได้เลย'}`}
   if(MECH())todo=todo.replace('ใช้แอป SMCV4 Reader แตะมิเตอร์ทีละตัว','ถ่ายหน้าปัดด้วยแอป SMCV4 Reader (โหมดกลไก) หรือคีย์ค่าที่แถบ ⌨ ด้านล่าง').replace('แตะมิเตอร์ทีละตัว','ถ่ายหน้าปัด/คีย์ค่าทีละตัว');
   const tmv=st.t0?dur((st.t1||Date.now())-st.t0):'00:00';
   const card=(m,i)=>{
@@ -667,8 +701,8 @@ function vRun(A){
   const doneP=A.P.filter(x=>x.state==='done'||x.state==='fail').length;
   const cfg=`<details class="card cfgd" ${anyData?'':'open'}><summary>🔧 <b>ตั้งค่าการทดสอบ</b> · ${MODEL(S.batch.model)} · ${S.batch.size} mm · R${S.batch.R} · ${N} ตัวบนแท่น <small>(แตะเพื่อแก้ไข)</small></summary><div class="cfgr">${sel('ชนิดมิเตอร์','batch.model',[['SJ','Single Jet'],['MJ','Multijet']])}${sel('ขนาด (mm)','batch.size',SIZES.map(s=>[s,s+' mm']))}${sel('คลาส R','batch.R',RCL.map(r=>[r,'R'+r]))}${fld('จำนวนมิเตอร์บนแท่น','batch.nm','number','min="1" max="40"')}</div>${q3Info()}<p class="hint" style="margin-top:8px">เปลี่ยนขนาด / คลาส R แล้วระบบปรับอัตราการไหลและแผนทดสอบให้อัตโนมัติ · ข้อมูลอื่น (ผู้ทดสอบ เกณฑ์ ความดัน อุณหภูมิ) อยู่ที่แท็บ ①</p></details>`;
   return`${cfg}${keyBar(pi,st,N)}${anyData?'':`<div class="card guide"><h2><em>📖</em>เริ่มใช้งานใน 6 ขั้น</h2>${guideHtml()}</div>`}
-  <div class="steps">${S.plan.map((q,i)=>`<div class="pt ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}" data-a="goto" data-v="${i}"><span class="st">${A.P[i].state==='done'?'✅':A.P[i].state==='fail'?'⚠️':''}</span><b>${esc(q.l)}</b><small>${flowT(q.f)} L/h · ${q.v} L</small><small>±${q.lim}% · ${A.P[i].n?A.P[i].pass+'/'+A.P[i].n+' ผ่าน':'รอทดสอบ'}</small></div>`).join('')}</div>
-  <div class="banner"><div><div style="opacity:.8;font-size:.9rem">จุดทดสอบที่ ${pi+1} / ${np} · ยืนยันแล้ว ${doneP} จุด</div><h3>${esc(p.l)} <small>· ${flowT(p.f)} L/h · ${p.v} L</small></h3>
+  <div class="steps">${S.plan.map((q,i)=>q.off?'':`<div class="pt ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}" data-a="goto" data-v="${i}"><span class="st">${A.P[i].state==='done'?'✅':A.P[i].state==='fail'?'⚠️':''}</span><b>${esc(q.l)}</b><small>${flowT(q.f)} L/h · ${q.v} L</small><small>±${q.lim}% · ${A.P[i].n?A.P[i].pass+'/'+A.P[i].n+' ผ่าน':'รอทดสอบ'}</small></div>`).join('')}</div>
+  <div class="banner"><div><div style="opacity:.8;font-size:.9rem">จุดทดสอบที่ ${ordOn(pi)} / ${np} · ยืนยันแล้ว ${doneP} จุด</div><h3>${esc(p.l)} <small>· ${flowT(p.f)} L/h · ${p.v} L</small></h3>
    <div class="k"><span>เกณฑ์ ±${p.lim}%</span><span>เวลาโดยประมาณ ${fx(p.v/p.f*60,1)} นาที</span><span>${regs.length}/${N} มิเตอร์</span>${fa?`<span style="${devBad?'background:#fb7185;color:#fff':''}">อัตราไหลจริง ${fx(fa,fa<100?1:0)} L/h (${sg(dev,1)}%)</span>`:''}</div>
    <div class="todo">${todo}</div>
    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">${ctl}<button class="btn g sm" data-a="howto">📖 วิธีใช้</button></div></div>
@@ -686,9 +720,9 @@ function vRun(A){
     <div class="card" style="margin:0"><h2><em>📊</em>จุดนี้โดยรวม</h2><div class="grid g4" style="gap:10px"><div class="kpi" style="--c:var(--ok)"><small>ผ่าน</small><b>${P.pass}/${P.n}</b><em>มิเตอร์</em></div><div class="kpi" style="--c:var(--acc)"><small>เฉลี่ย</small><b>${sg(P.mean)}</b><em>%</em></div><div class="kpi" style="--c:#7c3aed"><small>ต่ำสุด</small><b>${sg(P.min)}</b><em>%</em></div><div class="kpi" style="--c:#f59e0b"><small>สูงสุด</small><b>${sg(P.max)}</b><em>%</em></div></div></div></div></div>`}
 
 /* ---------- ④ ผลสรุป ---------- */
-function matrix(A,cls=''){const hd=S.plan.map(p=>`<th>${flowT(p.f)}<br><small style="font-weight:400">${esc(p.l)} · ±${p.lim}%</small></th>`).join('');
-  const body=A.mids.map(id=>{const m=A.M[id];return`<tr><td class="l mono"><b>${esc(id)}</b></td>${m.cells.map((c,i)=>`<td class="${c&&c.valid?heat(c.err,S.plan[i].lim):'hn'}">${c&&c.valid?sg(c.err):'–'}</td>`).join('')}<td>${m.tested?m.pass+'/'+S.plan.length:'–'}</td><td><span class="pill ${VD[m.verdict][0]}">${m.verdict==='pass'?'ผ่านครบ':m.verdict==='fail'?'ตก '+m.fail+' จุด':'รอ'}</span></td></tr>`}).join('');
-  const foot=[['เฉลี่ย %',p=>sg(p.mean)],['ต่ำสุด … สูงสุด',p=>p.n?sg(p.min,1)+' … '+sg(p.max,1):'–'],['ผ่าน / ทดสอบ',p=>p.n?p.pass+'/'+p.n:'–']].map(f=>`<tr style="background:var(--card2);font-weight:700"><td class="l">${f[0]}</td>${A.P.map(p=>`<td>${f[1](p)}</td>`).join('')}<td colspan="2"></td></tr>`).join('');
+function matrix(A,cls=''){const hd=S.plan.filter(p=>!p.off).map(p=>`<th>${flowT(p.f)}<br><small style="font-weight:400">${esc(p.l)} · ±${p.lim}%</small></th>`).join('');
+  const body=A.mids.map(id=>{const m=A.M[id];return`<tr><td class="l mono"><b>${esc(id)}</b></td>${m.cells.map((c,i)=>S.plan[i].off?'':`<td class="${c&&c.valid?heat(c.err,S.plan[i].lim):'hn'}">${c&&c.valid?sg(c.err):'–'}</td>`).join('')}<td>${m.tested?m.pass+'/'+A.np:'–'}</td><td><span class="pill ${VD[m.verdict][0]}">${m.verdict==='pass'?'ผ่านครบ':m.verdict==='fail'?'ตก '+m.fail+' จุด':'รอ'}</span></td></tr>`}).join('');
+  const foot=[['เฉลี่ย %',p=>sg(p.mean)],['ต่ำสุด … สูงสุด',p=>p.n?sg(p.min,1)+' … '+sg(p.max,1):'–'],['ผ่าน / ทดสอบ',p=>p.n?p.pass+'/'+p.n:'–']].map(f=>`<tr style="background:var(--card2);font-weight:700"><td class="l">${f[0]}</td>${A.P.filter(p=>!S.plan[p.i].off).map(p=>`<td>${f[1](p)}</td>`).join('')}<td colspan="2"></td></tr>`).join('');
   return`<div class="tw ${cls}"><table><thead><tr><th class="l">มิเตอร์</th>${hd}<th>ผ่าน</th><th>สรุป</th></tr></thead><tbody>${body||'<tr><td colspan="99" class="hint">ยังไม่มีผลทดสอบ</td></tr>'}${foot}</tbody></table></div>`}
 function kGrid(A){const fill=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),KR=kRef(S.batch.model,S.batch.size),bands=RPM_MAP.map((m,i)=>'≈'+fx(KR.q[i],KR.q[i]<100?1:0)+' L/h'+(KR.est[i]?'*':''));
   return`<div class="kk">${A.kRec.map((r,i)=>{const k=fill[i],tested=r.prop!=null,dl=k&&r.cur?(k/r.cur-1)*100:null;return`<div class="${tested?'an':''}"><small title="ช่วง RPM ${i===0?'≤'+RPM_MAP[0]:i===19?'>'+RPM_MAP[18]:RPM_MAP[i-1]+'–'+RPM_MAP[i]}">K${i+1} · ${bands[i]}</small><b>${k?fx(k):(r.cur?fx(r.cur):'–')}</b><em>${r.cur?fx(r.cur)+' → '+(dl!=null?sg(dl,1)+'%':'คงเดิม'):'ไม่มีค่าเดิม'}${tested?' · '+r.n+' ค่า':''}</em></div>`}).join('')}</div><p class="hint" style="margin-top:8px">อัตราไหลของแต่ละดัชนี (L/h) ของ ${MODEL(S.batch.model)} ${S.batch.size} mm · ${esc(KR.src)}${KR.est.some(x=>x)?' · * = ประมาณการ':''}</p>`}
@@ -703,11 +737,111 @@ function vRes(A){const v=VD[A.verdict],pts=S.plan;
    <div class="kpi" style="--c:#f59e0b"><small>error เฉลี่ย / สูงสุด</small><b>${sg(A.mean)} / ${sg(A.worst)}</b><em>% (สูงสุดคือค่าที่ห่างศูนย์มากสุด)</em></div></div>
   <div class="card"><h2><em>🧮</em>ตารางผล % error รายมิเตอร์</h2><p class="sub">สีเขียว ≤ 50% ของเกณฑ์ · เหลือง 50–80% · ส้ม 80–100% · แดง เกินเกณฑ์</p>${matrix(A)}</div>
   ${MECH()?'':batCard(A)}
+  ${MECH()?'':`<div class="card"><h2><em>🗂</em>ค่าตั้งของมิเตอร์ (จาก NFC)</h2><p class="sub">ทิศทางใบพัด · UART · โหมดคำนวณ · ช่วงบันทึก · K ที่อ่านได้ตอนทดสอบ</p>${cfgTable(A)}</div>`}
   <div class="grid g2"><div class="card"><h2><em>📈</em>% error เทียบอัตราการไหล</h2><p class="sub">เส้นฟ้า = ผ่าน · เส้นแดง = มีจุดเกินเกณฑ์</p>${pts.length?chartSvg({series:ser}):''}</div>
   <div class="card kx"><h2><em>🔩</em>ค่า K รายจุดทดสอบ</h2><p class="sub">ค่า K ที่ต้องใช้ ณ อัตราไหลที่ทดสอบ — ใช้เป็นข้อมูลปรับ K1–K20</p>${kPtsTable(A)}</div></div>
   <div class="card kx"><h2><em>🔧</em>ค่าคงที่ K1–K20 ที่แนะนำ</h2><p class="sub">K = ปริมาตรต่อ 1 รอบใบพัด (µL/รอบ) · K ใหม่ = ปริมาตรอ้างอิง × 10⁶ ÷ จำนวนรอบ (ค่ากลางของมิเตอร์ทั้ง Batch) · ช่องฟ้า = ดัชนีที่ทดสอบจริง</p>
    <label class="hint"><input type="checkbox" id="fillK" ${fillK?'checked':''}> สอดแทรกดัชนีที่ไม่ได้ทดสอบ</label> &nbsp; <label class="hint"><input type="checkbox" id="kMapTab" ${kMapTab?'checked':''}> จับคู่ดัชนีจากค่า K ที่ใกล้ที่สุด (ไม่เลือก = จัดตามอัตราไหลของรุ่น/ขนาดนี้)</label>${A.kRec.some(r=>r.prop!=null)?kGrid(A):'<p class="hint">ยังไม่มีข้อมูลจำนวนรอบ (Addr 184–186) — ใช้โหมด “แท่นเทส” หรืออ่านส่วนหัว 0–211 ในแอป หรือไฟล์ .bin เต็ม</p>'}
    <div style="margin-top:10px"><button class="btn sm" data-a="kcopy">📋 คัดลอกค่า K (BCD 8 หลัก)</button></div></div>`}
+
+
+/* ---------- ⑥ เขียนค่าลงมิเตอร์ผ่าน NFC (ทำงานเมื่อเปิดจากแอป SMCV4 Reader บนมือถือ) ---------- */
+const WR_CMD='AAA10000';
+const defWr=()=>({tid:'',any:false,timeOn:true,kOn:false,kSrc:'std',kPaste:'',dirOn:false,dir:0,uartOn:false,uart:0,calcOn:false,calc:1,logOn:false,logUnit:'min',logVal:15,cmdOn:true});
+let WR={state:'idle',job:null,res:null};
+const hex2=n=>(n&255).toString(16).toUpperCase().padStart(2,'0'),hex4=n=>(n&65535).toString(16).toUpperCase().padStart(4,'0');
+const fmtMin=m=>m==null||!isFinite(m)?'—':m<60?m+' นาที':m%60===0?(m/60)+' ชั่วโมง':Math.floor(m/60)+' ชม. '+(m%60)+' นาที';
+const dirW=v=>v==null?'—':v===0?'Forward':v===1?'Backward':'0x'+hex2(v);
+const uartW=v=>v==null?'—':v===0?'ปิด':v===1?'เปิด':'0x'+hex2(v);
+const calcW=v=>v==null?'—':v===0?'Cal > FW':v===1?'Cal FW or BR':'0x'+hex2(v);
+const nowTxt=()=>{const d=new Date();return p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes())};
+function wrBridge(){for(const w of[window,parent,top]){try{if(w&&w.NfcBridge&&typeof w.NfcBridge.queueWrite!=='undefined')return w.NfcBridge}catch(e){}}return null}
+function wrLogMin(){const w=S.wr,v=Math.round(+w.logVal||0);return w.logUnit==='h'?v*60:v}
+function parseKText(t){t=String(t||'').trim();if(!t)return null;const d=t.replace(/\s+/g,'');
+  if(/^\d{160}$/.test(d)){const a=[];for(let i=0;i<20;i++)a.push(parseInt(d.substr(i*8,8),10));return a}
+  const tk=t.split(/[\s,;]+/).filter(Boolean);if(tk.length===20&&tk.every(x=>/^\d+$/.test(x)))return tk.map(x=>parseInt(x,10));return null}
+function wrKvals(){const w=S.wr;
+  if(w.kSrc==='rec'){const A=agg();if(!A.kRec.some(r=>r.prop!=null))return{err:'ยังไม่มีค่า K แนะนำ — ต้องทดสอบน้ำและอ่านจำนวนรอบก่อน'};const f=kFill(A.kRec);if(f.some(x=>!(x>0)))return{err:'ค่า K แนะนำยังไม่ครบ 20 ค่า (ไม่มีค่าเดิมของบางดัชนี)'};return{k:f,src:'แนะนำจากผลทดสอบ Batch นี้'}}
+  if(w.kSrc==='std'){const R=kRef(S.batch.model,S.batch.size);if(!R.k)return{err:'ยังไม่มีชุด K มาตรฐานของรุ่น/ขนาดนี้ — ใช้ “วางค่า K” แทน'};return{k:R.k.slice(),src:'ชุดมาตรฐาน '+MODEL(S.batch.model)+' '+S.batch.size+' mm'}}
+  const k=parseKText(w.kPaste);if(!k)return{err:'ต้องวางค่า K ให้ครบ 20 ค่า (ตัวเลขฐานสิบ) หรือรหัส BCD 160 หลัก'};return{k,src:'ค่าที่วางเอง'}}
+function wrBuild(){const w=S.wr,errs=[],rows=[],patches=[];let any=false;
+  if(!w.any&&!String(w.tid||'').trim())errs.push('ระบุ Meter ID เป้าหมาย หรือเลือก “ไม่ตรวจ ID”');
+  if(w.kOn){any=true;const r=wrKvals();if(r.err)errs.push(r.err);else if(!r.k.every(x=>Number.isInteger(x)&&x>0&&x<=99999999))errs.push('ค่า K ต้องเป็นจำนวนเต็ม 1 – 99,999,999');
+    else{patches.push({a:84,h:r.k.map(k8).join('')});rows.push(['84–163','K1…K20 · 80 ไบต์','ค่าคงที่ K1–K20 ('+r.src+') · K1 = '+fx(r.k[0])+' … K20 = '+fx(r.k[19])])}}
+  if(w.dirOn){any=true;patches.push({a:168,h:hex2(w.dir)});rows.push(['168',hex2(w.dir),'ทิศทางใบพัด = '+dirW(+w.dir)])}
+  if(w.uartOn){any=true;patches.push({a:169,h:hex2(w.uart)});rows.push(['169',hex2(w.uart),'Log UART = '+uartW(+w.uart)])}
+  if(w.calcOn){any=true;patches.push({a:170,h:hex2(w.calc)});rows.push(['170',hex2(w.calc),'โหมดคำนวณ = '+calcW(+w.calc)])}
+  if(w.logOn){any=true;const m=wrLogMin();if(!(m>=1&&m<=65535))errs.push('ช่วงเวลาบันทึกต้องอยู่ระหว่าง 1 นาที ถึง 65,535 นาที');else{patches.push({a:166,h:hex4(m)});rows.push(['166–167',hex4(m),'ช่วงเวลาบันทึกลง EEPROM = '+fmtMin(m)])}}
+  const timeOn=!!(w.timeOn||any);
+  if(timeOn){any=true;rows.unshift(['78–83','BCD · hh mm dd MM yyyy','ตั้งเวลา/วันที่ให้เท่าเวลาปัจจุบันของมือถือ ('+nowTxt()+')'])}
+  if(!any)errs.push('เลือกรายการที่จะเขียนอย่างน้อย 1 อย่าง');
+  const cmd=w.cmdOn?WR_CMD:'';if(cmd)rows.push(['68–71',cmd,'คำสั่งให้มิเตอร์โหลดค่า — เขียนเป็นลำดับสุดท้าย']);
+  return{errs,rows,job:{v:1,id:w.any?'':String(w.tid).trim(),time:timeOn,patches,cmd,label:rows.filter(r=>r[0]!=='68–71').map(r=>r[2]).join(' · ')}}}
+function wrGo(){const b=wrBuild();if(b.errs.length){toast(b.errs[0],3800);return}const br=wrBridge();
+  if(!br){toast('ต้องเปิดหน้านี้จากแอป SMCV4 Reader บนมือถือ (เวอร์ชัน v18)',4200);return}
+  let r;try{r=String(br.queueWrite(JSON.stringify(b.job)))}catch(e){r='ERR:'+e.message}
+  if(r.indexOf('OK')!==0){toast('ส่งงานเขียนให้แอปไม่สำเร็จ: '+r,4800);return}
+  WR={state:'wait',job:b.job,res:null};render()}
+function wrCancel(){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}WR={state:'idle',job:null,res:null};render()}
+window.benchWriteResult=function(r){if(!r)return;const job=WR.job||{},id=r.id||job.id||'';WR.state=r.ok?'ok':'err';WR.res=r;
+  S.cfglog=S.cfglog||[];S.cfglog.unshift({t:Date.now(),id,ok:!!r.ok,label:r.label||job.label||'',err:r.error||'',cmd:r.cmd||'',time:r.time||''});S.cfglog=S.cfglog.slice(0,100);
+  if(r.ok&&id){S.cfg=S.cfg||{};S.cfg[id]=Object.assign({},S.cfg[id]||{},r.after||{},{t:Date.now()})}
+  save();render();toast(r.ok?'✔ เขียนค่าลงมิเตอร์ '+id+' สำเร็จ — ต่อไปกดทัชสวิตช์ที่มิเตอร์ค้าง 6 วินาที':'✗ เขียนไม่สำเร็จ: '+(r.error||''),5200);beep(r.ok?'ok':'bad')};
+window.benchOpenTab=function(t){if(TABS.some(x=>x[0]===t)){TAB=t;render()}};
+function wcard(key,icon,title,sub,body,lock){const w=S.wr,on=lock||!!w[key];
+  return`<div class="wc ${on?'on':''}"><div class="wt" data-a="${lock?'':'wrsw'}" data-v="${key}"><span class="wi">${icon}</span><span class="wn"><b>${title}</b><small>${sub}</small></span><span class="sw ${lock?'lock':''}"></span></div>${on&&body?`<div class="wb">${body}</div>`:''}</div>`}
+function wrseg(k,opts){const w=S.wr;return`<div class="seg">${opts.map(o=>`<button data-a="wrset" data-k="${k}" data-v="${o[0]}" class="${String(w[k])===String(o[0])?'on':''}">${o[1]}</button>`).join('')}</div>`}
+function cfgCell(id){let r=null;for(let pi=S.plan.length-1;pi>=0&&!r;pi--){const rd=(S.rd[pi]||{})[id];if(!rd)continue;const x=(rd.e&&rd.e.dir!=null)?rd.e:(rd.s&&rd.s.dir!=null)?rd.s:null;if(x)r=x}
+  const m=S.meters.find(x=>x.id===id);return{r,k:(r&&r.k)||(m&&m.k)||null,w:(S.cfg||{})[id]}}
+function cfgTable(A){if(!A.mids.length)return'<p class="hint">ยังไม่มีมิเตอร์</p>';
+  const rows=A.mids.map(id=>{const c=cfgCell(id),r=c.r,k=c.k,w=c.w;
+    const cmd=r&&r.cmd!=null?(r.cmd==='00000000'?'<span class="pill ok">ว่าง ✓</span>':'<span class="pill warn" title="รหัส '+esc(r.cmd)+'">รอทัช 6 วิ ⏳</span>'):'—';
+    return`<tr><td class="l mono"><b>${esc(id)}</b></td><td>${dirW(r?r.dir:null)}</td><td>${uartW(r?r.uart:null)}</td><td>${calcW(r?r.calc:null)}</td><td>${r&&r.logmin!=null?fmtMin(r.logmin)+' <small class="mono">('+hex4(r.logmin)+')</small>':'—'}</td><td>${k?fx(k[0])+' … '+fx(k[19]):'—'}</td><td>${cmd}</td><td class="l">${w?fdt(w.t):'—'}</td></tr>`}).join('');
+  return`<div class="tw"><table><thead><tr><th class="l">มิเตอร์</th><th>ทิศทางใบพัด</th><th>Log UART</th><th>โหมดคำนวณ</th><th>ช่วงบันทึก</th><th>K1 … K20</th><th>คำสั่ง 68–71</th><th class="l">เขียนค่าล่าสุด</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">อ่านจาก NFC ตอนทดสอบ (ต้องใช้โหมดแท่นเทสหรืออ่านทั้งหมด) · “คำสั่ง 68–71” ว่าง = มิเตอร์ประมวลผลค่าที่เขียนแล้ว · ⏳ = ยังไม่ได้กดทัชสวิตช์ค้าง 6 วินาที</p>`}
+function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.id).map(m=>m.id);
+  const logChips=(w.logUnit==='h'?[1,2,3,4,6,8,12,24]:[1,2,3,5,10,15,20,30,45]).map(v=>`<button data-a="wrset" data-k="logVal" data-v="${v}" class="${+w.logVal===v?'on':''}">${v} ${w.logUnit==='h'?'ชม.':'นาที'}</button>`).join('');
+  const lm=wrLogMin();
+  const kRes=w.kOn?wrKvals():null;
+  const kBody=`<div class="seg" style="margin-bottom:8px">${[['std','ชุดมาตรฐานรุ่นนี้'],['rec','แนะนำจากผลทดสอบ'],['paste','วางค่าเอง']].map(o=>`<button data-a="wrset" data-k="kSrc" data-v="${o[0]}" class="${w.kSrc===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>
+    ${w.kSrc==='paste'?`<textarea rows="3" data-wr="kPaste" placeholder="วาง K1–K20 (20 ค่า คั่นด้วยเว้นวรรค/บรรทัดใหม่) หรือรหัส BCD 160 หลักจากปุ่ม “คัดลอกค่า K” ในผลสรุป" style="width:100%">${esc(w.kPaste)}</textarea>`:''}
+    ${kRes&&kRes.err?`<p class="pill warn" style="white-space:normal;margin:6px 0 0">⚠ ${esc(kRes.err)}</p>`:kRes?`<p class="hint" style="margin:6px 0 0">${esc(kRes.src)} · K1 <b>${fx(kRes.k[0])}</b> · K10 <b>${fx(kRes.k[9])}</b> · K20 <b>${fx(kRes.k[19])}</b> µL/รอบ</p>`:''}`;
+  const cards=[
+   wcard('kOn','🔧','โหลดค่าคงที่ K1–K20','เขียน 80 ไบต์ที่ 84–163 แล้วให้มิเตอร์คำนวณปริมาตร/อัตราไหลใหม่',kBody),
+   wcard('dirOn','🧭','ทิศทางหมุนใบพัด','Forward = 0 · Backward = 1 (ตำแหน่ง 168)',wrseg('dir',[[0,'➡ Forward (00)'],[1,'⬅ Backward (01)']])),
+   wcard('uartOn','📟','Log ผ่าน UART','ปิด = 0 · เปิด = 1 (ตำแหน่ง 169)',wrseg('uart',[[0,'ปิด (00)'],[1,'เปิด (01)']])),
+   wcard('calcOn','🧮','โหมดคำนวณ','0 = Cal &gt; FW · 1 = Cal FW or BR (ตำแหน่ง 170)',wrseg('calc',[[0,'Cal &gt; FW (00)'],[1,'Cal FW or BR (01)']])),
+   wcard('logOn','⏱','ช่วงเวลาบันทึกค่าในมิเตอร์','เก็บเป็นเลขฐาน 16 นาที (ตำแหน่ง 166–167)',`${wrseg('logUnit',[['min','นาที'],['h','ชั่วโมง']])}<div class="chips">${logChips}</div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><input type="number" min="1" max="${w.logUnit==='h'?1092:65535}" data-wr="logVal" value="${esc(w.logVal)}" style="width:110px"><span>${w.logUnit==='h'?'ชั่วโมง':'นาที'}</span><span class="bytep" title="ค่าที่เก็บใน NFC">${lm>=1&&lm<=65535?hex4(lm):'----'}</span><small class="hint">= ${fmtMin(lm)}</small></div>`),
+   wcard('timeOn','🕒','ตั้งเวลา / วันที่ให้ตรงปัจจุบัน','เขียนเวลามือถือลง 78–83 · เปิดอัตโนมัติเมื่อแก้ค่าอื่น',`<p class="hint" style="margin:0">เวลาที่จะเขียน: <b>${nowTxt()}</b> (ใช้เวลา ณ ขณะแตะมิเตอร์จริง)</p>`,(w.kOn||w.dirOn||w.uartOn||w.calcOn||w.logOn))
+  ].join('');
+  const stat=WR.state==='wait'?`<div class="wst"><div class="nfcring">📲</div><div><h3>รอแตะมิเตอร์…</h3><p>${WR.job&&WR.job.id?'ต้องเป็นมิเตอร์ <b class="mono">'+esc(WR.job.id)+'</b> (ระบบตรวจ ID ก่อนเขียน)':'ไม่ตรวจ ID — เขียนให้มิเตอร์ตัวที่แตะ'} · แตะมือถือที่มิเตอร์แล้วถือนิ่งจนแอปแจ้งผล</p><button class="btn bad" data-a="wrcancel">ยกเลิก</button></div></div>`
+   :WR.state==='ok'?`<div class="wst ok"><div class="nfcring okr">✔</div><div><h3>เขียนและตรวจสอบสำเร็จ · ${esc((WR.res&&WR.res.id)||'')}</h3><p>${esc((WR.res&&WR.res.time)||'')} · อ่านกลับตรงกับที่เขียนทุกไบต์</p><div class="after"><b>ขั้นต่อไป:</b> ใช้นิ้วแตะ <b>ทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที</b> — MCU จะดึงค่าจาก NFC คำนวณค่าคงที่ ตั้งเวลา RTC แล้วเคลียร์คำสั่ง 68–71 เป็น <span class="bytep">00000000</span> เอง</div><button class="btn" data-a="wrreset">เขียนมิเตอร์ตัวถัดไป</button></div></div>`
+   :WR.state==='err'?`<div class="wst err"><div class="nfcring errr">✗</div><div><h3>เขียนไม่สำเร็จ</h3><p>${esc((WR.res&&WR.res.error)||'')}</p><button class="btn p" data-a="wrgo">ลองใหม่</button> <button class="btn" data-a="wrreset">ปิด</button></div></div>`
+   :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
+  const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
+  const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC</h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+   <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>เลือกมิเตอร์ แล้วเปิดสวิตช์ของค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าเข้า RTC/MCU แล้วเคลียร์คำสั่งเอง</div></div></div>
+  <div class="card" style="margin-top:14px"><h2><em>🎯</em>มิเตอร์เป้าหมาย</h2><p class="sub">แอปจะอ่าน Meter ID (72–75) จากมิเตอร์ที่แตะ และเขียนเมื่อตรงกันเท่านั้น กันเขียนผิดตัว</p>
+   <div class="fr"><div class="fld"><label>Meter ID</label><input list="wrids" data-wr="tid" value="${esc(w.tid)}" placeholder="เช่น 69050015" ${w.any?'disabled':''}><datalist id="wrids">${ids.map(i=>`<option value="${esc(i)}">`).join('')}</datalist></div>
+   <div class="fld"><label>&nbsp;</label><label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-wr="any" ${w.any?'checked':''}> ไม่ตรวจ ID (เขียนให้มิเตอร์ที่แตะ)</label></div></div>
+   ${ids.length?`<div class="chips">${ids.map(i=>`<button data-a="wrset" data-k="tid" data-v="${esc(i)}" class="${w.tid===i&&!w.any?'on':''}">${esc(i)}</button>`).join('')}</div>`:''}</div>
+  <div class="wgrid">${cards}</div>
+  <div class="card" style="margin-top:14px"><h2><em>📋</em>แผนการเขียน</h2><p class="sub">ข้อมูลที่จะถูกเขียน (ที่เหลือคงค่าเดิมไว้) · อ่านกลับตรวจสอบทุกครั้ง</p>
+   <div class="tw"><table><thead><tr><th>ตำแหน่ง</th><th>ค่า</th><th class="l">ความหมาย</th></tr></thead><tbody>${planRows}</tbody></table></div>
+   <label class="hint" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" data-wr="cmdOn" ${w.cmdOn?'checked':''}> ใส่คำสั่ง <span class="bytep">AA A1 00 00</span> ที่ 68–71 (ให้มิเตอร์โหลดค่าเมื่อกดทัชสวิตช์ 6 วินาที)</label></div>
+  <div class="card" style="margin-top:14px"><h2><em>📲</em>เขียนลงมิเตอร์</h2>${stat}</div>
+  <div class="card" style="margin-top:14px"><h2><em>🗂</em>ค่าตั้งของมิเตอร์ใน Batch นี้</h2><p class="sub">สถานะล่าสุดที่อ่านจาก NFC ระหว่างทดสอบน้ำ — บันทึกไว้ในรายงานและ Excel</p>${cfgTable(A)}</div>
+  <div class="card" style="margin-top:14px"><h2><em>🧾</em>ประวัติการเขียน</h2>${log?`<div class="tw"><table><thead><tr><th>เวลา</th><th>มิเตอร์</th><th class="l">รายการ</th><th>ผล</th></tr></thead><tbody>${log}</tbody></table></div><div style="margin-top:8px"><button class="btn sm" data-a="wrclr">ล้างประวัติ</button></div>`:'<p class="hint">ยังไม่มีการเขียน</p>'}</div>`}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v;
+  if(a==='wrsw'){S.wr[v]=!S.wr[v];save();render()}
+  else if(a==='wrset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc'].includes(k))x=+v;if(k==='logVal')x=+v;if(k==='tid'){S.wr.any=false}S.wr[k]=x;if(k==='logUnit'){S.wr.logVal=x==='h'?1:15}save();render()}
+  else if(a==='wrgo')wrGo();else if(a==='wrcancel')wrCancel();else if(a==='wrreset'){WR={state:'idle',job:null,res:null};render()}
+  else if(a==='wrclr'){S.cfglog=[];save();render()}
+  else if(a==='ptuse'){const p=S.plan[+v];if(!p)return;p.off=!p.off;if(S.plan.every(q=>q.off))p.off=false;save();render()}
+  else if(a==='ptall'){S.plan.forEach(p=>delete p.off);save();render()}
+  else if(a==='ptq3'||a==='ptq4'){const keep=a==='ptq3'?['Q1','Q2','Q3']:['Q1','Q2','Q3','Q4'];const any=S.plan.some(p=>keep.includes(p.l));if(!any){toast('ไม่พบจุดที่ชื่อ Q1/Q2/Q3 ในแผน',3000);return}S.plan.forEach(p=>{if(keep.includes(p.l))delete p.off;else p.off=true});save();render()}});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.wr)return;const k=t.dataset.wr;
+  if(t.type==='checkbox')S.wr[k]=t.checked;else if(k==='logVal')S.wr[k]=+t.value;else S.wr[k]=t.value;save();render()});
 
 /* ---------- ⑤ รายงาน ---------- */
 function reportHtml(A){const b=S.batch,v=VD[A.verdict],pts=S.plan,Q=qs(b.q3,b.R);
@@ -720,7 +854,7 @@ function reportHtml(A){const b=S.batch,v=VD[A.verdict],pts=S.plan,Q=qs(b.q3,b.R)
    <h3>ผล % error รายมิเตอร์</h3>${matrix(A)}
    <h3>กราฟ % error เทียบอัตราการไหล</h3>${pts.length?chartSvg({series:ser,w:900,h:300}):''}
    ${MECH()?'':`<h3>ค่า K รายจุดทดสอบ</h3>${kPtsTable(A)}<h3>ค่าคงที่ K1–K20 ที่แนะนำ (µL/รอบ)</h3>${A.kRec.some(r=>r.prop!=null)?kGrid(A):'<p class="hint">ไม่มีข้อมูลจำนวนรอบ</p>'}`}
-   ${MECH()?'':`<h3>แบตเตอรี่ระหว่างทดสอบ</h3>${batTable(A)}`}
+   ${MECH()?'':`<h3>แบตเตอรี่ระหว่างทดสอบ</h3>${batTable(A)}<h3>ค่าตั้งของมิเตอร์ (จาก NFC)</h3>${cfgTable(A)}`}
    <h3>ตรวจสอบคุณภาพข้อมูล</h3>${qcList(A)}
    ${b.note?`<h3>หมายเหตุ</h3><p>${esc(b.note)}</p>`:''}
    <div class="sg"><div>ผู้ทดสอบ<br><b>${esc(b.tester||'')}</b></div><div>ผู้ตรวจสอบ<br><b>${esc(b.checker||'')}</b></div><div>ผู้อนุมัติ</div></div></div>`}
@@ -754,7 +888,7 @@ function relayHtml(){const o=(v,t)=>`<option value="${v}" ${RL.role===v?'selecte
 /* ---------- Monitor จอใหญ่: หน้าปัดมิเตอร์เสมือนจริง + ผังแท่น ---------- */
 let MONH='',MONV='auto';
 function monHtml(A){
-  const np=S.plan.length,pi=Math.min(S.cur,Math.max(0,np-1)),p=S.plan[pi],st=np?pointState(pi):{step:'start'},b=S.batch,v=VD[A.verdict],N=Math.max(1,b.nm,S.meters.length),cols=N>12?4:N>6?2:2,rows=Math.ceil(N/cols);
+  const np=S.plan.filter(q=>!q.off).length,pi=Math.min(S.cur,Math.max(0,S.plan.length-1)),p=S.plan[pi],st=np?pointState(pi):{step:'start'},b=S.batch,v=VD[A.verdict],N=Math.max(1,b.nm,S.meters.length),cols=N>12?4:N>6?2:2,rows=Math.ceil(N/cols);
   const stT={start:'① อ่านค่าเริ่มต้น',run:'② กำลังปล่อยน้ำ',end:'③ อ่านค่าสิ้นสุด',done:'✔ จุดนี้เสร็จแล้ว'}[st.step];
   const fa=np?flowAct(pi):null,rdOf=m=>(S.rd[pi]||{})[m.id]||{};
   const z=Math.max(.8,Math.min(innerHeight*.56,innerWidth*.30)/290).toFixed(2);
@@ -763,8 +897,8 @@ function monHtml(A){
     if(!m.id)return`<div class="t empty"><span class="n">${i+1}</span>${lcd(null)}<div class="r2"><span class="ti">รอแตะมิเตอร์</span></div></div>`;
     const rd=rdOf(m),c=np?calc(pi,m.id):null,ok=c&&c.valid,shown=rd.e?rd.e.vol:rd.s?rd.s.vol:null,need=(st.step==='start'&&!rd.s)||(st.step==='end'&&!rd.e);
     return`<div class="t ${ok?(c.pass?'pass':'fail'):need?'need':rd.s?'got':''} ${LAST&&LAST.id===m.id&&fresh?'flash':''}"><span class="n">${i+1}</span>${lcd(shown)}<div class="r2"><span class="ti mono">${esc(m.id)} · ${m.size||'?'} mm<br>${MECH()?'แมคคานิค':'รอบ '+pad6((rd.e||rd.s||{}).rev)+' · 🔋'+batT((rd.e||rd.s||{}).bat)}</span><span class="te mono">${ok?sg(c.err)+'%':rd.e?'อ่านแล้ว':rd.s?(st.step==='start'?'พร้อม':'รอสิ้นสุด'):'รออ่าน'}</span></div></div>`}).join('');
-  const chips=S.plan.map((q,i)=>`<span class="pc ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}">${esc(q.l)} <small>${flowT(q.f)}</small></span>`).join('');
-  const hd=`<div class="mhd"><div><div style="opacity:.75;font-size:2.1vh">${np?'จุดที่ '+(pi+1)+' / '+np:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div><div class="tim mono" id="mtm"></div></div>
+  const chips=S.plan.map((q,i)=>q.off?'':`<span class="pc ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}">${esc(q.l)} <small>${flowT(q.f)}</small></span>`).join('');
+  const hd=`<div class="mhd"><div><div style="opacity:.75;font-size:2.1vh">${np?'จุดที่ '+ordOn(pi)+' / '+np:'ยังไม่มีแผน'} · ${esc(stT)}</div><div class="big">${p?esc(p.l):'—'} <small>${p?flowT(p.f)+' L/h · '+p.v+' L · ±'+p.lim+'%':''}</small></div>${fa?`<div style="font-size:2.1vh">อัตราไหลจริง <b>${fx(fa,1)} L/h</b></div>`:''}</div><div class="tim mono" id="mtm"></div></div>
     <div class="pcs">${chips}</div>`;
   const multi=MONV==='dials'||(MONV==='auto'&&N<=6),mcols=N<=3?N:N<=6?3:4,mrows=Math.ceil(N/mcols),zz=Math.max(.55,Math.min((innerWidth*.94/mcols)/310,(innerHeight*.5/mrows)/300)).toFixed(2);
   const dials=Array.from({length:N},(_,i)=>{const m=S.meters[i]||{id:''};if(!m.id)return`<div class="md empty"><div class="dialw" style="zoom:${zz}">${dial(null,0)}</div><div class="mdn">#${i+1} · รอแตะมิเตอร์</div></div>`;
@@ -803,12 +937,13 @@ async function wbReport(){const X=await needXL(),A=agg(),b=S.batch,wb=X.utils.bo
   const sum=[['SMCV4 Test Bench — สรุปผล'],[],['Batch ID',b.id],['วันที่ทดสอบ',fdt(b.date)],['ผู้ทดสอบ',b.tester],['ผู้ตรวจสอบ',b.checker],['แท่นทดสอบ',b.bench],['รุ่น / ขนาด',MODEL(b.model)+' '+b.size+' mm'],['คลาส R / Q3',`R${b.R} / ${b.q3} L/h`],['เกณฑ์ผ่าน',`±${b.limLow}% (ต่ำ) / ±${b.limHigh}% (สูง)`],['อุปกรณ์อ้างอิง',b.ref],['หมดอายุสอบเทียบ',b.refDue],['อุณหภูมิน้ำ (°C)',b.tmpC],['แรงดัน (bar)',b.bar],[],
     ['ผลสรุป Batch',v[1]],['มิเตอร์ผ่านครบ',`${A.full}/${A.nm} (${A.pct.toFixed(1)}%)`],['จุดทดสอบที่ผ่าน',`${A.cellsPass}/${A.cellsAll}`],['error เฉลี่ย (%)',A.mean==null?'':+A.mean.toFixed(3)],['error สูงสุด (%)',A.worst==null?'':+A.worst.toFixed(3)],['หมายเหตุ',b.note]];
   X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(sum),'สรุป');
-  const mx=[['มิเตอร์',...S.plan.map(p=>flowT(p.f)+' L/h ('+p.l+')'),'ผ่าน','สรุป']];mx.push(['เกณฑ์ ±%',...S.plan.map(p=>p.lim),'','']);
-  A.mids.forEach(id=>{const m=A.M[id];mx.push([id,...m.cells.map(c=>c&&c.valid?+c.err.toFixed(3):''),m.pass+'/'+S.plan.length,m.verdict==='pass'?'PASS':m.verdict==='fail'?'FAIL':'รอ'])});
-  mx.push(['เฉลี่ย %',...A.P.map(p=>p.mean==null?'':+p.mean.toFixed(3))]);const w2=X.utils.aoa_to_sheet(mx);w2['!cols']=[{wch:14},...S.plan.map(()=>({wch:14})),{wch:9},{wch:9}];X.utils.book_append_sheet(wb,w2,'ผล_%error');
+  const OP=S.plan.filter(p=>!p.off);const mx=[['มิเตอร์',...OP.map(p=>flowT(p.f)+' L/h ('+p.l+')'),'ผ่าน','สรุป']];mx.push(['เกณฑ์ ±%',...OP.map(p=>p.lim),'','']);
+  A.mids.forEach(id=>{const m=A.M[id];mx.push([id,...m.cells.filter((c,i)=>!S.plan[i].off).map(c=>c&&c.valid?+c.err.toFixed(3):''),m.pass+'/'+A.np,m.verdict==='pass'?'PASS':m.verdict==='fail'?'FAIL':'รอ'])});
+  mx.push(['เฉลี่ย %',...A.P.filter(p=>!S.plan[p.i].off).map(p=>p.mean==null?'':+p.mean.toFixed(3))]);const w2=X.utils.aoa_to_sheet(mx);w2['!cols']=[{wch:14},...OP.map(()=>({wch:14})),{wch:9},{wch:9}];X.utils.book_append_sheet(wb,w2,'ผล_%error');
   const KRx=kRef(S.batch.model,S.batch.size),kr=[['ดัชนี','ช่วง RPM','อัตราไหลที่ใช้ดัชนี (L/h)','K ปัจจุบัน (µL/รอบ)','K ที่ต้องใช้ (ค่ากลาง)','จำนวนค่า','K แนะนำ','K แนะนำ (สอดแทรก)','BCD 8 หลักสำหรับเขียนกลับ']],fill=kFill(A.kRec);
   A.kRec.forEach((r,i)=>kr.push(['K'+(i+1),i===0?'≤'+RPM_MAP[0]:i===19?'>'+RPM_MAP[18]:RPM_MAP[i-1]+'–'+RPM_MAP[i],+KRx.q[i].toFixed(1)+(KRx.est[i]?'*':''),r.cur||'',r.need==null?'':+r.need.toFixed(1),r.n,r.prop||'',fill[i]||'',k8(fill[i])]));
   X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(kr),'K1-K20');
+  if(!MECH()){const cg=[['มิเตอร์','ทิศทางใบพัด','Log UART','โหมดคำนวณ','ช่วงบันทึก (นาที)','ช่วงบันทึก (hex)','K1','K20','คำสั่ง 68-71','เขียนค่าล่าสุด']];A.mids.forEach(id=>{const c=cfgCell(id),r=c.r,k=c.k,w=c.w;cg.push([id,dirW(r?r.dir:null),uartW(r?r.uart:null),calcW(r?r.calc:null),r&&r.logmin!=null?r.logmin:'',r&&r.logmin!=null?hex4(r.logmin):'',k?k[0]:'',k?k[19]:'',r&&r.cmd?r.cmd:'',w?fdt(w.t):''])});X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(cg),'ค่าตั้งมิเตอร์');if((S.cfglog||[]).length)X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['เวลา','มิเตอร์','รายการ','ผล','ข้อผิดพลาด']].concat(S.cfglog.map(e=>[fdt(e.t),e.id,e.label,e.ok?'สำเร็จ':'ไม่สำเร็จ',e.err]))),'ประวัติการเขียน')}
   {const bt=[['มิเตอร์','แรงดันแรก (V)','ล่าสุด (V)','ต่ำสุด (V)','เปลี่ยน (V)','ช่วงเวลา (นาที)','อัตราตก (mV/ชม.)','สถานะ']];A.mids.forEach(id=>{const b=batStat(id);bt.push(b?[id,b.first,b.last,b.min,+b.dv.toFixed(2),+(b.hrs*60).toFixed(0),b.rate==null?'':+b.rate.toFixed(0),b.st==='ok'?'ปกติ':b.st==='warn'?'เฝ้าระวัง':'ต่ำ']:[id,'','','','','','','ไม่มีข้อมูล'])});X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(bt),'แบตเตอรี่')}
   S.plan.forEach((p,i)=>{if(A.P[i].n)X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(batchAoa(i)),('F'+flowT(p.f)).replace(/[^\w.]/g,'_').slice(0,28))});
   return X.writeFile(wb,'TestBench_'+b.id+'.xlsx')}
@@ -828,7 +963,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='goto'){enterPoint(+v);TAB='run';render()}
   else if(a==='startrun'){const st=pointState(S.cur);st.step='run';st.t0=Date.now();delete st.t1;save();render()}
   else if(a==='stoprun'){const st=pointState(S.cur);st.t1=Date.now();st.step='end';save();render()}
-  else if(a==='confirm'){const st=pointState(S.cur),lbl=S.plan[S.cur].l;st.step='done';const nx=S.cur+1;save();if(nx<S.plan.length){enterPoint(nx)}render();toast('บันทึกจุด '+lbl+' แล้ว'+(nx<S.plan.length?' — ไปจุดถัดไป':''))}
+  else if(a==='confirm'){const st=pointState(S.cur),lbl=S.plan[S.cur].l;st.step='done';const nx=nextOn(S.cur);save();if(nx!=null){enterPoint(nx)}render();toast('บันทึกจุด '+lbl+' แล้ว'+(nx<S.plan.length?' — ไปจุดถัดไป':''))}
   else if(a==='redo'){const st=pointState(S.cur);st.step=(S.rd[S.cur]&&Object.values(S.rd[S.cur]).some(x=>x.s))?'end':'start';save();render()}
   else if(a==='mkplan'){S.plan=buildPlan();S.rd={};S.pt={};S.cur=0;save();render();toast('สร้างแผน '+S.plan.length+' จุดแล้ว')}
   else if(a==='addpt'){const l=S.plan[S.plan.length-1],f=l?rs3(l.f*1.5):100;S.plan.push({l:'F'+f,f,v:defVol(f),lim:S.batch.limHigh});save();render()}
