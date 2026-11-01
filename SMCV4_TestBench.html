@@ -203,6 +203,13 @@ tr.ptoff td{opacity:.45}tr.ptoff td:first-child{opacity:1}
 .nxt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.nxt span{font:600 .85rem 'JetBrains Mono',monospace;background:#f1f5f9;color:#64748b;border-radius:99px;padding:3px 10px}.nxt span.on{background:#0ea5a4;color:#fff}
 .pvg{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
 .kbox{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-radius:14px;padding:12px 14px;border:1px solid}.kbox small{display:block;margin-top:2px;line-height:1.45}.kbox.real{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}.kbox.dummy{background:#fffbeb;border-color:#fcd34d;color:#78350f}
+.ksx{margin-top:6px}.ksseg{flex-wrap:wrap;margin-bottom:10px}.ksseg button{white-space:nowrap}
+.kslist{display:grid;gap:8px}.ksr{border:1px solid #d6e4ec;border-radius:14px;padding:10px 12px;background:#fff}.ksr.on{border-color:#0ea5a4;background:#f0fdfa}.ksh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.ksh small{color:#64748b}
+.ksv{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}.ksv button{text-align:left;border:2px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;color:#334155}.ksv button.on{border-color:#0ea5a4;background:#ccfbf1}.ksv button span{font-weight:600;display:block}.ksv button small{color:#64748b;display:block;margin-top:2px}
+.ksq{height:16px;border-radius:99px;background:#e2e8f0;position:relative;overflow:hidden;margin:4px 0}.ksq i{display:block;height:100%;background:linear-gradient(90deg,#34d399,#0ea5a4)}.ksq b{position:absolute;right:8px;top:-1px;font-size:.78rem;color:#065f46}
+.ksadj{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.ksadj label{display:flex;gap:6px;align-items:center;font-weight:600}.kschart{margin:8px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:8px}.kslg{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:#475569;padding:4px 8px}.kslg i{display:inline-block;width:18px;height:6px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.ksdet summary{cursor:pointer;font-weight:600;margin:8px 0}.kstb input{width:84px;text-align:right;padding:4px 6px}.kstb tr.ksch td{background:#fff7e0}.ksact{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.ksmodal{max-height:78vh;overflow:auto}.ksrt{width:100%;border-collapse:collapse;font-size:.88rem}.ksrt th,.ksrt td{border:1px solid #d6e4ec;padding:4px 8px;text-align:right}.ksrt th{background:#eef6fa}
 .vfh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .stp{display:flex;gap:0;margin:14px 0 6px;flex-wrap:wrap}.stp>div{flex:1;min-width:150px;position:relative;padding:10px 12px 10px 46px;border-radius:14px;background:#f1f5f9;margin:0 6px 6px 0;color:#64748b;font-size:.88rem;line-height:1.35}
 .stp>div b{display:block;color:#334155}.stp>div i{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:#cbd5e1;color:#fff;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:.85rem}
@@ -323,8 +330,8 @@ function rlSend(r){
 function rlPush(force){if(IS_MON||RL.role!=='recv'||!RL.code)return;const ids=[];S.meters.forEach((m,i)=>{if(m.id)ids.push([i+1,m.id])});const sig=JSON.stringify(ids);if(!force&&sig===RL.msig)return;RL.msig=sig;rlPost({v:1,t:'meters',ids,ts:Date.now()}).catch(()=>{RL.msig=''})}
 function rlRecv(m){
   if(!m||m.v!==1)return;
-  if(RL.role==='send'){if(m.t==='meters'&&Array.isArray(m.ids)&&(!RL.peer||m.ts>=RL.peer.ts)){RL.peer={ids:m.ids,ts:m.ts};if(TAB==='wr')render()}return}
-  if(m.t==='hello'){rlPush(true);return}
+  if(RL.role==='send'){if(m.t==='klib'&&m.key&&Array.isArray(m.c)){S.klib=S.klib||{};const o=S.klib[m.key];if(!o||o.t<=m.ts){S.klib[m.key]={t:m.ts,c:m.c,sig:'relay',src:'relay'};save();if(TAB==='pv'||TAB==='wr')render()}return}if(m.t==='meters'&&Array.isArray(m.ids)&&(!RL.peer||m.ts>=RL.peer.ts)){RL.peer={ids:m.ids,ts:m.ts};if(TAB==='wr')render()}return}
+  if(m.t==='hello'){rlPush(true);try{klibSync();klibPush(true)}catch(e){}return}
   if(m.t==='prov'&&m.id){S.pvlog=S.pvlog||[];if(!S.pvlog.some(x=>x.id===m.id&&x.t===m.ts)){S.pvlog.unshift({t:m.ts||Date.now(),id:m.id,size:m.size,model:m.model,dir:1,logMin:0,real:m.real!==false,k:m.k||null,from:'phone'});save();render();toast('📱 มือถือลงทะเบียนมิเตอร์ '+m.id+' แล้ว',3200);beep('ok')}return}
   if(m.t==='ping'){RL.last=Date.now();toast('✔ ได้รับสัญญาณทดสอบจากมือถือ — การเชื่อมต่อใช้งานได้',3200);beep('ok');rlChip();return}
   if(m.t!=='read'||(!m.id&&!m.mech)||m.seq&&RL.seen.has(m.seq))return;if(m.seq){RL.seen.add(m.seq);if(RL.seen.size>200)RL.seen.delete(RL.seen.values().next().value)}
@@ -334,7 +341,7 @@ function rlConnect(){
   try{RL.es&&RL.es.close()}catch(e){}RL.es=null;RL.st='off';
   if(IS_MON||(RL.role!=='recv'&&RL.role!=='send')||!RL.code||typeof EventSource==='undefined'){rlChip();return}
   try{const es=new EventSource(rlTopic()+'/sse'+(RL.role==='send'?'?since=12h':''));RL.es=es;RL.st='conn';
-    es.onopen=()=>{RL.st='on';rlChip();if(RL.role==='send')rlPost({v:1,t:'hello',ts:Date.now()}).catch(()=>{});else rlPush(true)};es.onerror=()=>{RL.st='retry';rlChip()};
+    es.onopen=()=>{RL.st='on';rlChip();if(RL.role==='send')rlPost({v:1,t:'hello',ts:Date.now()}).catch(()=>{});else{rlPush(true);try{klibSync();klibPush(true)}catch(e){}}};es.onerror=()=>{RL.st='retry';rlChip()};
     es.onmessage=e=>{try{const j=JSON.parse(e.data);if(j.event&&j.event!=='message')return;rlRecv(JSON.parse(j.message))}catch(x){}}}
   catch(e){RL.st='err'}
   rlChip()}
@@ -534,6 +541,7 @@ function render(){
   $('#tabs').innerHTML=TABS.map((t,i)=>`<button class="tab ${TAB===t[0]?'on':''} ${t[0]==='run'&&A.nm&&A.pend?'warn':''}" data-a="tab" data-v="${t[0]}"><i>${i+1}</i>${t[1]}<span class="dot"></span></button>`).join('');
   const b=S.batch;$('#hdBatch').textContent=b.id;$('#hdMeter').textContent=MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · '+A.nm+'/'+S.meters.length+' มิเตอร์'+(MECH()?' · แมคคานิค':'');document.body.classList.toggle('mech',MECH());
   try{rlPush()}catch(e){}
+  try{if((TAB==='pv'||TAB==='wr')&&Date.now()-(RL.kt||0)>8000){RL.kt=Date.now();if(klibSync()&&RL.role==='recv')klibPush()}}catch(e){}
   $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep,wr:vWr,pv:vPv}[TAB])(A);rlChip();
   if($('#kbVal')){if(!KBCLR){if(kb.val)$('#kbVal').value=kb.val;if(kb.id)$('#kbId').value=kb.id}const ff=KBFOCUS||kb.f;if(ff&&$('#'+ff))$('#'+ff).focus();KBFOCUS=null;KBCLR=false}
   if(MON)renderMon(A)}
@@ -775,7 +783,7 @@ function vRes(A){const v=VD[A.verdict],pts=S.plan;
 
 /* ---------- ⑥ เขียนค่าลงมิเตอร์ผ่าน NFC (ทำงานเมื่อเปิดจากแอป SMCV4 Reader บนมือถือ) ---------- */
 const WR_CMD='AAA10000';
-const defWr=()=>({tid:'',any:true,timeOn:true,kOn:false,kSrc:'std',kPaste:'',dirOn:false,dir:0,uartOn:false,uart:0,calcOn:false,calc:1,logOn:false,logUnit:'min',logVal:15,nfcOn:false,nfcUnit:'min',nfcVal:15,cmdOn:true});
+const defWr=()=>({tid:'',any:true,timeOn:true,kOn:false,kSrc:'lib',kPaste:'',dirOn:false,dir:0,uartOn:false,uart:0,calcOn:false,calc:1,logOn:false,logUnit:'min',logVal:15,nfcOn:false,nfcUnit:'min',nfcVal:15,cmdOn:true});
 let WR={state:'idle',job:null,res:null};
 const hex2=n=>(n&255).toString(16).toUpperCase().padStart(2,'0'),hex4=n=>(n&65535).toString(16).toUpperCase().padStart(4,'0');
 const fmtMin=m=>m==null||!isFinite(m)?'—':m<60?m+' นาที':m%60===0?(m/60)+' ชั่วโมง':Math.floor(m/60)+' ชม. '+(m%60)+' นาที';
@@ -788,10 +796,7 @@ function wrLogMin(p){p=p||'log';const w=S.wr,v=Math.round(+w[p+'Val']||0);return
 function parseKText(t){t=String(t||'').trim();if(!t)return null;const d=t.replace(/\s+/g,'');
   if(/^\d{160}$/.test(d)){const a=[];for(let i=0;i<20;i++)a.push(parseInt(d.substr(i*8,8),10));return a}
   const tk=t.split(/[\s,;]+/).filter(Boolean);if(tk.length===20&&tk.every(x=>/^\d+$/.test(x)))return tk.map(x=>parseInt(x,10));return null}
-function wrKvals(){const w=S.wr;
-  if(w.kSrc==='rec'){const A=agg();if(!A.kRec.some(r=>r.prop!=null))return{err:'ยังไม่มีค่า K แนะนำ — ต้องทดสอบน้ำและอ่านจำนวนรอบก่อน'};const f=kFill(A.kRec);if(f.some(x=>!(x>0)))return{err:'ค่า K แนะนำยังไม่ครบ 20 ค่า (ไม่มีค่าเดิมของบางดัชนี)'};return{k:f,src:'แนะนำจากผลทดสอบ Batch นี้'}}
-  if(w.kSrc==='std'){const R=kRef(S.batch.model,S.batch.size);if(!R.k)return{err:'ยังไม่มีชุด K มาตรฐานของรุ่น/ขนาดนี้ — ใช้ “วางค่า K” แทน'};return{k:R.k.slice(),src:'ชุดมาตรฐาน '+MODEL(S.batch.model)+' '+S.batch.size+' mm'}}
-  const k=parseKText(w.kPaste);if(!k)return{err:'ต้องวางค่า K ให้ครบ 20 ค่า (ตัวเลขฐานสิบ) หรือรหัส BCD 160 หลัก'};return{k,src:'ค่าที่วางเอง'}}
+function wrKvals(){const w=S.wr,F=kFinal(w,S.batch.model,S.batch.size);return F.err?{err:F.err}:{k:F.k,src:F.src}}
 function wrBuild(){const w=S.wr,errs=[],rows=[],patches=[];let any=false;
   if(!w.any&&!String(w.tid||'').trim())errs.push('ระบุ Meter ID เป้าหมาย หรือเลือก “ไม่ตรวจ ID”');
   if(w.kOn){any=true;const r=wrKvals();if(r.err)errs.push(r.err);else if(!r.k.every(x=>Number.isInteger(x)&&x>0&&x<=99999999))errs.push('ค่า K ต้องเป็นจำนวนเต็ม 1 – 99,999,999');
@@ -888,9 +893,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
   const ivBody=p=>{const u=w[p+'Unit'],val=+w[p+'Val'],mm=wrLogMin(p),chips=(u==='h'?[1,2,3,4,6,8,12,24]:[1,2,3,5,10,15,20,30,45]).map(v=>`<button data-a="wrset" data-k="${p}Val" data-v="${v}" class="${val===v?'on':''}">${v} ${u==='h'?'ชม.':'นาที'}</button>`).join('');
     return`${wrseg(p+'Unit',[['min','นาที'],['h','ชั่วโมง']])}<div class="chips">${chips}</div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><input type="number" min="1" max="${u==='h'?1092:65535}" data-wr="${p}Val" value="${esc(w[p+'Val'])}" style="width:110px"><span>${u==='h'?'ชั่วโมง':'นาที'}</span><span class="bytep" title="ค่าที่เก็บใน NFC">${mm>=1&&mm<=65535?hex4(mm):'----'}</span><small class="hint">= ${fmtMin(mm)}</small></div>`};
   const kRes=w.kOn?wrKvals():null;
-  const kBody=`<div class="seg" style="margin-bottom:8px">${[['std','ชุดมาตรฐานรุ่นนี้'],['rec','แนะนำจากผลทดสอบ'],['paste','วางค่าเอง']].map(o=>`<button data-a="wrset" data-k="kSrc" data-v="${o[0]}" class="${w.kSrc===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>
-    ${w.kSrc==='paste'?`<textarea rows="3" data-wr="kPaste" placeholder="วาง K1–K20 (20 ค่า คั่นด้วยเว้นวรรค/บรรทัดใหม่) หรือรหัส BCD 160 หลักจากปุ่ม “คัดลอกค่า K” ในผลสรุป" style="width:100%">${esc(w.kPaste)}</textarea>`:''}
-    ${kRes&&kRes.err?`<p class="pill warn" style="white-space:normal;margin:6px 0 0">⚠ ${esc(kRes.err)}</p>`:kRes?`<p class="hint" style="margin:6px 0 0">${esc(kRes.src)} · K1 <b>${fx(kRes.k[0])}</b> · K10 <b>${fx(kRes.k[9])}</b> · K20 <b>${fx(kRes.k[19])}</b> µL/รอบ</p>`:''}`;
+  const kBody=ksCard('wr',w,S.batch.model,S.batch.size);
   const cards=[
    wcard('kOn','🔧','โหลดค่าคงที่ K1–K20','เขียน 80 ไบต์ที่ 84–163 แล้วให้มิเตอร์คำนวณปริมาตร/อัตราไหลใหม่',kBody),
    wcard('dirOn','🧭','ทิศทางหมุนใบพัด','Forward = 0 · Backward = 1 (ตำแหน่ง 168)',wrseg('dir',[[0,'➡ Forward (00)'],[1,'⬅ Backward (01)']])),
@@ -906,7 +909,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
-  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v18</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v19</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
    <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
@@ -931,15 +934,10 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
   <div class="card" style="margin-top:14px"><h2><em>🗂</em>ค่าตั้งของมิเตอร์ใน Batch นี้</h2><p class="sub">สถานะล่าสุดที่อ่านจาก NFC ระหว่างทดสอบน้ำ — บันทึกไว้ในรายงานและ Excel</p>${cfgTable(A)}</div>
   <div class="card" style="margin-top:14px"><h2><em>🧾</em>ประวัติการเขียน</h2>${log?`<div class="tw"><table><thead><tr><th>เวลา</th><th>มิเตอร์</th><th class="l">รายการ</th><th>ผล</th></tr></thead><tbody>${log}</tbody></table></div><div style="margin-top:8px"><button class="btn sm" data-a="wrclr">ล้างประวัติ</button></div>`:'<p class="hint">ยังไม่มีการเขียน</p>'}</div>`}
 /* ---------- ⑦ ลงทะเบียน/ตั้งค่ามิเตอร์ดิจิทัลใหม่ ---------- */
-const defPv=()=>{const d=new Date();return{yy:(d.getFullYear()+543)%100,mo:d.getMonth()+1,lot:1,sn:1,model:'MJ',size:25,kSrc:'auto',kPaste:'',dir:1,uart:0,calc:1,logVal:15,logUnit:'min',nfcOn:false,guard:false}};
+const defPv=()=>{const d=new Date();return{yy:(d.getFullYear()+543)%100,mo:d.getMonth()+1,lot:1,sn:1,model:'MJ',size:25,kSrc:'lib',kPaste:'',dir:1,uart:0,calc:1,logVal:15,logUnit:'min',nfcOn:false,guard:false}};
 const pvN=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(+v||0)));
 const pvId=(p)=>{p=p||S.pv;return p2(pvN(p.yy,0,99))+p2(pvN(p.mo,1,12))+p2(pvN(p.lot,0,99))+p2(pvN(p.sn,0,99))};
-function pvKvals(){const p=S.pv;
-  if(p.kSrc==='rec'){const A=agg();if(!A.kRec.some(r=>r.prop!=null))return{err:'ยังไม่มีค่า K แนะนำจากผลทดสอบ — ต้องทดสอบน้ำและอ่านจำนวนรอบก่อน (หรือใช้ชุดมาตรฐาน)'};const f=kFill(A.kRec);if(f.some(x=>!(x>0)))return{err:'ค่า K แนะนำยังไม่ครบ 20 ค่า'};return{k:f,src:'แนะนำจากผลทดสอบ Batch ปัจจุบัน',real:true}}
-  if(p.kSrc==='paste'){const k=parseKText(p.kPaste);if(!k)return{err:'ต้องวางค่า K ให้ครบ 20 ค่า (ตัวเลขฐานสิบ) หรือรหัส BCD 160 หลัก'};return{k,src:'ค่าที่วางเอง',real:true}}
-  const R=kRef(p.model,p.size);
-  if(R.k)return{k:R.k.slice(),src:'ชุดมาตรฐาน '+MODEL(p.model)+' '+p.size+' mm · ผ่านการทดสอบ R160',real:true};
-  const base=(p.model==='SJ'?KREF.SJ15:KREF.MJ15).k;return{k:base.slice(),src:'DUMMY · ยืมค่าจาก '+(p.model==='SJ'?'Single Jet':'Multijet')+' 15 mm (ยังไม่มีชุดจริงของขนาดนี้)',real:false}}
+function pvKvals(){const p=S.pv,F=kFinal(p,p.model,p.size);return F.err?{err:F.err}:{k:F.k,src:F.src,real:F.real}}
 function pvBuild(){const p=S.pv,errs=[],rows=[],patches=[];const id=pvId(p);
   if(!(p.size>0&&p.size<=255))errs.push('ขนาดมิเตอร์ไม่ถูกต้อง');
   const idh=id;patches.push({a:72,h:idh});rows.push(['72–75',idh,'Meter ID = '+id+' (ปี พ.ศ. 25'+id.slice(0,2)+' · เดือน '+id.slice(2,4)+' · Lot '+id.slice(4,6)+' · ลำดับ '+id.slice(6,8)+')']);
@@ -971,9 +969,7 @@ function pvSpark(k){const mx=Math.max(...k),mn=Math.min(...k),w=240,h=46,pts=k.m
   return`<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="max-width:300px"><polyline fill="none" stroke="#0ea5a4" stroke-width="2.5" stroke-linejoin="round" points="${pts.map(x=>x[0].toFixed(1)+','+x[1].toFixed(1)).join(' ')}"/>${pts.map(x=>`<circle cx="${x[0].toFixed(1)}" cy="${x[1].toFixed(1)}" r="2.3" fill="#0f766e"/>`).join('')}</svg>`}
 function pvInp(k,label,lo,hi,hint){const p=S.pv;return`<div class="idf"><input type="number" inputmode="numeric" min="${lo}" max="${hi}" data-pv="${k}" value="${p2(p[k])}"><b>${label}</b><small>${hint}</small></div>`}
 function vPv(A){const p=S.pv=Object.assign(defPv(),S.pv||{}),b=pvBuild(),br=wrBridge(),id=b.id,kr=b.kr,log=(S.pvlog||[]).slice(0,10);
-  const kBody=`<div class="seg" style="margin:8px 0">${[['auto','ชุดมาตรฐาน (ผ่านทดสอบ R160)'],['rec','แนะนำจากผลทดสอบ'],['paste','วางเอง']].map(o=>`<button data-a="pvset" data-k="kSrc" data-v="${o[0]}" class="${p.kSrc===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>
-    ${p.kSrc==='paste'?`<textarea rows="3" data-pv="kPaste" placeholder="วาง K1–K20 (20 ค่า คั่นด้วยเว้นวรรค/บรรทัดใหม่) หรือรหัส BCD 160 หลัก" style="width:100%">${esc(p.kPaste)}</textarea>`:''}
-    ${kr&&kr.err?`<p class="pill warn" style="white-space:normal">⚠ ${esc(kr.err)}</p>`:kr?`<div class="kbox ${kr.real?'real':'dummy'}"><div><b>${kr.real?'✅ ค่า K จริง':'⚠ ค่า K แบบ DUMMY'}</b><small>${esc(kr.src)}</small>${kr.real?'':'<small>เขียนลงมิเตอร์ได้เลย แล้วไปปรับค่าจริงตอนทดสอบน้ำที่ Test Bench (แท็บ “เขียนค่า NFC”)</small>'}<small class="mono">K1 ${fx(kr.k[0])} · K10 ${fx(kr.k[9])} · K20 ${fx(kr.k[19])} µL/รอบ</small></div><div>${pvSpark(kr.k)}</div></div>`:''}`;
+  const kBody=ksCard('pv',p,p.model,p.size);
   const stat=WR.kind==='prov'&&WR.state==='wait'?`<div class="wst"><div class="nfcring">📲</div><div><h3>รอแตะมิเตอร์ใหม่…</h3><p>จะเขียน Meter ID <b class="mono">${esc(id)}</b> ขนาด ${p.size} mm ลงมิเตอร์ที่แตะ · แตะมือถือที่มิเตอร์แล้วถือนิ่งจนแอปแจ้งผล</p><button class="btn bad" data-a="wrcancel">ยกเลิก</button></div></div>`
    :WR.kind==='prov'&&WR.state==='ok'?`<div class="wst ok"><div class="nfcring okr">✔</div><div><h3>ลงทะเบียนสำเร็จ · <span class="mono">${esc((WR.res&&WR.res.id)||'')}</span></h3><p>${WR.res&&WR.res.prevId&&WR.res.prevId!==WR.res.id?'ID เดิมในมิเตอร์: <span class="mono">'+esc(WR.res.prevId)+'</span> → ID ใหม่ · ':''}ขนาด ${WR.res&&WR.res.size!=null?WR.res.size:p.size} mm · อ่านกลับตรงทุกไบต์ — <b>ตรวจเลขให้ตรงกับป้ายมิเตอร์</b></p><button class="btn p wbig" data-a="pvnext">▶ ตัวถัดไป ${esc(pvId())}</button></div></div>`
    :WR.kind==='prov'&&WR.state==='err'?`<div class="wst err"><div class="nfcring errr">✗</div><div><h3>เขียนไม่สำเร็จ</h3><p>${esc((WR.res&&WR.res.error)||'')}</p><button class="btn p" data-a="pvgo">ลองใหม่</button> <button class="btn" data-a="wrreset">ปิด</button></div></div>`
@@ -1012,6 +1008,97 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   else if(a==='pvclr')askConfirm('ล้างรายการมิเตอร์ที่ลงทะเบียนทั้งหมดในเครื่องนี้?',()=>{S.pvlog=[];save();render();closeModal()})});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||t.dataset.pv==null)return;const k=t.dataset.pv;
   if(t.type==='checkbox')S.pv[k]=t.checked;else if(k==='kPaste')S.pv[k]=t.value;else{const lim={yy:[0,99],mo:[1,12],lot:[0,99],sn:[0,99]}[k];S.pv[k]=lim?pvN(t.value,lim[0],lim[1]):t.value}save();render()});
+/* ---------- K Studio: เลือก K1–K20 จากผลทดสอบจริง · ปรับเป็น % · กราฟ · Preview/PDF/Excel/Save ---------- */
+const RPM_TXT=i=>{const lo=i===0?0:RPM_MAP[i-1],hi=RPM_MAP[i];return hi===Infinity?'> '+fx(lo)+' rpm':(i===0?'≤ ':fx(lo)+'–')+fx(hi)+' rpm'};
+const kQ=c=>c&&c.N?c.p0/c.N:0;
+const kRank=L=>L.slice().sort((a,b)=>kQ(b)-kQ(a)||((a.m0==null?99:a.m0)-(b.m0==null?99:b.m0))||b.N-a.N);
+const kKey=(m,z)=>m+z;
+function klibSync(){let L=null;try{const f=(window.smcvKLib)||(parent&&parent.smcvKLib)||(top&&top.smcvKLib);if(typeof f==='function')L=f()}catch(e){}
+  if(!L)return false;S.klib=S.klib||{};let ch=false;Object.keys(L).forEach(k=>{const c=kRank(L[k].c).slice(0,6),sig=JSON.stringify(c.map(x=>[x.id,x.N,x.p0,x.p1,x.K.join(',')]));if(!S.klib[k]||S.klib[k].sig!==sig){S.klib[k]={t:Date.now(),c,sig,src:'pc'};ch=true}});
+  if(ch)save();return ch}
+function klibPush(force){if(IS_MON||RL.role!=='recv'||!RL.code||!S.klib)return;Object.keys(S.klib).forEach(k=>{const e=S.klib[k];if(e.src!=='pc')return;if(!force&&RL.ksent&&RL.ksent[k]===e.sig)return;(RL.ksent=RL.ksent||{})[k]=e.sig;
+  const m={v:1,t:'klib',key:k,c:e.c.map(x=>({id:x.id,n:x.n,d:x.d,N:x.N,p0:x.p0,p1:x.p1,m0:x.m0==null?null:+x.m0.toFixed(3),m1:x.m1==null?null:+x.m1.toFixed(3),K0:x.K0,K:x.K,m:x.m,f:x.f})),ts:Date.now()};
+  if(JSON.stringify(m).length>3900)m.c=m.c.slice(0,3);rlPost(m).catch(()=>{RL.ksent[k]=null})})}
+function kCands(model,size){const e=S.klib&&S.klib[kKey(model,size)];return e?kRank(e.c):[]}
+function kBase(st,model,size){let sr=st.kSrc;const L=kCands(model,size);
+  if(sr==='lib'&&!L.length)sr='auto';if(sr==='std')sr='auto';
+  if(sr==='lib'){const sel=st.kSel||{},c=L.find(x=>x.id===sel.id)||L[0],v=sel.v==='n'?'n':'t',k=(v==='n'?c.K:c.K0).slice();
+    return{k,real:true,lib:true,cand:c,v,best:c===L[0],src:'ผลทดสอบจริง · '+c.n+(c.d?' ('+c.d+')':'')+' · '+(v==='n'?'K แนะนำใหม่':'K ที่ใช้ทดสอบ'),q:v==='n'?c.p1/c.N:c.p0/c.N,qk:v==='n'?'คาดการณ์':'ผ่านจริง'}}
+  if(sr==='saved'){const p=(S.kprof||[]).find(x=>x.id===st.kSaved);if(!p)return{err:'ยังไม่ได้เลือกชุด K ที่บันทึกไว้ (หรือยังไม่มีชุดที่บันทึก)'};return{k:p.k.slice(),real:true,src:'ชุดที่บันทึกไว้ · '+p.name}}
+  if(sr==='rec'){const A=agg();if(!A.kRec.some(r=>r.prop!=null))return{err:'ยังไม่มีค่า K แนะนำจากผลทดสอบ Batch นี้ — ต้องทดสอบน้ำและอ่านจำนวนรอบก่อน'};const f=kFill(A.kRec);if(f.some(x=>!(x>0)))return{err:'ค่า K แนะนำยังไม่ครบ 20 ค่า'};return{k:f,real:true,src:'แนะนำจาก Batch ปัจจุบัน (ยังไม่ผ่านการยืนยัน)'}}
+  if(sr==='paste'){const k=parseKText(st.kPaste);if(!k)return{err:'ต้องวางค่า K ให้ครบ 20 ค่า (ตัวเลขฐานสิบ) หรือรหัส BCD 160 หลัก'};return{k,real:true,src:'ค่าที่วางเอง'}}
+  const R=kRef(model,size);if(R.k)return{k:R.k.slice(),real:true,src:'ชุดมาตรฐาน '+MODEL(model)+' '+size+' mm · ผ่านการทดสอบ R160'};
+  return{k:(model==='SJ'?KREF.SJ15:KREF.MJ15).k.slice(),real:false,src:'DUMMY · ยืมค่าจาก '+(model==='SJ'?'Single Jet':'Multijet')+' 15 mm (ยังไม่มีชุดจริงของขนาดนี้)'}}
+function kAdjOf(st){const a=st.kAdj=st.kAdj||{all:0,pts:{}};a.pts=a.pts||{};return a}
+function kFinal(st,model,size){const b=kBase(st,model,size);if(b.err)return b;const a=kAdjOf(st),pct=i=>a.pts[i]!=null&&a.pts[i]!==''?+a.pts[i]:(+a.all||0);
+  const k=b.k.map((v,i)=>Math.round(v*(1+pct(i)/100)));const chg=k.map((v,i)=>v!==b.k[i]);
+  return Object.assign({},b,{base:b.k,k,pct:b.k.map((_,i)=>pct(i)),chg,nchg:chg.filter(Boolean).length,src:b.src+(chg.some(Boolean)?' · ปรับ '+(chg.filter(Boolean).length===20&&Object.keys(a.pts).length===0?(a.all>0?'+':'')+a.all+'% ทุกจุด':chg.filter(Boolean).length+' จุด'):'')})}
+function ksChart(F,L,cur){const W=680,H=270,p={l:56,r:16,t:16,b:40},iw=W-p.l-p.r,ih=H-p.t-p.b;
+  const sets=[];if(L&&L.length)L.forEach(c=>{if(cur&&c.id===cur.id)return;sets.push(c.K0)});
+  const all=[...F.base,...F.k,...sets.flat()].filter(x=>x>0),mx=Math.max(...all),mn=Math.min(...all),pad=(mx-mn||1)*.12,y0=Math.max(0,mn-pad),y1=mx+pad,X=i=>p.l+i*iw/19,Y=v=>p.t+ih-(v-y0)/(y1-y0)*ih;
+  const line=(a,st)=>`<polyline fill="none" ${st} points="${a.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')}"/>`;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;font:11px 'Sarabun',sans-serif"><rect x="0" y="0" width="${W}" height="${H}" fill="#fff" rx="10"/>`;
+  for(let g=0;g<=4;g++){const v=y0+(y1-y0)*g/4,y=Y(v);s+=`<line x1="${p.l}" x2="${W-p.r}" y1="${y}" y2="${y}" stroke="#e2e8f0"/><text x="${p.l-6}" y="${y+4}" text-anchor="end" fill="#64748b">${fx(v)}</text>`}
+  for(let i=0;i<20;i++)s+=`<text x="${X(i)}" y="${H-22}" text-anchor="middle" fill="#64748b" ${i%2?'opacity=".55"':''}>K${i+1}</text>`;
+  s+=`<text x="${p.l}" y="${H-6}" fill="#94a3b8">K1 = รอบหมุนต่ำ (flow ต่ำ) → K20 = รอบหมุนสูง</text><text x="12" y="${p.t+10}" fill="#94a3b8" transform="rotate(-90 12 ${p.t+ih/2})" text-anchor="middle">µL/รอบ</text>`;
+  sets.forEach(a=>s+=line(a,'stroke="#cbd5e1" stroke-width="1.4"'));
+  s+=line(F.base,'stroke="#64748b" stroke-width="2" stroke-dasharray="6 4"');s+=line(F.k,'stroke="#0ea5a4" stroke-width="3.2" stroke-linejoin="round"');
+  F.k.forEach((v,i)=>{s+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${F.chg[i]?5.2:3.4}" fill="${F.chg[i]?'#f59e0b':'#0f766e'}" stroke="#fff" stroke-width="1.5"><title>K${i+1} · ${RPM_TXT(i)}\nเดิม ${fx(F.base[i])} → ใช้ ${fx(v)} (${F.pct[i]>0?'+':''}${(+F.pct[i]).toFixed(2)}%)</title></circle>`});
+  return s+'</svg>'}
+function ksLegend(F,L){return`<div class="kslg"><span><i style="background:#0ea5a4"></i>ค่าที่จะเขียน</span><span><i style="background:#64748b"></i>ค่าต้นทาง (ก่อนปรับ)</span><span><i style="background:#f59e0b;border-radius:50%"></i>จุดที่ปรับ ${F.nchg} จุด</span>${L&&L.length>1?'<span><i style="background:#cbd5e1"></i>ครั้งทดสอบอื่น</span>':''}</div>`}
+function ksCard(tag,st,model,size){const key=kKey(model,size),L=kCands(model,size),F=kFinal(st,model,size),a=kAdjOf(st),lib=L.length>0;
+  if(!st.kSrc)st.kSrc='lib';
+  const srcs=[['lib','🧪 ผลทดสอบจริง'+(lib?' ('+L.length+')':'')],['auto','ชุดมาตรฐาน'],['saved','💾 ที่บันทึกไว้'],['rec','Batch นี้'],['paste','วางเอง']];
+  const qb=(c,v)=>{const q=v==='n'?c.p1/c.N:c.p0/c.N;return`<div class="ksq"><i style="width:${Math.round(q*100)}%"></i><b>${Math.round(q*100)}%</b></div>`};
+  const eff=st.kSrc==='lib'&&!lib?'auto':st.kSrc;
+  let list='';
+  if(eff==='lib'){const cur=F.cand,best=L[0];list=`<div class="kslist">${L.map((c,i)=>{const on=cur&&c.id===cur.id;return`<div class="ksr ${on?'on':''}"><div class="ksh"><b>${i===0?'⭐ ':''}${esc(c.n)}</b><small>${esc(c.d||'')} · ${c.N} จุด · ${c.m} มิเตอร์</small>${i===0?'<span class="pill ok">ดีที่สุด</span>':''}</div>
+     <div class="ksv"><button data-a="kssel" data-t="${tag}" data-id="${esc(c.id)}" data-v="t" class="${on&&F.v==='t'?'on':''}"><span>K ที่ใช้ทดสอบ</span>${qb(c,'t')}<small>ผ่านจริง ${c.p0}/${c.N}${c.m0!=null?' · |error| เฉลี่ย '+c.m0.toFixed(2)+'%':''}</small></button>
+     <button data-a="kssel" data-t="${tag}" data-id="${esc(c.id)}" data-v="n" class="${on&&F.v==='n'?'on':''}"><span>K แนะนำใหม่</span>${qb(c,'n')}<small>คาดการณ์ ${c.p1}/${c.N}${c.m1!=null?' · |error| เฉลี่ย '+c.m1.toFixed(2)+'%':''}</small></button></div></div>`}).join('')}</div><p class="hint" style="margin:6px 0 0">เรียงตาม “ผ่านจริง” ดีที่สุดก่อน · ค่าเริ่มต้นเลือกครั้งที่ดีที่สุดให้อัตโนมัติ · “K แนะนำใหม่” คือค่าที่ระบบคำนวณจากผล (ยังไม่ผ่านการทดสอบซ้ำ)</p>`}
+  else if(st.kSrc==='lib'&&!lib)list=`<p class="pill warn" style="white-space:normal">ℹ ยังไม่มีผลทดสอบจริงของ ${MODEL(model)} ${size} mm ในเครื่องนี้ — ${RL.role==='send'?'เปิดหน้าคอมพิวเตอร์ (โหมดรับจากมือถือ) แล้วกด “ขอข้อมูลจากคอม”':'นำเข้าไฟล์ผลทดสอบในแท็บ “สตูดิโอ K · RPM” ของแดชบอร์ด'} · ตอนนี้ใช้ชุดมาตรฐาน/dummy แทน</p>${RL.role==='send'?`<button class="btn sm" data-a="kssync" data-t="${tag}">🔄 ขอข้อมูลจากคอม</button>`:''}`;
+  else if(eff==='saved'){const P=(S.kprof||[]);list=P.length?`<div class="chips">${P.map(p=>`<button data-a="kssaved" data-t="${tag}" data-id="${esc(p.id)}" class="${st.kSaved===p.id?'on':''}">${esc(p.name)}</button>`).join('')}</div>`:'<p class="hint">ยังไม่มีชุดที่บันทึกไว้ — ปรับค่าแล้วกด “บันทึกชุดนี้”</p>'}
+  else if(eff==='paste')list=`<textarea rows="3" data-ks="${tag}:kPaste" placeholder="วาง K1–K20 (20 ค่า คั่นด้วยเว้นวรรค/บรรทัดใหม่) หรือรหัส BCD 160 หลัก" style="width:100%">${esc(st.kPaste||'')}</textarea>`;
+  let body='';
+  const hint=(!F.err&&F.lib&&F.v==='t'&&F.cand.p1>F.cand.p0)?`<div class="vbn wait" style="margin:10px 0"><div class="vi">💡</div><div><h3 style="font-size:1rem">K แนะนำใหม่ของ ${esc(F.cand.n)} คาดว่าผ่าน ${Math.round(100*F.cand.p1/F.cand.N)}% (ค่าที่ใช้ทดสอบจริงผ่าน ${Math.round(100*F.cand.p0/F.cand.N)}%)</h3><p>เป็นค่าคาดการณ์ ยังไม่เคยทดสอบยืนยัน · <button class="btn sm" data-a="kssel" data-t="${tag}" data-id="${esc(F.cand.id)}" data-v="n">ใช้ K แนะนำใหม่</button></p></div></div>`:'';
+  if(F.err)body=`<p class="pill warn" style="white-space:normal">⚠ ${esc(F.err)}</p>`;
+  else{const rows=F.k.map((v,i)=>`<tr class="${F.chg[i]?'ksch':''}"><td><b>K${i+1}</b></td><td class="l">${RPM_TXT(i)}</td><td class="mono">${fx(F.base[i])}</td><td><input class="ksp" type="number" step="0.1" data-ks="${tag}:p${i}" value="${a.pts[i]!=null&&a.pts[i]!==''?a.pts[i]:''}" placeholder="${(+a.all||0)?(+a.all):'0'}"></td><td><input class="ksf" type="number" data-ks="${tag}:v${i}" value="${v}"></td><td class="mono ${F.pct[i]?'':'mut'}">${F.pct[i]>0?'+':''}${(+F.pct[i]).toFixed(2)}%</td></tr>`).join('');
+    body=`<div class="kbox ${F.real?'real':'dummy'}"><div style="flex:1;min-width:200px"><b>${F.real?'✅ ค่า K จริง':'⚠ ค่า K แบบ DUMMY'}</b><small>${esc(F.src)}</small>${F.lib?`<small>คุณภาพ${F.qk}: <b>${Math.round(F.q*100)}%</b> ${F.best?'· ⭐ ดีที่สุดในรุ่นนี้':''}</small>`:''}${F.real?'':'<small>เขียนลงมิเตอร์ได้เลย แล้วไปปรับค่าจริงตอนทดสอบน้ำ</small>'}</div><div style="flex:1;min-width:220px"><small class="mono">K1 ${fx(F.k[0])} · K10 ${fx(F.k[9])} · K20 ${fx(F.k[19])} µL/รอบ</small></div></div>
+    <div class="ksadj"><label>✏ ปรับทุกจุดพร้อมกัน <input type="number" step="0.1" data-ks="${tag}:all" value="${a.all||0}" style="width:90px"> %</label>${[-2,-1,-.5,.5,1,2].map(x=>`<button class="btn sm" data-a="ksall" data-t="${tag}" data-v="${x}">${x>0?'+':''}${x}%</button>`).join('')}<button class="btn sm" data-a="ksreset" data-t="${tag}">↺ คืนค่าเดิม</button></div>
+    <div class="kschart">${ksChart(F,L,F.cand)}${ksLegend(F,L)}</div>
+    <details class="ksdet" ${F.nchg?'open':''}><summary>ตาราง K1–K20 · ปรับเป็น % หรือแก้ค่าเฉพาะจุด</summary><div class="tw"><table class="kstb"><thead><tr><th>K</th><th class="l">ช่วงรอบหมุน</th><th>ค่าต้นทาง</th><th>ปรับ %</th><th>ค่าที่จะเขียน</th><th>ผลต่าง</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint" style="margin:6px 0 0">ช่อง “ปรับ %” ว่าง = ใช้ % ทุกจุดด้านบน · พิมพ์ % เฉพาะจุดเพื่อแก้เฉพาะ K นั้น · หรือแก้ “ค่าที่จะเขียน” ตรงๆ ได้</p></details>
+    <div class="ksact"><input data-ks="${tag}:kName" value="${esc(st.kName||'')}" placeholder="ชื่อชุด K (เช่น MJ25 ปรับ +1%)" style="flex:1;min-width:160px"><button class="btn sm" data-a="kssave" data-t="${tag}">💾 บันทึกชุดนี้</button><button class="btn sm" data-a="ksprev" data-t="${tag}">👁 Preview</button><button class="btn sm" data-a="kspdf" data-t="${tag}">🖨 PDF</button><button class="btn sm" data-a="ksxl" data-t="${tag}">⬇ Excel</button></div>`}
+  return`<div class="ksx"><div class="seg ksseg">${srcs.map(o=>`<button data-a="kssrc" data-t="${tag}" data-v="${o[0]}" class="${st.kSrc===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>${list}${hint}${body}</div>`}
+function ksCtx(tag){return tag==='pv'?{st:S.pv,model:S.pv.model,size:S.pv.size}:{st:S.wr,model:S.batch.model,size:S.batch.size}}
+function ksReportHtml(tag){const c=ksCtx(tag),F=kFinal(c.st,c.model,c.size),L=kCands(c.model,c.size);if(F.err)return'<p>'+esc(F.err)+'</p>';
+  const rows=F.k.map((v,i)=>`<tr${F.chg[i]?' style="background:#fff7e0"':''}><td><b>K${i+1}</b></td><td style="text-align:left">${RPM_TXT(i)}</td><td>${fx(F.base[i])}</td><td>${F.pct[i]>0?'+':''}${(+F.pct[i]).toFixed(2)}%</td><td><b>${fx(v)}</b></td><td style="font-family:monospace">${k8(v)}</td></tr>`).join('');
+  const cand=L.length?`<h3 style="margin:16px 0 6px">ผลทดสอบจริงที่ใช้เปรียบเทียบ</h3><table class="ksrt"><thead><tr><th style="text-align:left">ครั้งที่ทดสอบ</th><th>วันที่</th><th>จุด</th><th>ผ่านจริง</th><th>คาดการณ์ (K ใหม่)</th><th>|error| เฉลี่ย</th></tr></thead><tbody>${L.map((x,i)=>`<tr${F.cand&&x.id===F.cand.id?' style="background:#e6fffb"':''}><td style="text-align:left">${i===0?'⭐ ':''}${esc(x.n)}</td><td>${esc(x.d||'')}</td><td>${x.N}</td><td>${x.p0}/${x.N} (${Math.round(100*x.p0/x.N)}%)</td><td>${x.p1}/${x.N} (${Math.round(100*x.p1/x.N)}%)</td><td>${x.m0==null?'–':x.m0.toFixed(2)+'%'}</td></tr>`).join('')}</tbody></table>`:'';
+  return`<div class="paper ksrep"><div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0b7ea4;padding-bottom:8px"><div><div style="font-size:1.4rem;font-weight:700">ค่าคงที่ K1–K20 · ${MODEL(c.model)} ${c.size} mm</div><div style="color:#64748b">Flo Sensor Lab · SMCV4 · พิมพ์ ${nowTxt()}</div></div><div style="text-align:right"><div style="font-weight:700;color:${F.real?'#047857':'#b45309'}">${F.real?'ค่า K จริง':'DUMMY'}</div><div style="font-size:.85rem;color:#475569">${esc(F.src)}</div></div></div>
+  <div style="margin:12px 0">${ksChart(F,L,F.cand)}${ksLegend(F,L)}</div>
+  <table class="ksrt"><thead><tr><th>K</th><th style="text-align:left">ช่วงรอบหมุน</th><th>ค่าต้นทาง</th><th>ปรับ</th><th>ค่าที่จะเขียน (µL/รอบ)</th><th>BCD 8 หลัก</th></tr></thead><tbody>${rows}</tbody></table>${cand}</div>`}
+async function ksExcel(tag){const c=ksCtx(tag),F=kFinal(c.st,c.model,c.size),L=kCands(c.model,c.size);if(F.err){toast(F.err,3500);return}
+  try{const X=await needXL(),wb=X.utils.book_new();
+  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['ค่าคงที่ K1–K20'],['รุ่น/ขนาด',MODEL(c.model)+' '+c.size+' mm'],['แหล่งที่มา',F.src],['สถานะ',F.real?'ค่า K จริง':'DUMMY'],['จุดที่ปรับ',F.nchg],['สร้างเมื่อ',nowTxt()]]),'สรุป');
+  const kr=[['K','ช่วงรอบหมุน (rpm)','ค่าต้นทาง','ปรับ %','ค่าที่จะเขียน','BCD 8 หลัก']];F.k.forEach((v,i)=>kr.push(['K'+(i+1),RPM_TXT(i),F.base[i],+(+F.pct[i]).toFixed(3),v,k8(v)]));
+  const w2=X.utils.aoa_to_sheet(kr);w2['!cols']=[{wch:6},{wch:20},{wch:12},{wch:9},{wch:14},{wch:12}];X.utils.book_append_sheet(wb,w2,'K1-K20');
+  if(L.length){const cr=[['ครั้งที่ทดสอบ','วันที่','จุดทดสอบ','มิเตอร์','ผ่านจริง','ผ่านจริง %','คาดการณ์ (K ใหม่)','คาดการณ์ %','|error| เฉลี่ย (จริง)','|error| เฉลี่ย (K ใหม่)',...Array.from({length:20},(_,i)=>'K'+(i+1)+' ทดสอบ'),...Array.from({length:20},(_,i)=>'K'+(i+1)+' ใหม่')]];L.forEach(x=>cr.push([x.n,x.d||'',x.N,x.m,x.p0,+(100*x.p0/x.N).toFixed(1),x.p1,+(100*x.p1/x.N).toFixed(1),x.m0==null?'':+x.m0.toFixed(3),x.m1==null?'':+x.m1.toFixed(3),...x.K0,...x.K]));X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(cr),'ผลทดสอบแต่ละครั้ง')}
+  X.writeFile(wb,'K1-K20_'+c.model+c.size+'_'+new Date().toISOString().slice(0,10)+'.xlsx')}catch(e){toast('สร้าง Excel ไม่สำเร็จ: '+e.message,4000)}}
+function ksPrint(tag){$('#rep').innerHTML=ksReportHtml(tag);setTimeout(()=>window.print(),80)}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-t][data-a]');if(!t||!/^ks/.test(t.dataset.a))return;const a=t.dataset.a,tag=t.dataset.t,c=ksCtx(tag),st=c.st,v=t.dataset.v,ad=kAdjOf(st);
+  if(a==='kssrc'){st.kSrc=v;save();render()}
+  else if(a==='kssel'){st.kSel={id:t.dataset.id,v:v};st.kSrc='lib';ad.all=0;ad.pts={};save();render()}
+  else if(a==='kssaved'){st.kSaved=t.dataset.id;ad.all=0;ad.pts={};save();render()}
+  else if(a==='ksall'){ad.all=+(((+ad.all||0)+(+v))).toFixed(2);save();render()}
+  else if(a==='ksreset'){ad.all=0;ad.pts={};save();render()}
+  else if(a==='kssync'){rlPost({v:1,t:'hello',ts:Date.now()}).then(()=>toast('ส่งคำขอไปที่จอคอมแล้ว — รอสักครู่',2800),()=>toast('ส่งคำขอไม่สำเร็จ ตรวจอินเทอร์เน็ต',3200))}
+  else if(a==='kssave'){const F=kFinal(st,c.model,c.size);if(F.err){toast(F.err,3000);return}S.kprof=S.kprof||[];const nm=(st.kName||'').trim()||(MODEL(c.model)+' '+c.size+' · '+(F.nchg?'ปรับ '+F.nchg+' จุด':'ไม่ปรับ')+' · '+fdt(Date.now()).slice(0,16));S.kprof.unshift({id:'kp'+Date.now().toString(36),name:nm,key:kKey(c.model,c.size),k:F.k.slice(),src:F.src,t:Date.now()});S.kprof=S.kprof.slice(0,40);st.kName='';save();render();toast('💾 บันทึกชุด K แล้ว: '+nm,3200)}
+  else if(a==='ksprev'){modal('<div class="ksmodal">'+ksReportHtml(tag)+'<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn p" data-a="kssave" data-t="'+tag+'">💾 บันทึก</button><button class="btn" data-a="kspdf" data-t="'+tag+'">🖨 PDF</button><button class="btn" data-a="ksxl" data-t="'+tag+'">⬇ Excel</button><button class="btn" data-a="mclose">ปิด</button></div></div>')}
+  else if(a==='kspdf')ksPrint(tag);
+  else if(a==='ksxl')ksExcel(tag)});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||t.dataset.ks==null)return;const m=String(t.dataset.ks).match(/^(pv|wr):(.+)$/);if(!m)return;const c=ksCtx(m[1]),st=c.st,k=m[2],ad=kAdjOf(st);
+  if(k==='all'){ad.all=+t.value||0}else if(k==='kPaste')st.kPaste=t.value;else if(k==='kName'){st.kName=t.value;save();return}
+  else if(/^p\d+$/.test(k)){const i=+k.slice(1);if(t.value==='')delete ad.pts[i];else ad.pts[i]=+t.value}
+  else if(/^v\d+$/.test(k)){const i=+k.slice(1),F=kFinal(st,c.model,c.size);if(F.err)return;const nv=Math.round(+t.value);if(nv>0&&F.base[i]>0)ad.pts[i]=+((nv/F.base[i]-1)*100).toFixed(4)}
+  save();render()});
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v;
   if(a==='wrsw'){S.wr[v]=!S.wr[v];save();render()}
   else if(a==='wrset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc'].includes(k))x=+v;if(/Val$/.test(k))x=+v;if(k==='tid'){S.wr.any=false}S.wr[k]=x;if(/Unit$/.test(k)){S.wr[k.replace('Unit','Val')]=x==='h'?1:15}save();render()}
@@ -1218,7 +1305,7 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()})
 setInterval(()=>{if(IS_MON||MON){renderMon();return}rlChip();const el=$('#tm');if(el&&S.plan.length){const st=pointState(Math.min(S.cur,S.plan.length-1));el.textContent=st.t0?dur((st.t1||Date.now())-st.t0):'00:00'}},500);
 if(BC)BC.onmessage=e=>{if(IS_MON&&e.data&&e.data.t==='state'){S=e.data.S;LAST=e.data.LAST||null;renderMon()}};
 addEventListener('storage',e=>{if(IS_MON&&e.key===LS){loadState();renderMon()}});
-loadState();rlLoad();if(RL.role==='send'&&RL.code)TAB='run';rlConnect();
+setInterval(()=>{try{if(!IS_MON&&klibSync()&&RL.role==='recv')klibPush()}catch(e){}},20000);loadState();rlLoad();if(RL.role==='send'&&RL.code)TAB='run';rlConnect();
 {const b=S.batch,s=q3Std();if(s&&!b.q3Custom&&Math.abs(b.q3-s)>1e-9&&!Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length)){b.q3=s;S.plan=buildPlan();S.pt={};S.cur=0;save()}}
 if(!S.plan.length&&!Object.keys(S.rd).length)S.plan=buildPlan();
 if(IS_MON){document.body.classList.add('monitor');$('.top').style.display='none';$('main').style.display='none'}
