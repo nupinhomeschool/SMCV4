@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v18"
+                  private const val VERSION = "v20"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -1190,6 +1190,10 @@ jobs:
               /** อนุญาตเฉพาะ 78–83 (เวลา) · 84–163 (K) · 166–170 (ช่วงบันทึก/ทิศทาง/UART/โหมดคำนวณ) และคำสั่ง 68–71 */
               private fun validateJob(j: JSONObject): String? {
                   try {
+                      if (j.optString("op", "") == "verify") {
+                          val vid = j.optString("id", "")
+                          return if (vid.isNotEmpty() && !Regex("^\\d{8}$").matches(vid)) "Meter ID ต้องเป็นเลข 8 หลัก" else null
+                      }
                       val ps = j.getJSONArray("patches")
                       for (i in 0 until ps.length()) {
                           val p = ps.getJSONObject(i)
@@ -1197,7 +1201,7 @@ jobs:
                           val hx = p.getString("h")
                           if (hx.isEmpty() || hx.length % 2 != 0 || !Regex("^[0-9A-Fa-f]+$").matches(hx)) return "ข้อมูลเขียนไม่ถูกต้องที่ตำแหน่ง $a"
                           val n = hx.length / 2
-                          val ok = (a >= 78 && a + n <= 84) || (a >= 84 && a + n <= 164) || (a >= 166 && a + n <= 171)
+                          val ok = (a >= 78 && a + n <= 84) || (a >= 84 && a + n <= 164) || (a >= 164 && a + n <= 171)
                           if (!ok) return "ไม่อนุญาตให้เขียนตำแหน่ง $a (+$n ไบต์)"
                       }
                       val c = j.optString("cmd", "")
@@ -1218,7 +1222,8 @@ jobs:
                   writeBox.visibility = View.VISIBLE
                   btnWc.text = "ยกเลิก"
                   val id = j.optString("id", "")
-                  tvWrite.text = "✍ รอแตะมิเตอร์เพื่อเขียนค่า\n" + (if (id.isEmpty()) "ไม่ตรวจ Meter ID" else "Meter ID $id") + "\n" + j.optString("label", "")
+                  val vf = j.optString("op", "") == "verify"
+                  tvWrite.text = (if (vf) "🔍 รอแตะมิเตอร์เพื่ออ่านค่าที่เขียนไว้มาตรวจสอบ\n" else "✍ รอแตะมิเตอร์เพื่อเขียนค่า\n") + (if (id.isEmpty()) "ไม่ตรวจ Meter ID" else "Meter ID $id") + "\n" + j.optString("label", "")
                   tvWrite.setTextColor(Color.WHITE)
               }
 
@@ -1260,6 +1265,7 @@ jobs:
                   o.put("uart", a[169 - base].toInt() and 0xFF)
                   o.put("calc", a[170 - base].toInt() and 0xFF)
                   o.put("logMin", ((a[166 - base].toInt() and 0xFF) shl 8) or (a[167 - base].toInt() and 0xFF))
+                  o.put("nfcMin", ((a[164 - base].toInt() and 0xFF) shl 8) or (a[165 - base].toInt() and 0xFF))
                   o.put("cmd", a.copyOfRange(68 - base, 72 - base).toHex())
                   val k = JSONArray()
                   for (i in 0 until 20) k.put(a.copyOfRange(84 - base + i * 4, 88 - base + i * 4).toHex())
@@ -1269,7 +1275,8 @@ jobs:
 
               private fun doWrite(tag: Tag, j: JSONObject) {
                   writing = true
-                  runOnUiThread { tvWrite.text = "✍ กำลังเขียน… ห้ามเลื่อนโทรศัพท์ออกจากมิเตอร์"; tvWrite.setTextColor(Color.WHITE) }
+                  val isVerify = j.optString("op", "") == "verify"
+                  runOnUiThread { tvWrite.text = if (isVerify) "🔍 กำลังอ่านค่ากลับ… ห้ามเลื่อนโทรศัพท์ออกจากมิเตอร์" else "✍ กำลังเขียน… ห้ามเลื่อนโทรศัพท์ออกจากมิเตอร์"; tvWrite.setTextColor(Color.WHITE) }
                   val res = JSONObject()
                   var deliver = true
                   try {
@@ -1286,6 +1293,12 @@ jobs:
                           val id = orig.copyOfRange(72 - base, 76 - base).toHex()
                           val want = j.optString("id", "")
                           if (want.isNotEmpty() && want != id) throw WriteMismatch("Meter ID ไม่ตรง: มิเตอร์ที่แตะคือ $id (ต้องการ $want) — แตะตัวที่ถูกต้อง")
+                          if (isVerify) {
+                              res.put("ok", true).put("verify", true).put("id", id).put("uid", v.tag.id.toHex())
+                                  .put("label", j.optString("label", "")).put("base", base).put("dump", orig.toHex())
+                                  .put("at", SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.US).format(Date()))
+                                  .put("after", summary(orig, base))
+                          } else {
                           val img = orig.copyOf()
                           val ps = j.getJSONArray("patches")
                           for (i in 0 until ps.length()) {
@@ -1315,6 +1328,8 @@ jobs:
                               .put("wrote", wrote).put("cmd", cmd)
                               .put("time", if (j.optBoolean("time", false)) SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US).format(now.time) else "")
                               .put("before", summary(orig, base)).put("after", summary(back, base))
+                              .put("base", base).put("dump", back.toHex())
+                          }
                       } finally {
                           try { v.close() } catch (_: Exception) {}
                       }
@@ -1330,15 +1345,15 @@ jobs:
                   if (ok) writeJob = null
                   runOnUiThread {
                       if (ok) {
-                          tvWrite.text = "✔ เขียนและตรวจสอบสำเร็จ · ${res.optString("id")}\nต่อไป: กดทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที"
+                          tvWrite.text = if (res.optBoolean("verify")) "🔍 อ่านค่ากลับสำเร็จ · ${res.optString("id")}\nดูผลเปรียบเทียบในหน้าเว็บ แล้วกดทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที" else "✔ เขียนและตรวจสอบสำเร็จ · ${res.optString("id")}\nต่อไป: กดทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที"
                           tvWrite.setTextColor(Color.parseColor("#6EE7B7"))
                           btnWc.text = "ปิด"
-                          toast("เขียนค่าสำเร็จ")
+                          toast(if (res.optBoolean("verify")) "อ่านค่ากลับสำเร็จ" else "เขียนค่าสำเร็จ")
                       } else {
                           tvWrite.text = "✗ เขียนไม่สำเร็จ: ${res.optString("error")}\nแตะมิเตอร์ใหม่เพื่อลองอีกครั้ง"
                           tvWrite.setTextColor(Color.parseColor("#FCA5A5"))
                       }
-                      callBench("benchWriteResult", res.toString())
+                      callBench(if (res.optBoolean("verify")) "benchVerifyResult" else "benchWriteResult", res.toString())
                   }
               }
 
