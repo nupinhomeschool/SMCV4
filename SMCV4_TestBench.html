@@ -189,6 +189,7 @@ tr.ptoff td{opacity:.45}tr.ptoff td:first-child{opacity:1}
 .nfcring.okr{border-color:#10b981;color:#10b981;animation:none;font-weight:700}.nfcring.errr{border-color:#e11d48;color:#e11d48;animation:none;font-weight:700}
 @keyframes wpulse{0%{box-shadow:0 0 0 0 #14b8a688}100%{box-shadow:0 0 0 26px #14b8a600}}
 .after{background:#fff7e0;border:1px solid #f6d77a;border-radius:12px;padding:10px 12px;margin:0 0 10px;color:#6b4e00;line-height:1.55}
+.peer{margin-top:12px;padding:12px 14px;border-radius:14px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a}.peer small{display:block;opacity:.85;margin:2px 0 4px;line-height:1.5}
 .devb{display:flex;gap:12px;align-items:center;border-radius:16px;padding:12px 16px;margin-top:14px;border:1px solid}.devb>span{font-size:1.8rem}.devb b{display:block}.devb small{color:inherit;opacity:.85;line-height:1.5}
 .devb.ph{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}.devb.pc{background:#fff7ed;border-color:#fdba74;color:#9a3412}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.tile{position:relative;text-align:left;border:2px solid #d6e4ec;background:#fff;border-radius:16px;padding:14px 14px 34px;cursor:pointer;font:inherit;color:#334155}
@@ -303,24 +304,27 @@ function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||windo
   const seq=kind==='bad'?[[330,.0,.18],[220,.2,.3]]:kind==='warn'?[[520,0,.2],[520,.25,.2]]:[[880,0,.1],[1320,.12,.14]];
   seq.forEach(([f,t,d])=>{const o=AC.createOscillator(),g=AC.createGain(),t0=AC.currentTime+t;o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.25,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.start(t0);o.stop(t0+d+.02)})}catch(e){}}
 const SENT=[];
-function rlPost(m){return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
+function rlPost(m){if(typeof fetch!=='function')return Promise.reject(new Error('no fetch'));return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
 function rlSend(r){
   if(!r||(!r.id&&!r.mech)||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
   const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,logmin:r.logmin,cmd:r.cmd,issues:r.issues||[],meta:r.meta||null,mech:r.mech?1:0,ts:Date.now()};
   const e={r,t:Date.now(),ok:null};SENT.unshift(e);SENT.length=Math.min(SENT.length,30);RL.sent++;beep('ok');
   rlPost(m).then(()=>{e.ok=true;render()},er=>{e.ok=false;RL.err=er.message||'ส่งไม่สำเร็จ';render()});
   render();return true}
+function rlPush(force){if(IS_MON||RL.role!=='recv'||!RL.code)return;const ids=[];S.meters.forEach((m,i)=>{if(m.id)ids.push([i+1,m.id])});const sig=JSON.stringify(ids);if(!force&&sig===RL.msig)return;RL.msig=sig;rlPost({v:1,t:'meters',ids,ts:Date.now()}).catch(()=>{RL.msig=''})}
 function rlRecv(m){
   if(!m||m.v!==1)return;
+  if(RL.role==='send'){if(m.t==='meters'&&Array.isArray(m.ids)&&(!RL.peer||m.ts>=RL.peer.ts)){RL.peer={ids:m.ids,ts:m.ts};if(TAB==='wr')render()}return}
+  if(m.t==='hello'){rlPush(true);return}
   if(m.t==='ping'){RL.last=Date.now();toast('✔ ได้รับสัญญาณทดสอบจากมือถือ — การเชื่อมต่อใช้งานได้',3200);beep('ok');rlChip();return}
   if(m.t!=='read'||(!m.id&&!m.mech)||m.seq&&RL.seen.has(m.seq))return;if(m.seq){RL.seen.add(m.seq);if(RL.seen.size>200)RL.seen.delete(RL.seen.values().next().value)}
   RL.last=Date.now();RL.n++;
   applyRead(Object.assign({},m,{k8:m.k?m.k.map(k8):null,ts:Date.now(),issues:m.issues||[]}),'phone')}
 function rlConnect(){
   try{RL.es&&RL.es.close()}catch(e){}RL.es=null;RL.st='off';
-  if(IS_MON||RL.role!=='recv'||!RL.code||typeof EventSource==='undefined'){rlChip();return}
-  try{const es=new EventSource(rlTopic()+'/sse');RL.es=es;RL.st='conn';
-    es.onopen=()=>{RL.st='on';rlChip()};es.onerror=()=>{RL.st='retry';rlChip()};
+  if(IS_MON||(RL.role!=='recv'&&RL.role!=='send')||!RL.code||typeof EventSource==='undefined'){rlChip();return}
+  try{const es=new EventSource(rlTopic()+'/sse'+(RL.role==='send'?'?since=12h':''));RL.es=es;RL.st='conn';
+    es.onopen=()=>{RL.st='on';rlChip();if(RL.role==='send')rlPost({v:1,t:'hello',ts:Date.now()}).catch(()=>{});else rlPush(true)};es.onerror=()=>{RL.st='retry';rlChip()};
     es.onmessage=e=>{try{const j=JSON.parse(e.data);if(j.event&&j.event!=='message')return;rlRecv(JSON.parse(j.message))}catch(x){}}}
   catch(e){RL.st='err'}
   rlChip()}
@@ -519,6 +523,7 @@ function render(){
   const A=agg();
   $('#tabs').innerHTML=TABS.map((t,i)=>`<button class="tab ${TAB===t[0]?'on':''} ${t[0]==='run'&&A.nm&&A.pend?'warn':''}" data-a="tab" data-v="${t[0]}"><i>${i+1}</i>${t[1]}<span class="dot"></span></button>`).join('');
   const b=S.batch;$('#hdBatch').textContent=b.id;$('#hdMeter').textContent=MODEL(b.model)+' '+b.size+' mm · R'+b.R+' · '+A.nm+'/'+S.meters.length+' มิเตอร์'+(MECH()?' · แมคคานิค':'');document.body.classList.toggle('mech',MECH());
+  try{rlPush()}catch(e){}
   $('#view').innerHTML=((RL.role==='send'&&RL.code&&TAB==='run')?vSend:{setup:vSetup,plan:vPlan,run:vRun,res:vRes,rep:vRep,wr:vWr}[TAB])(A);rlChip();
   if($('#kbVal')){if(!KBCLR){if(kb.val)$('#kbVal').value=kb.val;if(kb.id)$('#kbId').value=kb.id}const ff=KBFOCUS||kb.f;if(ff&&$('#'+ff))$('#'+ff).focus();KBFOCUS=null;KBCLR=false}
   if(MON)renderMon(A)}
@@ -890,6 +895,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
    <div class="tiles"><button data-a="wrmode" data-v="touch" class="tile ${w.any?'on':''}"><i>📲</i><b>ตัวที่แตะ</b><small>เขียนให้มิเตอร์ที่เอามือถือไปแตะ<br>เหมาะกับหน้างาน — ไม่ต้องพิมพ์อะไร</small><em>${w.any?'✓ เลือกอยู่':'แนะนำ'}</em></button>
    <button data-a="wrmode" data-v="id" class="tile ${!w.any?'on':''}"><i>🔒</i><b>ระบุเลขมิเตอร์</b><small>เขียนเฉพาะเลขที่ระบุ ถ้าแตะผิดตัวจะไม่เขียน<br>เหมาะกับการแก้มิเตอร์ตัวใดตัวหนึ่งโดยเฉพาะ</small><em>${!w.any?'✓ เลือกอยู่':'ปลอดภัยสุด'}</em></button></div>
+   ${RL.role==='send'?(RL.peer&&RL.peer.ids.length?`<div class="peer"><b>🖥 มิเตอร์ในแท่นทดสอบ (รับจากจอคอม)</b><small>แตะเลือกเพื่อเขียนเฉพาะตัวนั้น · อัปเดต ${fdt(RL.peer.ts)}</small><div class="chips">${RL.peer.ids.map(p=>`<button data-a="wrset" data-k="tid" data-v="${esc(p[1])}" class="${!w.any&&w.tid===p[1]?'on':''}">ช่อง ${p[0]} · ${esc(p[1])}</button>`).join('')}</div></div>`:`<div class="peer"><b>🖥 ยังไม่ได้รับรายชื่อมิเตอร์จากจอคอม</b><small>เปิดหน้า Test Bench บนคอมพิวเตอร์ (โหมดรับจากมือถือ รหัส ${esc((RL.code||'').toUpperCase())}) และอ่านมิเตอร์อย่างน้อย 1 ตัว แล้วรายชื่อจะโผล่ที่นี่ · หรือใช้ “ตัวที่แตะ”</small></div>`):''}
    ${w.any?'':`<div class="fr" style="margin-top:12px"><div class="fld"><label>Meter ID (8 หลัก) — ดูได้จากหน้าอ่าน NFC หรือป้ายมิเตอร์</label><input list="wrids" data-wr="tid" inputmode="numeric" value="${esc(w.tid)}" placeholder="เช่น 69050015"><datalist id="wrids">${ids.map(i=>`<option value="${esc(i)}">`).join('')}</datalist></div></div>
    ${ids.length?`<div class="chips">${ids.map(i=>`<button data-a="wrset" data-k="tid" data-v="${esc(i)}" class="${w.tid===i?'on':''}">${esc(i)}</button>`).join('')}</div>`:''}`}
    <p class="tgsum">${w.any?'✅ ระบบจะเขียนให้ <b>มิเตอร์ตัวที่คุณแตะ</b> แล้วแสดงเลขมิเตอร์ที่เขียนให้ดูทันที — ตรวจเลขให้ตรงกับป้ายมิเตอร์':String(w.tid||'').trim()?'🔒 ระบบจะเขียนเฉพาะมิเตอร์เลข <b class="mono">'+esc(w.tid)+'</b> เท่านั้น':'⚠ ยังไม่ได้ระบุเลขมิเตอร์'}</p></div>
