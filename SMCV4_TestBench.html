@@ -306,6 +306,7 @@ function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||windo
 const SENT=[];
 function rlPost(m){if(typeof fetch!=='function')return Promise.reject(new Error('no fetch'));return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
 function rlSend(r){
+  if(r&&r.id&&!r.bad){S.recent=(S.recent||[]).filter(x=>x[0]!==r.id);S.recent.unshift([r.id,Date.now()]);S.recent=S.recent.slice(0,12);try{save()}catch(e){}}
   if(!r||(!r.id&&!r.mech)||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
   const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,logmin:r.logmin,cmd:r.cmd,issues:r.issues||[],meta:r.meta||null,mech:r.mech?1:0,ts:Date.now()};
   const e={r,t:Date.now(),ok:null};SENT.unshift(e);SENT.length=Math.min(SENT.length,30);RL.sent++;beep('ok');
@@ -895,7 +896,14 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
    <div class="tiles"><button data-a="wrmode" data-v="touch" class="tile ${w.any?'on':''}"><i>📲</i><b>ตัวที่แตะ</b><small>เขียนให้มิเตอร์ที่เอามือถือไปแตะ<br>เหมาะกับหน้างาน — ไม่ต้องพิมพ์อะไร</small><em>${w.any?'✓ เลือกอยู่':'แนะนำ'}</em></button>
    <button data-a="wrmode" data-v="id" class="tile ${!w.any?'on':''}"><i>🔒</i><b>ระบุเลขมิเตอร์</b><small>เขียนเฉพาะเลขที่ระบุ ถ้าแตะผิดตัวจะไม่เขียน<br>เหมาะกับการแก้มิเตอร์ตัวใดตัวหนึ่งโดยเฉพาะ</small><em>${!w.any?'✓ เลือกอยู่':'ปลอดภัยสุด'}</em></button></div>
-   ${RL.role==='send'?(RL.peer&&RL.peer.ids.length?`<div class="peer"><b>🖥 มิเตอร์ในแท่นทดสอบ (รับจากจอคอม)</b><small>แตะเลือกเพื่อเขียนเฉพาะตัวนั้น · อัปเดต ${fdt(RL.peer.ts)}</small><div class="chips">${RL.peer.ids.map(p=>`<button data-a="wrset" data-k="tid" data-v="${esc(p[1])}" class="${!w.any&&w.tid===p[1]?'on':''}">ช่อง ${p[0]} · ${esc(p[1])}</button>`).join('')}</div></div>`:`<div class="peer"><b>🖥 ยังไม่ได้รับรายชื่อมิเตอร์จากจอคอม</b><small>เปิดหน้า Test Bench บนคอมพิวเตอร์ (โหมดรับจากมือถือ รหัส ${esc((RL.code||'').toUpperCase())}) และอ่านมิเตอร์อย่างน้อย 1 ตัว แล้วรายชื่อจะโผล่ที่นี่ · หรือใช้ “ตัวที่แตะ”</small></div>`):''}
+   ${(()=>{const peer=RL.role==='send'&&RL.peer?RL.peer.ids:[],rec=(S.recent||[]).filter(x=>!peer.some(p=>p[1]===x[0]));
+     const chip=(v,t)=>`<button data-a="wrset" data-k="tid" data-v="${esc(v)}" class="${!w.any&&w.tid===v?'on':''}">${t}</button>`;
+     let h='';
+     if(RL.role==='send')h+=peer.length?`<div class="peer"><b>🖥 มิเตอร์ในแท่นทดสอบ (รับจากจอคอม)</b><small>แตะเลือกเพื่อเขียนเฉพาะตัวนั้น · อัปเดต ${fdt(RL.peer.ts)}</small><div class="chips">${peer.map(p=>chip(p[1],'ช่อง '+p[0]+' · '+esc(p[1]))).join('')}</div><button class="btn sm" data-a="peerreq" style="margin-top:8px">🔄 ขอรายชื่อใหม่จากคอม</button></div>`
+       :`<div class="peer"><b>🖥 ยังไม่ได้รับรายชื่อจากจอคอม</b><small>สาเหตุที่พบบ่อย: ① หน้าคอมยังไม่ได้รีเฟรชเป็นเวอร์ชันใหม่ ② คอมใช้รหัสจับคู่ไม่ตรงกับมือถือ (รหัสมือถือ <b>${esc((RL.code||'').toUpperCase())}</b>) ③ คอมยังไม่มีมิเตอร์ที่มี ID — ให้อ่านมิเตอร์อย่างน้อย 1 ตัวบนคอม</small><button class="btn sm" data-a="peerreq" style="margin-top:6px">🔄 ขอรายชื่อใหม่จากคอม</button></div>`;
+     else h+=`<div class="peer"><b>ℹ มือถือเครื่องนี้ยังไม่ได้จับคู่กับจอคอม</b><small>ตั้งผ่านปุ่ม “…” → “จับคู่กับจอคอม” เพื่อให้รายชื่อมิเตอร์บนคอมมาโผล่ที่นี่ · หรือใช้ “ตัวที่แตะ” ได้เลย</small></div>`;
+     if(rec.length)h+=`<div class="peer" style="background:#f0fdf4;border-color:#bbf7d0;color:#14532d"><b>🕘 มิเตอร์ที่เพิ่งอ่านจากเครื่องนี้</b><small>แตะเลือกเพื่อเขียนเฉพาะตัวนั้น</small><div class="chips">${rec.slice(0,8).map(x=>chip(x[0],esc(x[0]))).join('')}</div></div>`;
+     return h})()}
    ${w.any?'':`<div class="fr" style="margin-top:12px"><div class="fld"><label>Meter ID (8 หลัก) — ดูได้จากหน้าอ่าน NFC หรือป้ายมิเตอร์</label><input list="wrids" data-wr="tid" inputmode="numeric" value="${esc(w.tid)}" placeholder="เช่น 69050015"><datalist id="wrids">${ids.map(i=>`<option value="${esc(i)}">`).join('')}</datalist></div></div>
    ${ids.length?`<div class="chips">${ids.map(i=>`<button data-a="wrset" data-k="tid" data-v="${esc(i)}" class="${w.tid===i?'on':''}">${esc(i)}</button>`).join('')}</div>`:''}`}
    <p class="tgsum">${w.any?'✅ ระบบจะเขียนให้ <b>มิเตอร์ตัวที่คุณแตะ</b> แล้วแสดงเลขมิเตอร์ที่เขียนให้ดูทันที — ตรวจเลขให้ตรงกับป้ายมิเตอร์':String(w.tid||'').trim()?'🔒 ระบบจะเขียนเฉพาะมิเตอร์เลข <b class="mono">'+esc(w.tid)+'</b> เท่านั้น':'⚠ ยังไม่ได้ระบุเลขมิเตอร์'}</p></div>
@@ -909,7 +917,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v;
   if(a==='wrsw'){S.wr[v]=!S.wr[v];save();render()}
   else if(a==='wrset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc'].includes(k))x=+v;if(/Val$/.test(k))x=+v;if(k==='tid'){S.wr.any=false}S.wr[k]=x;if(/Unit$/.test(k)){S.wr[k.replace('Unit','Val')]=x==='h'?1:15}save();render()}
-  else if(a==='wrmode'){S.wr.any=(v==='touch');save();render()}else if(a==='wrgo')wrGo();else if(a==='wrcancel')wrCancel();else if(a==='vfgo')wrVerify();else if(a==='vfcancel'){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}VF={state:'idle',res:null,cmp:null};render()}else if(a==='wrreset'){WR={state:'idle',job:null,res:null};render()}
+  else if(a==='peerreq'){rlPost({v:1,t:'hello',ts:Date.now()}).then(()=>toast('ส่งคำขอรายชื่อไปที่จอคอมแล้ว — รอสักครู่',2800),()=>toast('ส่งคำขอไม่สำเร็จ ตรวจอินเทอร์เน็ต',3200))}else if(a==='wrmode'){S.wr.any=(v==='touch');save();render()}else if(a==='wrgo')wrGo();else if(a==='wrcancel')wrCancel();else if(a==='vfgo')wrVerify();else if(a==='vfcancel'){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}VF={state:'idle',res:null,cmp:null};render()}else if(a==='wrreset'){WR={state:'idle',job:null,res:null};render()}
   else if(a==='wrclr'){S.cfglog=[];save();render()}
   else if(a==='ptuse'){const p=S.plan[+v];if(!p)return;p.off=!p.off;if(S.plan.every(q=>q.off))p.off=false;save();render()}
   else if(a==='ptall'){S.plan.forEach(p=>delete p.off);save();render()}
