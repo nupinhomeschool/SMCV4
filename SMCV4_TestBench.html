@@ -773,6 +773,7 @@ function vRes(A){const v=VD[A.verdict],pts=S.plan;
    <div class="kpi" style="--c:#f59e0b"><small>error เฉลี่ย / สูงสุด</small><b>${sg(A.mean)} / ${sg(A.worst)}</b><em>% (สูงสุดคือค่าที่ห่างศูนย์มากสุด)</em></div></div>
   <div class="card"><h2><em>🧮</em>ตารางผล % error รายมิเตอร์</h2><p class="sub">สีเขียว ≤ 50% ของเกณฑ์ · เหลือง 50–80% · ส้ม 80–100% · แดง เกินเกณฑ์</p>${matrix(A)}</div>
   ${MECH()?'':batCard(A)}
+  ${qrCard(A)}
   ${MECH()?'':`<div class="card"><h2><em>🗂</em>ค่าตั้งของมิเตอร์ (จาก NFC)</h2><p class="sub">ทิศทางใบพัด · UART · โหมดคำนวณ · ช่วงบันทึก · K ที่อ่านได้ตอนทดสอบ</p>${cfgTable(A)}</div>`}
   <div class="grid g2"><div class="card"><h2><em>📈</em>% error เทียบอัตราการไหล</h2><p class="sub">เส้นฟ้า = ผ่าน · เส้นแดง = มีจุดเกินเกณฑ์</p>${pts.length?chartSvg({series:ser}):''}</div>
   <div class="card kx"><h2><em>🔩</em>ค่า K รายจุดทดสอบ</h2><p class="sub">ค่า K ที่ต้องใช้ ณ อัตราไหลที่ทดสอบ — ใช้เป็นข้อมูลปรับ K1–K20</p>${kPtsTable(A)}</div></div>
@@ -909,7 +910,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
-  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v19</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v20</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
    <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
@@ -1310,6 +1311,30 @@ setInterval(()=>{try{if(!IS_MON&&klibSync()&&RL.role==='recv')klibPush()}catch(e
 if(!S.plan.length&&!Object.keys(S.rd).length)S.plan=buildPlan();
 if(IS_MON){document.body.classList.add('monitor');$('.top').style.display='none';$('main').style.display='none'}
 render();
+
+/* ===== ส่งผลเข้าทะเบียนคุณภาพ (Google Sheet ผ่านแดชบอร์ด) ===== */
+let QR={stage:'test'};
+const qrHost=()=>{try{return window.parent&&window.parent!==window&&typeof window.parent.smcvTrkAdd==='function'?window.parent:null}catch(e){return null}};
+function qrBuild(A){const b=S.batch,q3=+b.q3||q3Std()||0,out=[];
+  const slotOf=f=>{const r=q3?f/q3:0;return r<=.008?0:r<=.02?1:r<=.6?2:3};
+  const d=new Date(),date=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  A.mids.forEach(id=>{const m=S.meters.find(x=>x.id===id)||{},cells=A.M[id].cells,F=[null,null,null,null],sc=[0,0,0,0];
+    cells.forEach((c,i)=>{if(!c||!c.valid)return;const p=S.plan[i];if(!p||p.off)return;const sl=slotOf(p.f),lim=p.lim||(sl<2?b.limLow:b.limHigh)||5,sev=Math.abs(c.err)/lim;
+      if(F[sl]==null||sev>sc[sl]){sc[sl]=sev;F[sl]={flow:p.f,err:+c.err,batch:b.id,pass:!!c.pass}}});
+    const cc=cfgCell(id).r||{},cfg=cc.dir!=null?((cc.dir?'Backward':'Forward')+(cc.logMin?' · log '+cc.logMin+' นาที':'')):'';
+    const ks=(S.pvlog||[]).filter(e=>e.id===id).slice(-1)[0];
+    out.push({id,lot:'L'+String(id).slice(0,6),date,model:b.model==='SJ'?'Single Jet':'Multijet',size:m.size||b.size,rclass:'R'+(b.R||160),tester:b.tester||'',hw:b.hw||'',K:m.k&&m.k.length===20?m.k:null,bench:b.id,kset:ks?ks.ksrc||'':'',cfg,F})});
+  return out}
+function qrCard(A){const h=qrHost(),list=qrBuild(A),n=list.filter(o=>o.F.some(Boolean)).length;
+  const sg=[['trial','🧪 รุ่นทดลอง'],['test','✅ ทดสอบจริง'],['prod','🏭 ผลิตจริง']];
+  return`<div class="card"><h2><em>☁</em>ส่งผลเข้าทะเบียนคุณภาพ (Google Sheet)</h2><p class="sub">บันทึกผลทดสอบ ${n} ตัว (เลือกจุดที่ error เทียบเกณฑ์แย่ที่สุดของแต่ละน้ำ) เข้าทะเบียนเพื่อตรวจสอบย้อนหลัง · Lot = L+เลข ID 6 หลักแรก</p>
+  <div class="seg" style="margin:8px 0">${sg.map(x=>`<button class="${QR.stage===x[0]?'on':''}" data-a="qrstage" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>
+  <button class="btn" data-a="qrpush" ${n&&h?'':'disabled'}>☁ ส่งเข้าทะเบียน (${n} ตัว)</button>
+  <p class="sub" id="qrmsg" style="margin-top:8px">${h?'':'⚠ เปิดผ่านหน้าแดชบอร์ด (index.html) เพื่อเชื่อมต่อทะเบียน'}${n?'':' · ยังไม่มีผลทดสอบที่ใช้ได้'}</p></div>`}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a^="qr"]');if(!t)return;const a=t.dataset.a;
+  if(a==='qrstage'){QR.stage=t.dataset.v;render();return}
+  if(a==='qrpush'){const h=qrHost();if(!h)return;const A=agg(),list=qrBuild(A).filter(o=>o.F.some(Boolean));
+    if(!list.length)return;try{const r=h.smcvTrkAdd(list,QR.stage);const m=document.getElementById('qrmsg');if(m)m.textContent='✔ ส่งแล้ว: เพิ่ม '+r.add+' · อัปเดต '+r.upd+' ตัว ('+QR.stage+') — ดูได้ที่แท็บ คุณภาพ & ตรวจสอบย้อนหลัง';try{toast&&toast('ส่งเข้าทะเบียนแล้ว')}catch(_){}}catch(err){alert('ส่งไม่สำเร็จ: '+(err.message||err))}}});
 </script>
 </body>
 </html>
