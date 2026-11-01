@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v20"
+                  private const val VERSION = "v21"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -1201,7 +1201,7 @@ jobs:
                           val hx = p.getString("h")
                           if (hx.isEmpty() || hx.length % 2 != 0 || !Regex("^[0-9A-Fa-f]+$").matches(hx)) return "ข้อมูลเขียนไม่ถูกต้องที่ตำแหน่ง $a"
                           val n = hx.length / 2
-                          val ok = (a >= 78 && a + n <= 84) || (a >= 84 && a + n <= 164) || (a >= 164 && a + n <= 171)
+                          val ok = (a >= 72 && a + n <= 77) || (a >= 78 && a + n <= 84) || (a >= 84 && a + n <= 164) || (a >= 164 && a + n <= 171)
                           if (!ok) return "ไม่อนุญาตให้เขียนตำแหน่ง $a (+$n ไบต์)"
                       }
                       val c = j.optString("cmd", "")
@@ -1299,6 +1299,8 @@ jobs:
                                   .put("at", SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.US).format(Date()))
                                   .put("after", summary(orig, base))
                           } else {
+                          if (j.optBoolean("guardId", false) && id != "00000000" && id.uppercase() != "FFFFFFFF")
+                              throw WriteMismatch("มิเตอร์ตัวนี้มี ID อยู่แล้ว ($id) — ไม่เขียนทับ (ปิด “กันเขียนทับ” ถ้าต้องการเขียนทับ)")
                           val img = orig.copyOf()
                           val ps = j.getJSONArray("patches")
                           for (i in 0 until ps.length()) {
@@ -1324,7 +1326,8 @@ jobs:
                           }
                           val back = readBlocks(v, b0, nb, bs, info.extended) ?: error("อ่านกลับเพื่อตรวจสอบไม่สำเร็จ")
                           if (!back.contentEquals(img)) error("ตรวจสอบหลังเขียนไม่ตรง — ลองเขียนใหม่")
-                          res.put("ok", true).put("id", id).put("uid", v.tag.id.toHex()).put("label", j.optString("label", ""))
+                          res.put("ok", true).put("id", back.copyOfRange(72 - base, 76 - base).toHex()).put("prevId", id).put("size", back[76 - base].toInt() and 0xFF)
+                              .put("uid", v.tag.id.toHex()).put("label", j.optString("label", ""))
                               .put("wrote", wrote).put("cmd", cmd)
                               .put("time", if (j.optBoolean("time", false)) SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US).format(now.time) else "")
                               .put("before", summary(orig, base)).put("after", summary(back, base))
