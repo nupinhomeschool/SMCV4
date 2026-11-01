@@ -815,7 +815,7 @@ function wrCompare(r,last){
   const items=[];const add=(a,n,label,fmt)=>{const act=seg(a,n);if(act.length!==n*2)return;const e=exp(a,n);items.push({a,n,label,act,e,ok:e==null?null:e===act,txt:fmt(act)})};
   const iv=h=>parseInt(h,16);
   add(72,4,'Meter ID',h=>h);
-  if(last&&last.time)add(78,6,'เวลา/วันที่ในมิเตอร์',h=>{const b=h.match(/../g);return b[0]+':'+b[1]+' · '+b[2]+'/'+b[3]+'/'+b[4]+b[5]});
+  if(last&&(last.time||last.adhoc))add(78,6,'เวลา/วันที่ในมิเตอร์',h=>{const b=h.match(/../g);return b[0]+':'+b[1]+' · '+b[2]+'/'+b[3]+'/'+b[4]+b[5]});
   add(84,80,'ค่าคงที่ K1–K20',h=>{const k=[];for(let i=0;i<20;i++){const t=h.substr(i*8,8);k.push(/^\d{8}$/.test(t)?parseInt(t,10):null)}return k[0]==null?h.slice(0,16)+'…':'K1 '+fx(k[0])+' … K10 '+fx(k[9])+' … K20 '+fx(k[19])});
   add(164,2,'ช่วงเก็บลง NFC',h=>fmtMin(iv(h)));add(166,2,'ช่วงบันทึกในมิเตอร์',h=>fmtMin(iv(h)));
   add(168,1,'ทิศทางใบพัด',h=>dirW(iv(h)));add(169,1,'Log UART',h=>uartW(iv(h)));add(170,1,'โหมดคำนวณ',h=>calcW(iv(h)));
@@ -826,20 +826,27 @@ function wrCompare(r,last){
 function hexDump(c){const hx=c.hx,base=c.base;let o='';const bad=new Set(c.items.filter(x=>x.ok===false).flatMap(x=>Array.from({length:x.n},(_,i)=>x.a+i))),hl=new Set(c.items.filter(x=>x.ok===true).flatMap(x=>Array.from({length:x.n},(_,i)=>x.a+i)));
   for(let a=base;a<base+hx.length/2;a+=4){let l='<span class="ad">'+String(a).padStart(3,' ')+' </span>';for(let i=0;i<4;i++){const ad=a+i,b=hx.substr((ad-base)*2,2);l+=(bad.has(ad)?'<span class="bd">'+b+'</span>':hl.has(ad)?'<span class="hl">'+b+'</span>':b)+' '}o+=l+'\n'}
   return'<pre class="hexd">'+o+'</pre>'}
-function wrVerify(){const last=S.wrLast;if(!last){toast('ยังไม่มีงานเขียนให้ตรวจ');return}const br=wrBridge();
+function vfLast(){return S.wrLast||{id:S.wr.any?'':String(S.wr.tid||'').trim(),patches:[],cmd:'',time:'',t:0,adhoc:true}}
+function wrVerify(){const last=vfLast();const br=wrBridge();
   if(!br){toast('ต้องเปิดหน้านี้จากแอป SMCV4 Reader บนมือถือ (เวอร์ชัน v20)',4200);return}
   let r;try{r=String(br.queueWrite(JSON.stringify({v:1,op:'verify',id:last.id||'',label:'อ่านกลับตรวจสอบ'})))}catch(e){r='ERR:'+e.message}
-  if(r.indexOf('OK')!==0){toast('ส่งงานอ่านกลับให้แอปไม่สำเร็จ: '+r,4800);return}
+  if(r.indexOf('OK')!==0){toast(/รูปแบบ|ไม่มีรายการ/.test(r)?'แอปมือถือเป็นเวอร์ชันเก่า (ต้อง v20 ขึ้นไป) — ต้อง Build และติดตั้งแอปใหม่ก่อน จึงจะอ่านกลับได้':'ส่งงานอ่านกลับให้แอปไม่สำเร็จ: '+r,6000);return}
   VF={state:'wait',res:null,cmp:null};render()}
-window.benchVerifyResult=function(r){if(!r)return;const last=S.wrLast||{},id=r.id||last.id||'';
+window.benchVerifyResult=function(r){if(!r)return;const last=vfLast(),id=r.id||last.id||'';
   if(!r.ok){VF={state:'err',res:r,cmp:null};render();toast('✗ อ่านกลับไม่สำเร็จ: '+(r.error||''),4800);beep('bad');return}
   const c=wrCompare(r,last);VF={state:'done',res:r,cmp:c};
   S.cfglog=S.cfglog||[];S.cfglog.unshift({t:Date.now(),id,ok:c.bad===0,label:'ตรวจอ่านกลับ · ตรง '+c.good+' รายการ'+(c.bad?' · ไม่ตรง '+c.bad:'')+' · คำสั่ง '+(c.cmdSt==='cleared'?'ถูกเคลียร์แล้ว':c.cmdSt==='pending'?'รอทัช':'ไม่ทราบ'),err:'',cmd:c.cmdA,time:r.at||''});S.cfglog=S.cfglog.slice(0,100);
   if(id){S.cfg=S.cfg||{};S.cfg[id]=Object.assign({},S.cfg[id]||{},r.after||{},{t:Date.now()})}
   if(c.cmdSt==='cleared'&&last){last.done=true}
   save();render();toast(c.bad?'⚠ พบค่าที่ไม่ตรง '+c.bad+' รายการ':'✔ ค่าที่เขียนตรงทุกรายการ',4200);beep(c.bad?'bad':'ok')};
-function vfCard(){const last=S.wrLast;if(!last)return'';const c=VF.cmp,st=VF.state;
+function vfCard(){const last=vfLast(),ad=!!last.adhoc;const c=VF.cmp,st=VF.state;
   const wrote=1,vfd=st==='done',touched=vfd&&c.cmdSt==='cleared';
+  if(ad){let b2;if(st==='wait')b2=`<div class="wst"><div class="nfcring">🔍</div><div><h3>รอแตะมิเตอร์…</h3><p>แตะมือถือที่มิเตอร์ ถือนิ่งจนแอปแจ้งผล (อ่านอย่างเดียว ไม่เขียน)</p><button class="btn bad" data-a="vfcancel">ยกเลิก</button></div></div>`;
+    else if(st==='err')b2=`<div class="vbn bad"><div class="vi">✗</div><div><h3>อ่านไม่สำเร็จ</h3><p>${esc((VF.res&&VF.res.error)||'')}</p></div></div><button class="btn p" data-a="vfgo">ลองอีกครั้ง</button>`;
+    else if(vfd){const rows=c.items.map(x=>`<tr><td class="mono"><b>${x.a}${x.n>1?'–'+(x.a+x.n-1):''}</b></td><td class="l">${x.label}</td><td class="l">${esc(x.txt)}</td></tr>`).join('')+`<tr><td class="mono"><b>68–71</b></td><td class="l">คำสั่ง</td><td class="l mono">${esc(c.cmdA)} ${c.cmdA==='00000000'?'· ว่าง (ไม่มีคำสั่งค้าง)':'· มีคำสั่งรอทัชสวิตช์'}</td></tr>`;
+      b2=`<div class="vbn fin"><div class="vi">📖</div><div><h3>ค่าที่อยู่ในมิเตอร์ตอนนี้</h3><p>อ่านเมื่อ ${esc(VF.res.at||'')}</p></div></div><div class="tw vcmp"><table><thead><tr><th>ตำแหน่ง</th><th class="l">รายการ</th><th class="l">ค่าที่อ่านได้</th></tr></thead><tbody>${rows}</tbody></table></div><details style="margin-top:8px"><summary class="hint" style="cursor:pointer">ดูข้อมูลดิบ (Hex) 68–171</summary>${hexDump(c)}</details><div style="margin-top:10px"><button class="btn p" data-a="vfgo">🔁 อ่านอีกครั้ง</button></div>`}
+    else b2=`<p class="hint" style="margin:0 0 10px">ดูว่าตอนนี้ในมิเตอร์เก็บค่าอะไรอยู่ (ช่วงบันทึก · ทิศทาง · K · เวลา · คำสั่งค้าง) โดยไม่เขียนอะไรเลย</p><button class="btn p wbig" data-a="vfgo">📖 แตะมือถือที่มิเตอร์ เพื่ออ่านค่าปัจจุบัน</button>`;
+    return`<div class="card" style="margin-top:14px"><h2><em>🔍</em>อ่านค่าที่อยู่ในมิเตอร์ตอนนี้</h2>${b2}</div>`}
   const step=(n,t,d,cls)=>`<div class="${cls}"><i>${cls==='done'?'✓':n}</i><b>${t}</b>${d}</div>`;
   const steps=`<div class="stp">${step(1,'เขียนค่า','สำเร็จ · '+esc(last.time||''),'done')}${step(2,'อ่านกลับตรวจ',vfd?(c.bad?'พบไม่ตรง '+c.bad:'ตรง '+c.good+' รายการ'):'แตะมือถือที่มิเตอร์',vfd&&!c.bad?'done':'now')}${step(3,'กดทัชสวิตช์ 6 วิ',touched?'มิเตอร์รับคำสั่งแล้ว':'ที่ตัวมิเตอร์',touched?'done':(vfd&&!c.bad?'now':''))}${step(4,'อ่านยืนยันอีกครั้ง',touched?'เสร็จสมบูรณ์':'ดูว่า 68–71 = 00000000',touched?'done':'')}</div>`;
   let body='';
@@ -890,7 +897,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
-  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC</h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v17</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
    <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
