@@ -189,6 +189,14 @@ tr.ptoff td{opacity:.45}tr.ptoff td:first-child{opacity:1}
 .nfcring.okr{border-color:#10b981;color:#10b981;animation:none;font-weight:700}.nfcring.errr{border-color:#e11d48;color:#e11d48;animation:none;font-weight:700}
 @keyframes wpulse{0%{box-shadow:0 0 0 0 #14b8a688}100%{box-shadow:0 0 0 26px #14b8a600}}
 .after{background:#fff7e0;border:1px solid #f6d77a;border-radius:12px;padding:10px 12px;margin:0 0 10px;color:#6b4e00;line-height:1.55}
+.vfh{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.stp{display:flex;gap:0;margin:14px 0 6px;flex-wrap:wrap}.stp>div{flex:1;min-width:150px;position:relative;padding:10px 12px 10px 46px;border-radius:14px;background:#f1f5f9;margin:0 6px 6px 0;color:#64748b;font-size:.88rem;line-height:1.35}
+.stp>div b{display:block;color:#334155}.stp>div i{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:#cbd5e1;color:#fff;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:.85rem}
+.stp>div.done{background:#ecfdf5;color:#047857}.stp>div.done i{background:#10b981}.stp>div.now{background:#e0f2fe;color:#0369a1;box-shadow:0 0 0 2px #38bdf8 inset}.stp>div.now i{background:#0ea5e9;animation:wpulse 1.5s infinite}
+.vbn{display:flex;gap:14px;align-items:center;border-radius:16px;padding:14px 16px;margin:12px 0;border:1px solid}.vbn .vi{font-size:2rem;flex:none}.vbn h3{margin:0 0 2px}.vbn p{margin:0;font-size:.92rem}
+.vbn.ok{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}.vbn.wait{background:#fffbeb;border-color:#fcd34d;color:#78350f}.vbn.bad{background:#fff1f2;border-color:#fda4af;color:#9f1239}.vbn.fin{background:#eff6ff;border-color:#93c5fd;color:#1e3a8a}
+.vcmp td.exp{color:#64748b}.vcmp tr.vbad td{background:#fff1f2}.vcmp .mono{font-size:.85rem}
+.hexd{font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;background:#0f172a;color:#cbd5e1;border-radius:12px;padding:10px 12px;overflow:auto;margin-top:8px}.hexd .hl{color:#34d399;font-weight:700}.hexd .ad{color:#64748b}.hexd .bd{color:#fb7185;font-weight:700}
 .btn.wbig{font-size:1.1rem;padding:14px 22px;border-radius:16px}
 .keybar .kbr{display:grid;grid-template-columns:1fr 1.2fr 1.4fr auto;gap:10px;align-items:end}.keybar .fld{margin:0}.keybar input,.keybar select{width:100%}
 #kbVal{font:700 1.4rem ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px}
@@ -499,7 +507,7 @@ let fillK=true;
 
 function render(){
   if(S.plan.length&&S.plan[S.cur]&&S.plan[S.cur].off){const n=nextOn(S.cur),pv=prevOn(S.cur);S.cur=n!=null?n:pv!=null?pv:S.cur}
-  if(!S.wr)S.wr=defWr();if(!S.cfglog)S.cfglog=[];if(!S.cfg)S.cfg={};
+  S.wr=Object.assign(defWr(),S.wr||{});if(!S.cfglog)S.cfglog=[];if(!S.cfg)S.cfg={};
   if(!S.batch.mtype)S.batch.mtype='nfc';if(S.batch.mfrac==null)S.batch.mfrac=3;
   if(IS_MON){renderMon();return}
   const kb={id:($('#kbId')||{}).value,val:($('#kbVal')||{}).value,f:document.activeElement&&/^kb(Id|Val)$/.test(document.activeElement.id)?document.activeElement.id:null};
@@ -747,7 +755,7 @@ function vRes(A){const v=VD[A.verdict],pts=S.plan;
 
 /* ---------- ⑥ เขียนค่าลงมิเตอร์ผ่าน NFC (ทำงานเมื่อเปิดจากแอป SMCV4 Reader บนมือถือ) ---------- */
 const WR_CMD='AAA10000';
-const defWr=()=>({tid:'',any:false,timeOn:true,kOn:false,kSrc:'std',kPaste:'',dirOn:false,dir:0,uartOn:false,uart:0,calcOn:false,calc:1,logOn:false,logUnit:'min',logVal:15,cmdOn:true});
+const defWr=()=>({tid:'',any:false,timeOn:true,kOn:false,kSrc:'std',kPaste:'',dirOn:false,dir:0,uartOn:false,uart:0,calcOn:false,calc:1,logOn:false,logUnit:'min',logVal:15,nfcOn:false,nfcUnit:'min',nfcVal:15,cmdOn:true});
 let WR={state:'idle',job:null,res:null};
 const hex2=n=>(n&255).toString(16).toUpperCase().padStart(2,'0'),hex4=n=>(n&65535).toString(16).toUpperCase().padStart(4,'0');
 const fmtMin=m=>m==null||!isFinite(m)?'—':m<60?m+' นาที':m%60===0?(m/60)+' ชั่วโมง':Math.floor(m/60)+' ชม. '+(m%60)+' นาที';
@@ -756,7 +764,7 @@ const uartW=v=>v==null?'—':v===0?'ปิด':v===1?'เปิด':'0x'+hex2(v)
 const calcW=v=>v==null?'—':v===0?'Cal > FW':v===1?'Cal FW or BR':'0x'+hex2(v);
 const nowTxt=()=>{const d=new Date();return p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes())};
 function wrBridge(){for(const w of[window,parent,top]){try{if(w&&w.NfcBridge&&typeof w.NfcBridge.queueWrite!=='undefined')return w.NfcBridge}catch(e){}}return null}
-function wrLogMin(){const w=S.wr,v=Math.round(+w.logVal||0);return w.logUnit==='h'?v*60:v}
+function wrLogMin(p){p=p||'log';const w=S.wr,v=Math.round(+w[p+'Val']||0);return w[p+'Unit']==='h'?v*60:v}
 function parseKText(t){t=String(t||'').trim();if(!t)return null;const d=t.replace(/\s+/g,'');
   if(/^\d{160}$/.test(d)){const a=[];for(let i=0;i<20;i++)a.push(parseInt(d.substr(i*8,8),10));return a}
   const tk=t.split(/[\s,;]+/).filter(Boolean);if(tk.length===20&&tk.every(x=>/^\d+$/.test(x)))return tk.map(x=>parseInt(x,10));return null}
@@ -772,21 +780,72 @@ function wrBuild(){const w=S.wr,errs=[],rows=[],patches=[];let any=false;
   if(w.uartOn){any=true;patches.push({a:169,h:hex2(w.uart)});rows.push(['169',hex2(w.uart),'Log UART = '+uartW(+w.uart)])}
   if(w.calcOn){any=true;patches.push({a:170,h:hex2(w.calc)});rows.push(['170',hex2(w.calc),'โหมดคำนวณ = '+calcW(+w.calc)])}
   if(w.logOn){any=true;const m=wrLogMin();if(!(m>=1&&m<=65535))errs.push('ช่วงเวลาบันทึกต้องอยู่ระหว่าง 1 นาที ถึง 65,535 นาที');else{patches.push({a:166,h:hex4(m)});rows.push(['166–167',hex4(m),'ช่วงเวลาบันทึกลง EEPROM = '+fmtMin(m)])}}
+  if(w.nfcOn){any=true;const m=wrLogMin('nfc');if(!(m>=1&&m<=65535))errs.push('ช่วงเวลาเก็บลง NFC ต้องอยู่ระหว่าง 1 นาที ถึง 65,535 นาที');else{patches.push({a:164,h:hex4(m)});rows.push(['164–165',hex4(m),'ช่วงเวลาเก็บลง NFC = '+fmtMin(m)])}}
   const timeOn=!!(w.timeOn||any);
   if(timeOn){any=true;rows.unshift(['78–83','BCD · hh mm dd MM yyyy','ตั้งเวลา/วันที่ให้เท่าเวลาปัจจุบันของมือถือ ('+nowTxt()+')'])}
   if(!any)errs.push('เลือกรายการที่จะเขียนอย่างน้อย 1 อย่าง');
   const cmd=w.cmdOn?WR_CMD:'';if(cmd)rows.push(['68–71',cmd,'คำสั่งให้มิเตอร์โหลดค่า — เขียนเป็นลำดับสุดท้าย']);
   return{errs,rows,job:{v:1,id:w.any?'':String(w.tid).trim(),time:timeOn,patches,cmd,label:rows.filter(r=>r[0]!=='68–71').map(r=>r[2]).join(' · ')}}}
 function wrGo(){const b=wrBuild();if(b.errs.length){toast(b.errs[0],3800);return}const br=wrBridge();
-  if(!br){toast('ต้องเปิดหน้านี้จากแอป SMCV4 Reader บนมือถือ (เวอร์ชัน v18)',4200);return}
+  if(!br){toast('ต้องเปิดหน้านี้จากแอป SMCV4 Reader บนมือถือ (เวอร์ชัน v20)',4200);return}
   let r;try{r=String(br.queueWrite(JSON.stringify(b.job)))}catch(e){r='ERR:'+e.message}
   if(r.indexOf('OK')!==0){toast('ส่งงานเขียนให้แอปไม่สำเร็จ: '+r,4800);return}
   WR={state:'wait',job:b.job,res:null};render()}
-function wrCancel(){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}WR={state:'idle',job:null,res:null};render()}
+function wrCancel(){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}WR={state:'idle',job:null,res:null};VF={state:'idle',res:null,cmp:null};render()}
 window.benchWriteResult=function(r){if(!r)return;const job=WR.job||{},id=r.id||job.id||'';WR.state=r.ok?'ok':'err';WR.res=r;
   S.cfglog=S.cfglog||[];S.cfglog.unshift({t:Date.now(),id,ok:!!r.ok,label:r.label||job.label||'',err:r.error||'',cmd:r.cmd||'',time:r.time||''});S.cfglog=S.cfglog.slice(0,100);
-  if(r.ok&&id){S.cfg=S.cfg||{};S.cfg[id]=Object.assign({},S.cfg[id]||{},r.after||{},{t:Date.now()})}
-  save();render();toast(r.ok?'✔ เขียนค่าลงมิเตอร์ '+id+' สำเร็จ — ต่อไปกดทัชสวิตช์ที่มิเตอร์ค้าง 6 วินาที':'✗ เขียนไม่สำเร็จ: '+(r.error||''),5200);beep(r.ok?'ok':'bad')};
+  if(r.ok&&id){S.cfg=S.cfg||{};S.cfg[id]=Object.assign({},S.cfg[id]||{},r.after||{},{t:Date.now()});S.wrLast={id,t:Date.now(),patches:job.patches||[],cmd:r.cmd||job.cmd||'',time:r.time||'',label:r.label||job.label||''};VF={state:'idle',res:null,cmp:null}}
+  save();render();toast(r.ok?'✔ เขียนค่าลงมิเตอร์ '+id+' สำเร็จ — ต่อไป: แตะอ่านกลับเพื่อตรวจ แล้วค่อยกดทัชสวิตช์ 6 วินาที':'✗ เขียนไม่สำเร็จ: '+(r.error||''),5200);beep(r.ok?'ok':'bad')};
+let VF={state:'idle',res:null,cmp:null};
+function wrBcd(h){return /^\d+$/.test(h)?h:null}
+function wrCompare(r,last){
+  const hx=String(r.dump||'').replace(/\s+/g,'').toUpperCase(),base=r.base||68,seg=(a,n)=>hx.substr((a-base)*2,n*2);
+  const pat=(last&&last.patches)||[],exp=(a,n)=>{let o='';for(let i=0;i<n;i++){let f=null;for(const p of pat){const off=a+i-p.a;if(off>=0&&off<p.h.length/2){f=p.h.substr(off*2,2).toUpperCase();break}}if(f==null)return null;o+=f}return o};
+  const items=[];const add=(a,n,label,fmt)=>{const act=seg(a,n);if(act.length!==n*2)return;const e=exp(a,n);items.push({a,n,label,act,e,ok:e==null?null:e===act,txt:fmt(act)})};
+  const iv=h=>parseInt(h,16);
+  add(72,4,'Meter ID',h=>h);
+  if(last&&last.time)add(78,6,'เวลา/วันที่ในมิเตอร์',h=>{const b=h.match(/../g);return b[0]+':'+b[1]+' · '+b[2]+'/'+b[3]+'/'+b[4]+b[5]});
+  add(84,80,'ค่าคงที่ K1–K20',h=>{const k=[];for(let i=0;i<20;i++){const t=h.substr(i*8,8);k.push(/^\d{8}$/.test(t)?parseInt(t,10):null)}return k[0]==null?h.slice(0,16)+'…':'K1 '+fx(k[0])+' … K10 '+fx(k[9])+' … K20 '+fx(k[19])});
+  add(164,2,'ช่วงเก็บลง NFC',h=>fmtMin(iv(h)));add(166,2,'ช่วงบันทึกในมิเตอร์',h=>fmtMin(iv(h)));
+  add(168,1,'ทิศทางใบพัด',h=>dirW(iv(h)));add(169,1,'Log UART',h=>uartW(iv(h)));add(170,1,'โหมดคำนวณ',h=>calcW(iv(h)));
+  const wanted=items.filter(x=>x.ok!=null),bad=wanted.filter(x=>!x.ok).length;
+  const cmdA=seg(68,4),cmdE=((last&&last.cmd)||'').toUpperCase();
+  const cmdSt=cmdA==='00000000'?'cleared':(cmdE&&cmdA===cmdE)?'pending':'other';
+  return{items,bad,good:wanted.length-bad,cmdA,cmdE,cmdSt,hx,base}}
+function hexDump(c){const hx=c.hx,base=c.base;let o='';const bad=new Set(c.items.filter(x=>x.ok===false).flatMap(x=>Array.from({length:x.n},(_,i)=>x.a+i))),hl=new Set(c.items.filter(x=>x.ok===true).flatMap(x=>Array.from({length:x.n},(_,i)=>x.a+i)));
+  for(let a=base;a<base+hx.length/2;a+=4){let l='<span class="ad">'+String(a).padStart(3,' ')+' </span>';for(let i=0;i<4;i++){const ad=a+i,b=hx.substr((ad-base)*2,2);l+=(bad.has(ad)?'<span class="bd">'+b+'</span>':hl.has(ad)?'<span class="hl">'+b+'</span>':b)+' '}o+=l+'\n'}
+  return'<pre class="hexd">'+o+'</pre>'}
+function wrVerify(){const last=S.wrLast;if(!last){toast('ยังไม่มีงานเขียนให้ตรวจ');return}const br=wrBridge();
+  if(!br){toast('ต้องเปิดหน้านี้จากแอป SMCV4 Reader บนมือถือ (เวอร์ชัน v20)',4200);return}
+  let r;try{r=String(br.queueWrite(JSON.stringify({v:1,op:'verify',id:last.id||'',label:'อ่านกลับตรวจสอบ'})))}catch(e){r='ERR:'+e.message}
+  if(r.indexOf('OK')!==0){toast('ส่งงานอ่านกลับให้แอปไม่สำเร็จ: '+r,4800);return}
+  VF={state:'wait',res:null,cmp:null};render()}
+window.benchVerifyResult=function(r){if(!r)return;const last=S.wrLast||{},id=r.id||last.id||'';
+  if(!r.ok){VF={state:'err',res:r,cmp:null};render();toast('✗ อ่านกลับไม่สำเร็จ: '+(r.error||''),4800);beep('bad');return}
+  const c=wrCompare(r,last);VF={state:'done',res:r,cmp:c};
+  S.cfglog=S.cfglog||[];S.cfglog.unshift({t:Date.now(),id,ok:c.bad===0,label:'ตรวจอ่านกลับ · ตรง '+c.good+' รายการ'+(c.bad?' · ไม่ตรง '+c.bad:'')+' · คำสั่ง '+(c.cmdSt==='cleared'?'ถูกเคลียร์แล้ว':c.cmdSt==='pending'?'รอทัช':'ไม่ทราบ'),err:'',cmd:c.cmdA,time:r.at||''});S.cfglog=S.cfglog.slice(0,100);
+  if(id){S.cfg=S.cfg||{};S.cfg[id]=Object.assign({},S.cfg[id]||{},r.after||{},{t:Date.now()})}
+  if(c.cmdSt==='cleared'&&last){last.done=true}
+  save();render();toast(c.bad?'⚠ พบค่าที่ไม่ตรง '+c.bad+' รายการ':'✔ ค่าที่เขียนตรงทุกรายการ',4200);beep(c.bad?'bad':'ok')};
+function vfCard(){const last=S.wrLast;if(!last)return'';const c=VF.cmp,st=VF.state;
+  const wrote=1,vfd=st==='done',touched=vfd&&c.cmdSt==='cleared';
+  const step=(n,t,d,cls)=>`<div class="${cls}"><i>${cls==='done'?'✓':n}</i><b>${t}</b>${d}</div>`;
+  const steps=`<div class="stp">${step(1,'เขียนค่า','สำเร็จ · '+esc(last.time||''),'done')}${step(2,'อ่านกลับตรวจ',vfd?(c.bad?'พบไม่ตรง '+c.bad:'ตรง '+c.good+' รายการ'):'แตะมือถือที่มิเตอร์',vfd&&!c.bad?'done':'now')}${step(3,'กดทัชสวิตช์ 6 วิ',touched?'มิเตอร์รับคำสั่งแล้ว':'ที่ตัวมิเตอร์',touched?'done':(vfd&&!c.bad?'now':''))}${step(4,'อ่านยืนยันอีกครั้ง',touched?'เสร็จสมบูรณ์':'ดูว่า 68–71 = 00000000',touched?'done':'')}</div>`;
+  let body='';
+  if(st==='wait')body=`<div class="wst"><div class="nfcring">🔍</div><div><h3>รอแตะมิเตอร์เพื่ออ่านกลับ…</h3><p>${last.id?'ต้องเป็นมิเตอร์ <b class="mono">'+esc(last.id)+'</b>':'ไม่ตรวจ ID'} · แตะมือถือที่มิเตอร์ ถือนิ่งจนแอปแจ้งผล (ไม่มีการเขียน เป็นการอ่านอย่างเดียว)</p><button class="btn bad" data-a="vfcancel">ยกเลิก</button></div></div>`;
+  else if(st==='err')body=`<div class="vbn bad"><div class="vi">✗</div><div><h3>อ่านกลับไม่สำเร็จ</h3><p>${esc((VF.res&&VF.res.error)||'')}</p></div></div><button class="btn p" data-a="vfgo">ลองอ่านกลับอีกครั้ง</button>`;
+  else if(vfd){
+    const ban=c.bad?`<div class="vbn bad"><div class="vi">⚠</div><div><h3>พบค่าที่ไม่ตรงกับที่เขียน ${c.bad} รายการ</h3><p>ดูแถวสีแดงด้านล่าง · อย่าเพิ่งกดทัชสวิตช์ — เขียนใหม่แล้วตรวจซ้ำ</p></div></div>`
+     :c.cmdSt==='cleared'?`<div class="vbn fin"><div class="vi">🎉</div><div><h3>มิเตอร์รับคำสั่งแล้ว — เสร็จสมบูรณ์</h3><p>ตำแหน่ง 68–71 ถูกเคลียร์เป็น 00000000 โดยมิเตอร์ · ค่าในมิเตอร์ตรงกับที่ตั้งไว้ ${c.good} รายการ</p></div></div>`
+     :c.cmdSt==='pending'?`<div class="vbn ok"><div class="vi">✅</div><div><h3>ค่าที่เขียนตรงทุกรายการ (${c.good}/${c.good})</h3><p>คำสั่ง <span class="bytep">${esc(c.cmdA)}</span> ยังรออยู่ที่ 68–71 → <b>ไปกดทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที</b> แล้วกลับมาแตะอ่านยืนยันอีกครั้ง</p></div></div>`
+     :`<div class="vbn wait"><div class="vi">❔</div><div><h3>ค่าตรงตามที่เขียน แต่คำสั่ง 68–71 = ${esc(c.cmdA)}</h3><p>ไม่ใช่ค่าที่เขียนไว้ (${esc(c.cmdE||'ไม่ได้เขียนคำสั่ง')}) และไม่ใช่ 00000000 — ตรวจสอบเฟิร์มแวร์/ลองเขียนใหม่</p></div></div>`;
+    const rows=c.items.map(x=>`<tr class="${x.ok===false?'vbad':''}"><td class="mono"><b>${x.a}${x.n>1?'–'+(x.a+x.n-1):''}</b></td><td class="l">${x.label}</td><td class="l">${esc(x.txt)}</td><td class="mono exp">${x.e==null?'—':x.n>8?'80 ไบต์':esc(x.e)}</td><td>${x.ok==null?'<span class="pill mut">ไม่ได้แก้</span>':x.ok?'<span class="pill ok">ตรง ✓</span>':'<span class="pill bad">ไม่ตรง ✗</span>'}</td></tr>`).join('')
+     +`<tr><td class="mono"><b>68–71</b></td><td class="l">คำสั่ง</td><td class="l mono">${esc(c.cmdA)}</td><td class="mono exp">${esc(c.cmdE||'—')}</td><td>${c.cmdSt==='cleared'?'<span class="pill ok">เคลียร์แล้ว ✓</span>':c.cmdSt==='pending'?'<span class="pill warn">รอทัช ⏳</span>':'<span class="pill bad">ผิดปกติ</span>'}</td></tr>`;
+    body=`${ban}<div class="tw vcmp"><table><thead><tr><th>ตำแหน่ง</th><th class="l">รายการ</th><th class="l">ค่าที่อ่านได้จากมิเตอร์</th><th>ค่าที่เขียน</th><th>ผล</th></tr></thead><tbody>${rows}</tbody></table></div>
+     <details style="margin-top:8px"><summary class="hint" style="cursor:pointer">ดูข้อมูลดิบ (Hex) 68–171 · อ่านเมื่อ ${esc(VF.res.at||'')}</summary>${hexDump(c)}</details>
+     <div style="margin-top:10px"><button class="btn p" data-a="vfgo">🔁 อ่านกลับอีกครั้ง</button></div>`}
+  else body=`<p class="hint" style="margin:0 0 10px">เขียนเสร็จแล้ว — แตะมือถือที่มิเตอร์อีกครั้ง เพื่ออ่านค่าที่อยู่ในมิเตอร์จริงมาเทียบกับที่เขียน (<b>ก่อน</b>ไปกดทัชสวิตช์) แล้วค่อยกดทัชสวิตช์ค้าง 6 วินาที</p><button class="btn p wbig" data-a="vfgo">🔍 แตะมือถือที่มิเตอร์ เพื่ออ่านค่าที่เขียนมาตรวจสอบ</button>`;
+  return`<div class="card" style="margin-top:14px"><div class="vfh"><h2 style="margin:0"><em>🔍</em>ตรวจสอบค่าที่เขียน · <span class="mono">${esc(last.id||'')}</span></h2><small class="hint">เขียนเมื่อ ${fdt(last.t)}</small></div>${steps}${body}</div>`}
 window.benchOpenTab=function(t){if(TABS.some(x=>x[0]===t)){TAB=t;render()}};
 function wcard(key,icon,title,sub,body,lock){const w=S.wr,on=lock||!!w[key];
   return`<div class="wc ${on?'on':''}"><div class="wt" data-a="${lock?'':'wrsw'}" data-v="${key}"><span class="wi">${icon}</span><span class="wn"><b>${title}</b><small>${sub}</small></span><span class="sw ${lock?'lock':''}"></span></div>${on&&body?`<div class="wb">${body}</div>`:''}</div>`}
@@ -796,11 +855,11 @@ function cfgCell(id){let r=null;for(let pi=S.plan.length-1;pi>=0&&!r;pi--){const
 function cfgTable(A){if(!A.mids.length)return'<p class="hint">ยังไม่มีมิเตอร์</p>';
   const rows=A.mids.map(id=>{const c=cfgCell(id),r=c.r,k=c.k,w=c.w;
     const cmd=r&&r.cmd!=null?(r.cmd==='00000000'?'<span class="pill ok">ว่าง ✓</span>':'<span class="pill warn" title="รหัส '+esc(r.cmd)+'">รอทัช 6 วิ ⏳</span>'):'—';
-    return`<tr><td class="l mono"><b>${esc(id)}</b></td><td>${dirW(r?r.dir:null)}</td><td>${uartW(r?r.uart:null)}</td><td>${calcW(r?r.calc:null)}</td><td>${r&&r.logmin!=null?fmtMin(r.logmin)+' <small class="mono">('+hex4(r.logmin)+')</small>':'—'}</td><td>${k?fx(k[0])+' … '+fx(k[19]):'—'}</td><td>${cmd}</td><td class="l">${w?fdt(w.t):'—'}</td></tr>`}).join('');
-  return`<div class="tw"><table><thead><tr><th class="l">มิเตอร์</th><th>ทิศทางใบพัด</th><th>Log UART</th><th>โหมดคำนวณ</th><th>ช่วงบันทึก</th><th>K1 … K20</th><th>คำสั่ง 68–71</th><th class="l">เขียนค่าล่าสุด</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">อ่านจาก NFC ตอนทดสอบ (ต้องใช้โหมดแท่นเทสหรืออ่านทั้งหมด) · “คำสั่ง 68–71” ว่าง = มิเตอร์ประมวลผลค่าที่เขียนแล้ว · ⏳ = ยังไม่ได้กดทัชสวิตช์ค้าง 6 วินาที</p>`}
+    return`<tr><td class="l mono"><b>${esc(id)}</b></td><td>${dirW(r?r.dir:null)}</td><td>${uartW(r?r.uart:null)}</td><td>${calcW(r?r.calc:null)}</td><td class="mono">${r&&r.nfcT?esc(r.nfcT.toUpperCase()):'—'}</td><td>${r&&r.logmin!=null?fmtMin(r.logmin)+' <small class="mono">('+hex4(r.logmin)+')</small>':'—'}</td><td>${k?fx(k[0])+' … '+fx(k[19]):'—'}</td><td>${cmd}</td><td class="l">${w?fdt(w.t):'—'}</td></tr>`}).join('');
+  return`<div class="tw"><table><thead><tr><th class="l">มิเตอร์</th><th>ทิศทางใบพัด</th><th>Log UART</th><th>โหมดคำนวณ</th><th>เก็บลง NFC (164–165)</th><th>ช่วงบันทึก (166–167)</th><th>K1 … K20</th><th>คำสั่ง 68–71</th><th class="l">เขียนค่าล่าสุด</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">อ่านจาก NFC ตอนทดสอบ (ต้องใช้โหมดแท่นเทสหรืออ่านทั้งหมด) · “คำสั่ง 68–71” ว่าง = มิเตอร์ประมวลผลค่าที่เขียนแล้ว · ⏳ = ยังไม่ได้กดทัชสวิตช์ค้าง 6 วินาที</p>`}
 function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.id).map(m=>m.id);
-  const logChips=(w.logUnit==='h'?[1,2,3,4,6,8,12,24]:[1,2,3,5,10,15,20,30,45]).map(v=>`<button data-a="wrset" data-k="logVal" data-v="${v}" class="${+w.logVal===v?'on':''}">${v} ${w.logUnit==='h'?'ชม.':'นาที'}</button>`).join('');
-  const lm=wrLogMin();
+  const ivBody=p=>{const u=w[p+'Unit'],val=+w[p+'Val'],mm=wrLogMin(p),chips=(u==='h'?[1,2,3,4,6,8,12,24]:[1,2,3,5,10,15,20,30,45]).map(v=>`<button data-a="wrset" data-k="${p}Val" data-v="${v}" class="${val===v?'on':''}">${v} ${u==='h'?'ชม.':'นาที'}</button>`).join('');
+    return`${wrseg(p+'Unit',[['min','นาที'],['h','ชั่วโมง']])}<div class="chips">${chips}</div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><input type="number" min="1" max="${u==='h'?1092:65535}" data-wr="${p}Val" value="${esc(w[p+'Val'])}" style="width:110px"><span>${u==='h'?'ชั่วโมง':'นาที'}</span><span class="bytep" title="ค่าที่เก็บใน NFC">${mm>=1&&mm<=65535?hex4(mm):'----'}</span><small class="hint">= ${fmtMin(mm)}</small></div>`};
   const kRes=w.kOn?wrKvals():null;
   const kBody=`<div class="seg" style="margin-bottom:8px">${[['std','ชุดมาตรฐานรุ่นนี้'],['rec','แนะนำจากผลทดสอบ'],['paste','วางค่าเอง']].map(o=>`<button data-a="wrset" data-k="kSrc" data-v="${o[0]}" class="${w.kSrc===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>
     ${w.kSrc==='paste'?`<textarea rows="3" data-wr="kPaste" placeholder="วาง K1–K20 (20 ค่า คั่นด้วยเว้นวรรค/บรรทัดใหม่) หรือรหัส BCD 160 หลักจากปุ่ม “คัดลอกค่า K” ในผลสรุป" style="width:100%">${esc(w.kPaste)}</textarea>`:''}
@@ -810,17 +869,18 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    wcard('dirOn','🧭','ทิศทางหมุนใบพัด','Forward = 0 · Backward = 1 (ตำแหน่ง 168)',wrseg('dir',[[0,'➡ Forward (00)'],[1,'⬅ Backward (01)']])),
    wcard('uartOn','📟','Log ผ่าน UART','ปิด = 0 · เปิด = 1 (ตำแหน่ง 169)',wrseg('uart',[[0,'ปิด (00)'],[1,'เปิด (01)']])),
    wcard('calcOn','🧮','โหมดคำนวณ','0 = Cal &gt; FW · 1 = Cal FW or BR (ตำแหน่ง 170)',wrseg('calc',[[0,'Cal &gt; FW (00)'],[1,'Cal FW or BR (01)']])),
-   wcard('logOn','⏱','ช่วงเวลาบันทึกค่าในมิเตอร์','เก็บเป็นเลขฐาน 16 นาที (ตำแหน่ง 166–167)',`${wrseg('logUnit',[['min','นาที'],['h','ชั่วโมง']])}<div class="chips">${logChips}</div><div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><input type="number" min="1" max="${w.logUnit==='h'?1092:65535}" data-wr="logVal" value="${esc(w.logVal)}" style="width:110px"><span>${w.logUnit==='h'?'ชั่วโมง':'นาที'}</span><span class="bytep" title="ค่าที่เก็บใน NFC">${lm>=1&&lm<=65535?hex4(lm):'----'}</span><small class="hint">= ${fmtMin(lm)}</small></div>`),
-   wcard('timeOn','🕒','ตั้งเวลา / วันที่ให้ตรงปัจจุบัน','เขียนเวลามือถือลง 78–83 · เปิดอัตโนมัติเมื่อแก้ค่าอื่น',`<p class="hint" style="margin:0">เวลาที่จะเขียน: <b>${nowTxt()}</b> (ใช้เวลา ณ ขณะแตะมิเตอร์จริง)</p>`,(w.kOn||w.dirOn||w.uartOn||w.calcOn||w.logOn))
+   wcard('logOn','⏱','ช่วงเวลาบันทึกค่าในมิเตอร์ (EEPROM)','เก็บเป็นเลขฐาน 16 นาที · ตำแหน่ง 166–167',ivBody('log')),
+   wcard('nfcOn','🗂','ช่วงเวลาเก็บลง NFC','เลขฐาน 16 นาที (สมมติรูปแบบเดียวกับ 166–167) · ตำแหน่ง 164–165',ivBody('nfc')),
+   wcard('timeOn','🕒','ตั้งเวลา / วันที่ให้ตรงปัจจุบัน','เขียนเวลามือถือลง 78–83 · เปิดอัตโนมัติเมื่อแก้ค่าอื่น',`<p class="hint" style="margin:0">เวลาที่จะเขียน: <b>${nowTxt()}</b> (ใช้เวลา ณ ขณะแตะมิเตอร์จริง)</p>`,(w.kOn||w.dirOn||w.uartOn||w.calcOn||w.logOn||w.nfcOn))
   ].join('');
   const stat=WR.state==='wait'?`<div class="wst"><div class="nfcring">📲</div><div><h3>รอแตะมิเตอร์…</h3><p>${WR.job&&WR.job.id?'ต้องเป็นมิเตอร์ <b class="mono">'+esc(WR.job.id)+'</b> (ระบบตรวจ ID ก่อนเขียน)':'ไม่ตรวจ ID — เขียนให้มิเตอร์ตัวที่แตะ'} · แตะมือถือที่มิเตอร์แล้วถือนิ่งจนแอปแจ้งผล</p><button class="btn bad" data-a="wrcancel">ยกเลิก</button></div></div>`
-   :WR.state==='ok'?`<div class="wst ok"><div class="nfcring okr">✔</div><div><h3>เขียนและตรวจสอบสำเร็จ · ${esc((WR.res&&WR.res.id)||'')}</h3><p>${esc((WR.res&&WR.res.time)||'')} · อ่านกลับตรงกับที่เขียนทุกไบต์</p><div class="after"><b>ขั้นต่อไป:</b> ใช้นิ้วแตะ <b>ทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที</b> — MCU จะดึงค่าจาก NFC คำนวณค่าคงที่ ตั้งเวลา RTC แล้วเคลียร์คำสั่ง 68–71 เป็น <span class="bytep">00000000</span> เอง</div><button class="btn" data-a="wrreset">เขียนมิเตอร์ตัวถัดไป</button></div></div>`
+   :WR.state==='ok'?`<div class="wst ok"><div class="nfcring okr">✔</div><div><h3>เขียนและตรวจสอบสำเร็จ · ${esc((WR.res&&WR.res.id)||'')}</h3><p>${esc((WR.res&&WR.res.time)||'')} · อ่านกลับตรงกับที่เขียนทุกไบต์ · ขั้นต่อไป: เลื่อนลงไปกด “แตะอ่านค่ากลับ” เพื่อตรวจ ก่อนกดทัชสวิตช์</p>${WR.res&&WR.res.after?`<p class="mono" style="font-size:.9rem">อ่านกลับจากมิเตอร์: 164–165 = ${hex4(WR.res.after.nfcMin||0)} · 166–167 = ${hex4(WR.res.after.logMin||0)} (${fmtMin(WR.res.after.logMin)}) · 168/169/170 = ${hex2(WR.res.after.dir)}/${hex2(WR.res.after.uart)}/${hex2(WR.res.after.calc)} · 68–71 = ${esc(WR.res.after.cmd||'')}</p>`:''}<div class="after"><b>ขั้นต่อไป:</b> ใช้นิ้วแตะ <b>ทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที</b> — MCU จะดึงค่าจาก NFC คำนวณค่าคงที่ ตั้งเวลา RTC แล้วเคลียร์คำสั่ง 68–71 เป็น <span class="bytep">00000000</span> เอง</div><button class="btn" data-a="wrreset">เขียนมิเตอร์ตัวถัดไป</button></div></div>`
    :WR.state==='err'?`<div class="wst err"><div class="nfcring errr">✗</div><div><h3>เขียนไม่สำเร็จ</h3><p>${esc((WR.res&&WR.res.error)||'')}</p><button class="btn p" data-a="wrgo">ลองใหม่</button> <button class="btn" data-a="wrreset">ปิด</button></div></div>`
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
   return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC</h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
-   <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>เลือกมิเตอร์ แล้วเปิดสวิตช์ของค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าเข้า RTC/MCU แล้วเคลียร์คำสั่งเอง</div></div></div>
+   <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>เลือกมิเตอร์ แล้วเปิดสวิตช์ของค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>มิเตอร์เป้าหมาย</h2><p class="sub">แอปจะอ่าน Meter ID (72–75) จากมิเตอร์ที่แตะ และเขียนเมื่อตรงกันเท่านั้น กันเขียนผิดตัว</p>
    <div class="fr"><div class="fld"><label>Meter ID</label><input list="wrids" data-wr="tid" value="${esc(w.tid)}" placeholder="เช่น 69050015" ${w.any?'disabled':''}><datalist id="wrids">${ids.map(i=>`<option value="${esc(i)}">`).join('')}</datalist></div>
    <div class="fld"><label>&nbsp;</label><label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-wr="any" ${w.any?'checked':''}> ไม่ตรวจ ID (เขียนให้มิเตอร์ที่แตะ)</label></div></div>
@@ -829,19 +889,19 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
   <div class="card" style="margin-top:14px"><h2><em>📋</em>แผนการเขียน</h2><p class="sub">ข้อมูลที่จะถูกเขียน (ที่เหลือคงค่าเดิมไว้) · อ่านกลับตรวจสอบทุกครั้ง</p>
    <div class="tw"><table><thead><tr><th>ตำแหน่ง</th><th>ค่า</th><th class="l">ความหมาย</th></tr></thead><tbody>${planRows}</tbody></table></div>
    <label class="hint" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" data-wr="cmdOn" ${w.cmdOn?'checked':''}> ใส่คำสั่ง <span class="bytep">AA A1 00 00</span> ที่ 68–71 (ให้มิเตอร์โหลดค่าเมื่อกดทัชสวิตช์ 6 วินาที)</label></div>
-  <div class="card" style="margin-top:14px"><h2><em>📲</em>เขียนลงมิเตอร์</h2>${stat}</div>
+  <div class="card" style="margin-top:14px"><h2><em>📲</em>เขียนลงมิเตอร์</h2>${stat}</div>${vfCard()}
   <div class="card" style="margin-top:14px"><h2><em>🗂</em>ค่าตั้งของมิเตอร์ใน Batch นี้</h2><p class="sub">สถานะล่าสุดที่อ่านจาก NFC ระหว่างทดสอบน้ำ — บันทึกไว้ในรายงานและ Excel</p>${cfgTable(A)}</div>
   <div class="card" style="margin-top:14px"><h2><em>🧾</em>ประวัติการเขียน</h2>${log?`<div class="tw"><table><thead><tr><th>เวลา</th><th>มิเตอร์</th><th class="l">รายการ</th><th>ผล</th></tr></thead><tbody>${log}</tbody></table></div><div style="margin-top:8px"><button class="btn sm" data-a="wrclr">ล้างประวัติ</button></div>`:'<p class="hint">ยังไม่มีการเขียน</p>'}</div>`}
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,v=t.dataset.v;
   if(a==='wrsw'){S.wr[v]=!S.wr[v];save();render()}
-  else if(a==='wrset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc'].includes(k))x=+v;if(k==='logVal')x=+v;if(k==='tid'){S.wr.any=false}S.wr[k]=x;if(k==='logUnit'){S.wr.logVal=x==='h'?1:15}save();render()}
-  else if(a==='wrgo')wrGo();else if(a==='wrcancel')wrCancel();else if(a==='wrreset'){WR={state:'idle',job:null,res:null};render()}
+  else if(a==='wrset'){const k=t.dataset.k;let x=v;if(['dir','uart','calc'].includes(k))x=+v;if(/Val$/.test(k))x=+v;if(k==='tid'){S.wr.any=false}S.wr[k]=x;if(/Unit$/.test(k)){S.wr[k.replace('Unit','Val')]=x==='h'?1:15}save();render()}
+  else if(a==='wrgo')wrGo();else if(a==='wrcancel')wrCancel();else if(a==='vfgo')wrVerify();else if(a==='vfcancel'){const br=wrBridge();try{br&&br.cancelWrite()}catch(e){}VF={state:'idle',res:null,cmp:null};render()}else if(a==='wrreset'){WR={state:'idle',job:null,res:null};render()}
   else if(a==='wrclr'){S.cfglog=[];save();render()}
   else if(a==='ptuse'){const p=S.plan[+v];if(!p)return;p.off=!p.off;if(S.plan.every(q=>q.off))p.off=false;save();render()}
   else if(a==='ptall'){S.plan.forEach(p=>delete p.off);save();render()}
   else if(a==='ptq3'||a==='ptq4'){const keep=a==='ptq3'?['Q1','Q2','Q3']:['Q1','Q2','Q3','Q4'];const any=S.plan.some(p=>keep.includes(p.l));if(!any){toast('ไม่พบจุดที่ชื่อ Q1/Q2/Q3 ในแผน',3000);return}S.plan.forEach(p=>{if(keep.includes(p.l))delete p.off;else p.off=true});save();render()}});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.wr)return;const k=t.dataset.wr;
-  if(t.type==='checkbox')S.wr[k]=t.checked;else if(k==='logVal')S.wr[k]=+t.value;else S.wr[k]=t.value;save();render()});
+  if(t.type==='checkbox')S.wr[k]=t.checked;else if(/Val$/.test(k))S.wr[k]=+t.value;else S.wr[k]=t.value;save();render()});
 
 /* ---------- ⑤ รายงาน ---------- */
 function reportHtml(A){const b=S.batch,v=VD[A.verdict],pts=S.plan,Q=qs(b.q3,b.R);
