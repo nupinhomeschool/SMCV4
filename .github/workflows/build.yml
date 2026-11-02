@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v26"
+                  private const val VERSION = "v27"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -2669,11 +2669,11 @@ jobs:
               }
 
               /** ส่งรูป + ค่าเบื้องต้นที่ OCR ในแอปอ่านได้ ไปให้ Test Bench แสดงหน้าครอบช่อง/ตรวจทีละหลัก */
-              private fun sendMechImage(uri: Uri, own: Boolean, reading: String, id: String) {
+              private fun sendMechImage(uri: Uri, own: Boolean, reading: String, id: String, lcd: Boolean = false) {
                   val data = encodeForWeb(uri)
                   discardImage(uri, own)
                   if (data == null) { toast("เตรียมรูปส่งไม่สำเร็จ — ลองถ่ายใหม่"); return }
-                  val j = JSONObject().put("img", data).put("reading", reading).put("id", id).put("by", "cam").toString()
+                  val j = JSONObject().put("img", data).put("reading", reading).put("id", id).put("by", "cam").put("lcd", lcd).toString()
                   valMeter.text = if (id.isEmpty()) "(ตำแหน่งถัดไป)" else id
                   valSize.text = "ตรวจรูปใน Test Bench"
                   valTime.text = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
@@ -2778,7 +2778,7 @@ jobs:
                   box.addView(eVal)
                   box.addView(label("Meter ID / เลขซีเรียล (เว้นว่างได้ ระบบจะใส่ตำแหน่งถัดไปให้)", 12f, slate).apply { setPadding(0, dp(8), 0, 0) })
                   val eId = EditText(this)
-                  eId.setText(r.id)
+                  eId.setText(if (r.id.length >= 4 && r.id.any { it.isDigit() }) r.id else "")
                   eId.setSingleLine()
                   eId.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
                   eId.textSize = 18f
@@ -2803,13 +2803,20 @@ jobs:
                       hs.addView(row)
                       box.addView(hs)
                   }
+                            val cbLcd = CheckBox(this)
+                  cbLcd.text = "จอ LCD ของ SMCV4 (6 หลัก ทศนิยม 5 ตำแหน่ง · ไม่มีเข็ม)"
+                  cbLcd.textSize = 13f
+                  cbLcd.isChecked = prefs.getBoolean("lcdmode", false)
+                  cbLcd.setOnCheckedChangeListener { _, c -> prefs.edit().putBoolean("lcdmode", c).apply() }
+                  box.addView(cbLcd)
+                  box.addView(label("ตัวเลขจากกล้องในแอปอาจตกหลัก/จุดทศนิยม — กด “ครอบเฉพาะจุด” เพื่อซูมครอบเฉพาะตัวเลขแล้วตรวจทีละหลัก จะแม่นกว่า", 11f, slate).apply { setPadding(0, dp(6), 0, 0) })
                   val sv = ScrollView(this)
                   sv.addView(box)
                   val dlg = AlertDialog.Builder(this)
-                      .setTitle("📷 ตรวจค่าหน้าปัดมาตรกลไก\n(ยังไม่รวมเข็มละเอียด ×0.0001 — ใช้ “ตรวจทีละหลัก”)")
+                      .setTitle("📷 ตรวจค่าหน้าปัด")
                       .setView(sv)
-                      .setPositiveButton("🔍 ตรวจทีละหลัก (แนะนำ)", null)
-                      .setNeutralButton("ส่งเฉพาะหลัก (ไม่รวมเข็ม)", null)
+                      .setPositiveButton("🔍 ครอบเฉพาะจุด (แนะนำ)", null)
+                      .setNeutralButton("ส่งเลย (ไม่แนะนำ)", null)
                       .setNegativeButton("📷 ถ่ายใหม่", null)
                       .create()
                   dlg.setCanceledOnTouchOutside(false)
@@ -2817,7 +2824,7 @@ jobs:
                   dlg.show()
                   dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                       dlg.dismiss()
-                      sendMechImage(uri, own, eVal.text.toString().trim(), eId.text.toString().trim())
+                      sendMechImage(uri, own, eVal.text.toString().trim(), eId.text.toString().trim(), cbLcd.isChecked)
                   }
                   dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
                       var v = eVal.text.toString().trim().replace(',', '.')
