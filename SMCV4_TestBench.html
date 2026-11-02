@@ -81,7 +81,7 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 .modal h3{margin:0 0 10px}
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(30px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:14px;opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:92vw;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.35)}#toast.on{opacity:1;transform:translateX(-50%)}
 /* Monitor */
-#mon{position:fixed;inset:0;z-index:90;background:radial-gradient(1200px 700px at 20% -10%,#12456b,#071a2a 70%);color:#eaf6fb;display:none;flex-direction:column;padding:2.2vh 2.4vw;overflow:hidden}#mon.on{display:flex}
+#mon{position:fixed;inset:0;z-index:90;background:radial-gradient(1200px 700px at 20% -10%,var(--mb1,#12456b),var(--mb2,#071a2a) 70%);color:var(--mfg,#eaf6fb);display:none;flex-direction:column;padding:2.2vh 2.4vw;overflow:hidden}#mon.on{display:flex}
 #mon .mt{display:flex;align-items:center;gap:2vw;flex-wrap:wrap}#mon .mt h2{margin:0;font-size:2.6vh}#mon .mt .c{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:99px;padding:.5vh 1.3vw;font-size:2vh}
 #mon .mc2{display:grid;grid-template-columns:1.25fr 1fr;gap:2vw;margin:2vh 0}
 #mon .big{font-size:9.5vh;font-weight:700;line-height:1;letter-spacing:-1px}#mon .big small{font-size:3.3vh;font-weight:400;opacity:.8}
@@ -92,6 +92,13 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 #mon .t b{display:block;font-size:2.1vh;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mon .t .e{font-size:6.4vh;font-weight:700;line-height:1.1}#mon .t .d{font-size:1.9vh;opacity:.8}
 #mon .bar{height:2.2vh;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;display:flex}#mon .bar i{display:block;height:100%}
 #mon .x{position:absolute;right:1.5vw;top:1.5vh}
+#monpal{display:none;position:fixed;right:1.5vw;bottom:1.5vh;z-index:95;font-family:inherit}#mon.on~#monpal{display:block}
+#monpb{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.45);color:#fff;font-size:22px;cursor:pointer;opacity:.55}#monpb:hover{opacity:1}
+#monpp{display:none;position:absolute;right:0;bottom:56px;width:270px;background:#fff;color:#0d2b3e;border-radius:14px;padding:12px;box-shadow:0 10px 36px rgba(0,0,0,.5)}#monpal.o #monpp{display:block}#monpal.o #monpb{opacity:1}
+#monsw{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:8px 0}#monsw i{height:34px;border-radius:9px;border:2px solid #fff;box-shadow:0 0 0 1px #c5d4de;cursor:pointer}#monsw i.on{box-shadow:0 0 0 3px #0b7ea4}
+#monpp .mpr{display:flex;gap:10px}#monpp .mpr label{flex:1;font-size:12px;display:flex;flex-direction:column;gap:3px}#monpp input[type=color]{width:100%;height:34px;border:0;padding:0;background:none}#monpp small{display:block;margin-top:6px;color:#5d7586;font-size:11px}
+#mon.lt{--mfg:#0d2b3e}#mon.lt .x,#mon.lt button{color:#0d2b3e}#mon.lt .x{background:rgba(255,255,255,.7);border-color:rgba(10,42,67,.3)}#mon.lt .pc.cur{background:#0a2a43;color:#fff}#mon.lt .c,#mon.lt .pc,#mon.lt .t,#mon.lt .md{background:rgba(255,255,255,.55);border-color:rgba(10,42,67,.25)}
+
 #rep{display:none}
 /* รายงาน */
 .paper{background:#fff;color:#0d2b3e;max-width:1120px;margin:0 auto;padding:26px 30px;border:1px solid var(--line);border-radius:14px}
@@ -276,6 +283,7 @@ body.mro{overflow:hidden}
 <main id="view"></main>
 
 <div id="mon" aria-label="Monitor"></div>
+<div id="monpal"><button id="monpb" type="button" title="เปลี่ยนสีพื้นหลังจอ">🎨</button><div id="monpp"><b>สีพื้นหลังจอ</b><div id="monsw"></div><div class="mpr"><label>สีบน<input type="color" id="monc1"></label><label>สีล่าง<input type="color" id="monc2"></label></div><small>เลือกสีเอง หรือกดชุดสีสำเร็จรูป · จำค่าไว้ในเครื่องนี้</small></div></div>
 <div id="rep"></div>
 <div class="modal" id="modal"><div class="box" id="mbox"></div></div>
 <div id="toast"></div>
@@ -346,7 +354,20 @@ function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||windo
   const seq=kind==='bad'?[[330,.0,.18],[220,.2,.3]]:kind==='warn'?[[520,0,.2],[520,.25,.2]]:[[880,0,.1],[1320,.12,.14]];
   seq.forEach(([f,t,d])=>{const o=AC.createOscillator(),g=AC.createGain(),t0=AC.currentTime+t;o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.25,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.start(t0);o.stop(t0+d+.02)})}catch(e){}}
 const SENT=[];
-function rlPost(m){if(typeof fetch!=='function')return Promise.reject(new Error('no fetch'));return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
+const RLQ=[];let rlBusy=false,rlHelloT=0;
+function rlPost(m){return new Promise((ok,no)=>{const j={m,ok,no,tries:0};if(m&&m.t==='read')RLQ.splice(rlBusy?1:0,0,j);else RLQ.push(j);rlPump()})}
+async function rlPump(){if(rlBusy)return;rlBusy=true;
+  while(RLQ.length){const j=RLQ[0];
+    try{if(typeof fetch!=='function')throw new Error('no fetch');
+      const r=await fetch(rlTopic(),{method:'POST',body:JSON.stringify(j.m)});
+      if(r.status===429||r.status>=500){j.tries++;let ra=0;try{ra=+r.headers.get('Retry-After')||0}catch(e){}
+        if(j.tries>6){RLQ.shift();j.no(new Error('HTTP '+r.status+(r.status===429?' — เซิร์ฟเวอร์ ntfy.sh จำกัดจำนวนข้อความ (ส่งถี่/เกินโควต้าวันนี้) ลองใหม่ภายหลัง หรือเปลี่ยนเซิร์ฟเวอร์รีเลย์ในตั้งค่า':'')));continue}
+        RL.err='ถูกจำกัดความถี่ (HTTP '+r.status+') — กำลังลองส่งใหม่ครั้งที่ '+j.tries+'…';try{rlChip();render()}catch(e){}
+        await new Promise(k=>setTimeout(k,Math.max(ra*1000,Math.min(30000,2500*j.tries))));continue}
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      RL.err='';RLQ.shift();j.ok(true);await new Promise(k=>setTimeout(k,600))}
+    catch(e){RLQ.shift();j.no(e)}}
+  rlBusy=false}
 /* ในแอปมือถือ: ถ้าจับคู่รหัสแล้ว ให้เป็นโหมด “ส่งขึ้นจอ” เสมอ (เดิมค้างเป็น off จึงไม่ขึ้นจอคอม) */
 function rlAuto(){if(rlBridge()&&RL.code&&RL.role!=='send'){RL.role='send';rlSave();try{rlConnect()}catch(e){}}return RL.role==='send'&&!!RL.code}
 function rlNeedPair(){toast('⚠ ยังไม่ได้จับคู่กับจอคอม — ใส่รหัสในหน้านี้ก่อน ค่าจึงจะขึ้นจอคอม',5200);beep('bad');RL.role='send';try{modal(relayHtml())}catch(e){}return false}
@@ -371,7 +392,7 @@ function rlConnect(){
   try{RL.es&&RL.es.close()}catch(e){}RL.es=null;RL.st='off';
   if(IS_MON||(RL.role!=='recv'&&RL.role!=='send')||!RL.code||typeof EventSource==='undefined'){rlChip();return}
   try{const es=new EventSource(rlTopic()+'/sse'+(RL.role==='send'?'?since=12h':''));RL.es=es;RL.st='conn';
-    es.onopen=()=>{RL.st='on';rlChip();if(RL.role==='send')rlPost({v:1,t:'hello',ts:Date.now()}).catch(()=>{});else{rlPush(true);try{klibSync();klibPush(true)}catch(e){}}};es.onerror=()=>{RL.st='retry';rlChip()};
+    es.onopen=()=>{RL.st='on';rlChip();if(RL.role==='send'){if(Date.now()-rlHelloT>300000){rlHelloT=Date.now();rlPost({v:1,t:'hello',ts:Date.now()}).catch(()=>{})}}else{rlPush(true);try{klibSync();klibPush(true)}catch(e){}}};es.onerror=()=>{RL.st='retry';rlChip()};
     es.onmessage=e=>{try{const j=JSON.parse(e.data);if(j.event&&j.event!=='message')return;rlRecv(JSON.parse(j.message))}catch(x){}}}
   catch(e){RL.st='err'}
   rlChip()}
@@ -1593,6 +1614,21 @@ function pvRegCard(p){const h=qrHost();
    <div class="qrg"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" data-pv="autoReg" ${p.autoReg!==false?'checked':''}> ลงทะเบียนเข้าทะเบียนอัตโนมัติ</label>
    <div class="seg" style="max-width:420px">${[['trial','🧪 รุ่นทดลอง'],['test','✅ ทดสอบจริง'],['prod','🏭 ผลิตจริง']].map(x=>`<button class="${QR.stage===x[0]?'on':''}" data-a="qrstage" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>
    <span class="hint">${h?'เชื่อมต่อทะเบียนแล้ว':'⚠ เปิดผ่านหน้าแดชบอร์ด (index.html) จึงจะเชื่อมทะเบียนได้'}</span></div></div>`}
+
+/* ---------- ปรับสีพื้นหลังจอ Monitor ---------- */
+(function(){const K='smcv4.monbg',P=[['#12456b','#071a2a'],['#0f3d2e','#04140e'],['#3b1d63','#12081f'],['#5a1d2e','#1c070d'],['#1f2937','#030712'],['#0e7490','#083344'],['#7c2d12','#1c0a04'],['#000000','#000000'],['#e2edf5','#bcd0de'],['#fef3c7','#fcd9a0']];
+ const lum=h=>{const n=parseInt(h.slice(1),16);return(.299*(n>>16)+.587*((n>>8)&255)+.114*(n&255))/255};
+ function apply(a,b,save){const m=document.getElementById('mon');if(!m)return;m.style.setProperty('--mb1',a);m.style.setProperty('--mb2',b);m.classList.toggle('lt',(lum(a)+lum(b))/2>.62);
+  const c1=document.getElementById('monc1'),c2=document.getElementById('monc2');if(c1)c1.value=a;if(c2)c2.value=b;
+  document.querySelectorAll('#monsw i').forEach(i=>i.classList.toggle('on',i.dataset.a===a&&i.dataset.b===b));
+  if(save)try{localStorage.setItem(K,JSON.stringify([a,b]))}catch(e){}}
+ function init(){const sw=document.getElementById('monsw');if(!sw)return;sw.innerHTML=P.map(p=>`<i data-a="${p[0]}" data-b="${p[1]}" style="background:linear-gradient(${p[0]},${p[1]})"></i>`).join('');
+  let v=null;try{v=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}if(!v||v.length<2)v=P[0];apply(v[0],v[1],false);
+  document.getElementById('monpb').onclick=()=>document.getElementById('monpal').classList.toggle('o');
+  sw.onclick=e=>{const i=e.target.closest('i');if(i)apply(i.dataset.a,i.dataset.b,true)};
+  const f=()=>apply(document.getElementById('monc1').value,document.getElementById('monc2').value,true);
+  document.getElementById('monc1').oninput=f;document.getElementById('monc2').oninput=f}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init()})();
 </script>
 </body>
 </html>
