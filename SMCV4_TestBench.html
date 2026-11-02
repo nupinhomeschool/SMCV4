@@ -400,6 +400,7 @@ async function rlPump(){if(rlBusy)return;rlBusy=true;
       else{RLQ.shift();j.no(new Error('HTTP '+r.status));continue}
       let ra=0;try{ra=+r.headers.get('Retry-After')||0}catch(e){}j.ra=ra}
     catch(e){why=(e&&e.name==='AbortError')?'ตอบช้าเกิน 10 วินาที (สัญญาณไม่เสถียร/เครือข่ายบล็อก ntfy.sh)':'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ('+((e&&e.message)||'network')+')'}
+    if(RL.gerr&&rlTx())why='Google: '+RL.gerr+' · ntfy: '+why;else if(rlTx()&&!gsCfg())why='ไม่พบลิงก์ Google Apps Script (ตั้งในแดชบอร์ด ☁️) · ntfy: '+why;
     j.tries++;
     if(j.tries>=7){RLQ.shift();j.no(new Error(why+' — ลองแล้ว 7 ครั้ง'));continue}
     RL.err=why;const msg='ลองใหม่ครั้งที่ '+j.tries+'/6 · '+why;try{j.hook&&j.hook(msg);rlChip();render()}catch(e){}
@@ -1367,8 +1368,14 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
     if(role!=='off'&&code.length<6){toast('รหัสจับคู่ต้องยาวอย่างน้อย 6 ตัว');return}
     RL.role=role;if(role!=='off')RL.code=code;RL.server=srv;RL.tp=($('#rlTp')||{}).value==='ntfy'?'ntfy':'auto';RL.beep=$('#rlBeep').value==='1';rlSave();rlConnect();closeModal();if(role==='send')TAB='run';render();toast(role==='recv'?'พร้อมรับค่าจากมือถือ · รหัส '+RL.code.toUpperCase():role==='send'?'พร้อมส่งค่าขึ้นจอ · รหัส '+RL.code.toUpperCase():'ปิดการเชื่อมต่อแล้ว (ใช้เครื่องเดียว)',3200)}
   else if(a==='rlresend'){const e=SENT[0];if(!e||!e.m){toast('ไม่มีรายการให้ส่งซ้ำ');return}e.ok=null;e.info='';RL.err='';rlPost(e.m,t=>{e.info=t}).then(()=>{e.ok=true;e.info='';render()},er=>{e.ok=false;RL.err=er.message;render()});render()}
-  else if(a==='rldiag'){toast('กำลังตรวจการเชื่อมต่อกับ '+RL.server+' …',2500);const t0=Date.now(),ac=typeof AbortController==='function'?new AbortController():null,tm=ac?setTimeout(()=>ac.abort(),8000):0;
-    fetch(RL.server.replace(/\/+$/,'')+'/v1/health',{signal:ac?ac.signal:undefined}).then(r=>{clearTimeout(tm);toast(r.ok?'✔ ติดต่อเซิร์ฟเวอร์ได้ ('+(Date.now()-t0)+' มิลลิวินาที) — ถ้ายังส่งไม่ขึ้น แสดงว่าติดโควต้า/ความถี่ ให้รอสักครู่':'⚠ เซิร์ฟเวอร์ตอบ HTTP '+r.status+(r.status===429?' (ถูกจำกัดความถี่/โควต้า)':''),6000)},e=>{clearTimeout(tm);toast('✖ ติดต่อเซิร์ฟเวอร์ไม่ได้ — '+((e&&e.name==='AbortError')?'ช้าเกิน 8 วินาที':'เครือข่ายบล็อกหรือไม่มีสัญญาณ')+' · ลองสลับ Wi-Fi/ข้อมูลมือถือ',6500)})}
+  else if(a==='rldiag'){toast('กำลังตรวจ Google Apps Script และ ntfy …',2500);
+    (async()=>{const out=[],c=gsCfg();
+      if(!c)out.push('✖ Google: ไม่พบลิงก์ Apps Script');
+      else{const o=gsTO(9000),t0=Date.now();try{const u=c.url+(c.url.includes('?')?'&':'?')+new URLSearchParams({token:c.token||'',action:'rget',code:RL.code||'testtest',since:'now'});const r=await fetch(u,{signal:o.sig});const j=await r.json();clearTimeout(o.t);
+          out.push(j&&j.error?'✖ Google: '+j.error:(j&&j.ok&&j.ver>=9)?'✔ Google พร้อม (สคริปต์ v'+j.ver+', '+(Date.now()-t0)+' ms)':'✖ Google: สคริปต์ที่ Deploy อยู่เป็นรุ่นเก่า'+(j&&j.ver?' (v'+j.ver+')':'')+' — ต้อง Deploy v9 เป็นเวอร์ชันใหม่')}
+        catch(e){clearTimeout(o.t);out.push('✖ Google: ติดต่อไม่ได้ ('+((e&&e.name==='AbortError')?'ช้าเกิน 9 วินาที':(e&&e.message)||'network')+')')}}
+      const o2=gsTO(8000),t1=Date.now();try{const r=await fetch(RL.server.replace(/\/+$/,'')+'/v1/health',{signal:o2.sig});clearTimeout(o2.t);out.push(r.ok?'✔ ntfy ติดต่อได้ ('+(Date.now()-t1)+' ms) — แต่อาจติดโควต้าส่ง':'⚠ ntfy ตอบ HTTP '+r.status)}catch(e){clearTimeout(o2.t);out.push('✖ ntfy: ติดต่อไม่ได้')}
+      modal('<h3>🩺 ผลตรวจการเชื่อมต่อ</h3><div style="line-height:1.9;margin:8px 0">'+out.map(x=>'<div>'+esc(x)+'</div>').join('')+'</div><button class="btn p" data-a="mclose">ปิด</button>')})()}
   else if(a==='rltest'){if(RL.role!=='send'||!RL.code){toast('ตั้งค่าเครื่องนี้เป็น “มือถือ” และใส่รหัสก่อน',3200);return}rlPost({v:1,t:'ping',ts:Date.now()}).then(()=>toast('ส่งสัญญาณทดสอบแล้ว — ดูที่จอคอมพิวเตอร์',3000),e=>toast('✖ ส่งไม่สำเร็จ: '+e.message,4200))}
   else if(a==='monmode'){const N=Math.max(S.batch.nm,S.meters.length),cur=MONV==='dials'||(MONV==='auto'&&N<=6);MONV=cur?'tiles':'dials';MONH='';renderMon()}
   else if(a==='mclose')closeModal();
