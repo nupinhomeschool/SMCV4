@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v21"
+                  private const val VERSION = "v23"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -299,6 +299,7 @@ jobs:
               private lateinit var btnMode: Button
               private lateinit var camRow: View
               private var camUri: Uri? = null
+              private var webCamUri: Uri? = null
               private var pendingMech: String? = null
               @Volatile private var writeJob: JSONObject? = null
               @Volatile private var writing = false
@@ -576,11 +577,14 @@ jobs:
                               this@MainActivity.fileCallback = cb
                               val i = Intent(Intent.ACTION_GET_CONTENT)
                               i.addCategory(Intent.CATEGORY_OPENABLE)
-                              i.type = "*/*"
+                              val wantImg = params?.acceptTypes?.any { it.startsWith("image") } == true
+                              i.type = if (wantImg) "image/*" else "*/*"
                               if (params?.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE)
                                   i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                              val chooser = Intent.createChooser(i, if (wantImg) "ถ่ายภาพ / เลือกรูป" else "เลือกไฟล์")
+                              if (wantImg) this@MainActivity.prepareWebCamera()?.let { chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(it)) }
                               return try {
-                                  this@MainActivity.startActivityForResult(Intent.createChooser(i, "เลือกไฟล์"), REQ_FILE)
+                                  this@MainActivity.startActivityForResult(chooser, REQ_FILE)
                                   true
                               } catch (e: Exception) {
                                   this@MainActivity.fileCallback = null
@@ -608,7 +612,12 @@ jobs:
 
               override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
                   if (requestCode == REQ_FILE) {
-                      fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+                      val parsed = WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+                      val cu = webCamUri
+                      webCamUri = null
+                      val out: Array<Uri>? = if ((parsed == null || parsed.isEmpty()) && resultCode == RESULT_OK && cu != null) arrayOf(cu) else parsed
+                      if (cu != null && (out == null || out.isEmpty() || out[0] != cu)) discardImage(cu, true)
+                      fileCallback?.onReceiveValue(out)
                       fileCallback = null
                   } else if (requestCode == REQ_CAM) {
                       val u = camUri
@@ -1392,6 +1401,72 @@ jobs:
                   }
               }
 
+              /** เตรียม intent ถ่ายภาพให้หน้าเว็บ (ช่องเลือกรูปใน Test Bench) */
+              private fun prepareWebCamera(): Intent? {
+                  return try {
+                      val cv = ContentValues().apply {
+                          put(MediaStore.Images.Media.DISPLAY_NAME, "SMCV4_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg")
+                          put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                          put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/SMCV4")
+                      }
+                      val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv) ?: return null
+                      webCamUri = uri
+                      Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                  } catch (e: Exception) {
+                      null
+                  }
+              }
+
+              /** ย่อรูป + หมุนตาม EXIF + เข้ารหัส base64 เพื่อส่งให้หน้า “อ่านจากรูป” ใน Test Bench */
+              private fun encodeForWeb(uri: Uri): String? {
+                  return try {
+                      val o = BitmapFactory.Options()
+                      o.inJustDecodeBounds = true
+                      contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o) }
+                      var ss = 1
+                      while (maxOf(o.outWidth, o.outHeight) / ss > 2800) ss *= 2
+                      val o2 = BitmapFactory.Options()
+                      o2.inSampleSize = ss
+                      var bm = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, o2) } ?: return null
+                      val deg = contentResolver.openInputStream(uri)?.use { st ->
+                          when (ExifInterface(st).getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)) {
+                              ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                              ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                              ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                              else -> 0
+                          }
+                      } ?: 0
+                      if (deg != 0) {
+                          val m = Matrix()
+                          m.postRotate(deg.toFloat())
+                          bm = Bitmap.createBitmap(bm, 0, 0, bm.width, bm.height, m, true)
+                      }
+                      val mx = maxOf(bm.width, bm.height)
+                      if (mx > 1500) {
+                          val f = 1500f / mx
+                          bm = Bitmap.createScaledBitmap(bm, (bm.width * f).toInt(), (bm.height * f).toInt(), true)
+                      }
+                      val bo = ByteArrayOutputStream()
+                      bm.compress(Bitmap.CompressFormat.JPEG, 82, bo)
+                      "data:image/jpeg;base64," + Base64.encodeToString(bo.toByteArray(), Base64.NO_WRAP)
+                  } catch (e: Throwable) {
+                      null
+                  }
+              }
+
+              /** ส่งรูป + ค่าเบื้องต้นที่ OCR ในแอปอ่านได้ ไปให้ Test Bench แสดงหน้าครอบช่อง/ตรวจทีละหลัก */
+              private fun sendMechImage(uri: Uri, own: Boolean, reading: String, id: String) {
+                  val data = encodeForWeb(uri)
+                  discardImage(uri, own)
+                  if (data == null) { toast("เตรียมรูปส่งไม่สำเร็จ — ลองถ่ายใหม่"); return }
+                  val j = JSONObject().put("img", data).put("reading", reading).put("id", id).put("by", "cam").toString()
+                  valMeter.text = if (id.isEmpty()) "(ตำแหน่งถัดไป)" else id
+                  valSize.text = "ตรวจรูปใน Test Bench"
+                  valTime.text = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
+                  pendingMech = j
+                  pushMech(j)
+              }
+
               private fun openGallery() {
                   val pick = Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
                   startActivityForResult(Intent.createChooser(pick, "เลือกรูปหน้าปัด"), REQ_PICK)
@@ -1410,7 +1485,21 @@ jobs:
                   val rec = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
                   val scanner = BarcodeScanning.getClient()
                   rec.process(img)
-                      .addOnSuccessListener { t -> t.textBlocks.forEach { b -> b.lines.forEach { l -> lines.add(l.text) } } }
+                      .addOnSuccessListener { t ->
+                          class Ln(val t: String, val cy: Int, val h: Int, val left: Int)
+                          val items = ArrayList<Ln>()
+                          t.textBlocks.forEach { b -> b.lines.forEach { l ->
+                              lines.add(l.text)
+                              val bb = l.boundingBox
+                              if (bb != null) items.add(Ln(l.text, bb.centerY(), bb.height(), bb.left))
+                          } }
+                          val rows = ArrayList<MutableList<Ln>>()
+                          items.sortedBy { it.cy }.forEach { ln ->
+                              val row = rows.firstOrNull { r -> Math.abs(r[0].cy - ln.cy) < 0.6 * Math.max(r[0].h, ln.h) }
+                              if (row != null) row.add(ln) else rows.add(mutableListOf(ln))
+                          }
+                          rows.forEach { row -> if (row.size > 1) lines.add(row.sortedBy { it.left }.joinToString(" ") { it.t }) }
+                      }
                       .addOnFailureListener { }
                       .addOnCompleteListener {
                           scanner.process(img)
@@ -1503,23 +1592,28 @@ jobs:
                   val sv = ScrollView(this)
                   sv.addView(box)
                   val dlg = AlertDialog.Builder(this)
-                      .setTitle("📷 ตรวจค่าหน้าปัดมาตรกลไก")
+                      .setTitle("📷 ตรวจค่าหน้าปัดมาตรกลไก\n(ยังไม่รวมเข็มละเอียด ×0.0001 — ใช้ “ตรวจทีละหลัก”)")
                       .setView(sv)
-                      .setPositiveButton("✔ ส่งเข้า Web App", null)
-                      .setNeutralButton("📷 ถ่ายใหม่", null)
-                      .setNegativeButton("ยกเลิก", null)
+                      .setPositiveButton("🔍 ตรวจทีละหลัก (แนะนำ)", null)
+                      .setNeutralButton("ส่งเฉพาะหลัก (ไม่รวมเข็ม)", null)
+                      .setNegativeButton("📷 ถ่ายใหม่", null)
                       .create()
                   dlg.setCanceledOnTouchOutside(false)
+                  dlg.setOnCancelListener { discardImage(uri, own) }
                   dlg.show()
                   dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                      dlg.dismiss()
+                      sendMechImage(uri, own, eVal.text.toString().trim(), eId.text.toString().trim())
+                  }
+                  dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
                       var v = eVal.text.toString().trim().replace(',', '.')
                       if (!Regex("^\\d+(\\.\\d+)?$").matches(v)) { toast("ค่าหน้าปัดต้องเป็นตัวเลข เช่น 00123.456"); return@setOnClickListener }
                       if (!v.contains('.')) v = MechParse.format(v, cfgInt("frac", 3))
                       dlg.dismiss()
+                      discardImage(uri, own)
                       sendMech(eId.text.toString().trim(), v)
                   }
-                  dlg.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener { dlg.dismiss(); discardImage(uri, own); openCamera() }
-                  dlg.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener { dlg.dismiss(); discardImage(uri, own) }
+                  dlg.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener { dlg.dismiss(); discardImage(uri, own); openCamera() }
               }
 
               private fun sendMech(id: String, reading: String) {
@@ -1748,7 +1842,7 @@ jobs:
           object MechParse {
               class Result(val id: String, val reading: String, val cands: List<String>)
 
-              private class Tok(val digits: String, val frac: String?, val spaced: Boolean)
+              private class Tok(val digits: String, val frac: String?, val spaced: Boolean, var pure: Boolean = true)
 
               /** แก้ตัวอักษรที่ OCR มักสับสนกับตัวเลข (เฉพาะคำที่เป็นตัวเลขเป็นส่วนใหญ่) */
               private fun fixWord(w: String): String {
@@ -1809,7 +1903,8 @@ jobs:
                   val serials = LinkedHashSet<String>()
                   for (ln in lines) {
                       val fx = fixLine(ln)
-                      NUM.findAll(fx).forEach { m -> toTok(m.value)?.let { toks.add(it) } }
+                      val pure = !Regex("[A-Za-z]{2,}").containsMatchIn(ln)
+                      NUM.findAll(fx).forEach { m -> toTok(m.value)?.let { it.pure = pure; toks.add(it) } }
                       // ซีเรียลแบบมีตัวอักษรปน เช่น SN12345678, A1234567
                       Regex("[A-Za-z]{1,3}[- ]?\\d{6,12}").findAll(ln).forEach { m -> serials.add(cleanId(m.value)) }
                   }
@@ -1825,7 +1920,7 @@ jobs:
 
                   val reading = pool
                       .filter { total(it) in 4..9 }
-                      .sortedWith(compareBy<Tok>({ if (it.frac != null) 0 else if (it.spaced) 1 else 2 },
+                      .sortedWith(compareBy<Tok>({ if (it.pure) 0 else 1 }, { if (it.frac != null) 0 else if (it.spaced) 1 else 2 },
                           { Math.abs(total(it) - want) },
                           { if (it.digits.startsWith("0")) 0 else 1 }))
                       .firstOrNull()
