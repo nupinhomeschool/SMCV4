@@ -350,8 +350,8 @@ const RLK='smcv4_bench_relay';
 const RL={code:'',role:'',beep:true,server:'https://ntfy.sh',st:'off',last:0,n:0,sent:0,err:'',es:null,seen:new Set()};
 const rlBridge=()=>{try{return !!(window.NfcBridge||(window.parent&&window.parent.NfcBridge))}catch(e){return false}};
 const rlGen=()=>{const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';const a=new Uint8Array(8);(window.crypto||{getRandomValues:x=>x.forEach((_,i)=>x[i]=Math.random()*256)}).getRandomValues(a);a.forEach(x=>s+=c[x%c.length]);return s};
-function rlSave(){try{localStorage.setItem(RLK,JSON.stringify({code:RL.code,role:RL.role,beep:RL.beep,server:RL.server}))}catch(e){}}
-function rlLoad(){try{const j=JSON.parse(localStorage.getItem(RLK)||'null');if(j)Object.assign(RL,{code:j.code||'',role:j.role||'',beep:j.beep!==false,server:j.server||RL.server})}catch(e){}
+function rlSave(){try{localStorage.setItem(RLK,JSON.stringify({code:RL.code,role:RL.role,beep:RL.beep,server:RL.server,tp:RL.tp||'auto'}))}catch(e){}}
+function rlLoad(){try{const j=JSON.parse(localStorage.getItem(RLK)||'null');if(j)Object.assign(RL,{code:j.code||'',role:j.role||'',beep:j.beep!==false,server:j.server||RL.server,tp:j.tp||'auto'})}catch(e){}
   try{const q=new URLSearchParams(location.search),pc=q.get('pair');if(pc){RL.code=pc.toLowerCase().replace(/[^a-z0-9]/g,'');RL.role=q.get('role')||(rlBridge()?'send':'recv')}}catch(e){}
   if(!RL.role)RL.role=rlBridge()?'off':'recv';
   if(RL.role==='recv'&&!RL.code)RL.code=rlGen();
@@ -362,19 +362,48 @@ function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||windo
   const seq=kind==='bad'?[[330,.0,.18],[220,.2,.3]]:kind==='warn'?[[520,0,.2],[520,.25,.2]]:[[880,0,.1],[1320,.12,.14]];
   seq.forEach(([f,t,d])=>{const o=AC.createOscillator(),g=AC.createGain(),t0=AC.currentTime+t;o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.25,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.start(t0);o.stop(t0+d+.02)})}catch(e){}}
 const SENT=[];
+/* ---------- ช่องทางส่งผ่าน Google Apps Script ของ FSL (ไม่ติดโควต้าฟรีของ ntfy) ---------- */
+function gsCfg(){for(const w of [window.parent,window.top,window.opener]){try{if(w&&typeof w.smcvGsCfg==='function'){const c=w.smcvGsCfg();if(c&&c.url)return c}}catch(e){}}return RL.gs&&RL.gs.url?RL.gs:null}
+const gsTO=(ms)=>{const ac=typeof AbortController==='function'?new AbortController():null;return{ac,sig:ac?ac.signal:undefined,t:ac?setTimeout(()=>ac.abort(),ms):0}};
+async function gsPut(c,m){const o=gsTO(10000);let r;try{r=await fetch(c.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:c.token||'',action:'rput',code:RL.code,msg:JSON.stringify(m)}),signal:o.sig})}finally{clearTimeout(o.t)}
+  let j;try{j=await r.json()}catch(e){throw new Error('Google ตอบไม่ใช่ JSON (ตรวจ Deploy “ผู้มีสิทธิ์เข้าถึง = ทุกคน”)')}
+  if(j&&j.error)throw new Error(j.error);if(!(j&&j.ok&&j.ver>=9))throw new Error('Apps Script ยังเป็นรุ่นเก่า — ต้อง Deploy สคริปต์ v9');return j}
+const rlTx=()=>RL.tp!=='ntfy';
+let rlGsTimer=0,rlGsCur=null,rlGsBusy=false;
+function rlGsStop(){clearTimeout(rlGsTimer);rlGsTimer=0;rlGsCur=null;RL.gok=0}
+function rlGsStart(){rlGsStop();if(IS_MON||(RL.role!=='recv'&&RL.role!=='send')||!RL.code||!rlTx())return;const tick=async()=>{
+  rlGsTimer=0;if(RL.role!=='recv'&&RL.role!=='send')return;const c=gsCfg();let wait=RL.role==='recv'?2000:6000;
+  if(c&&RL.gskip!==undefined&&Date.now()<RL.gskip){wait=15000}
+  else if(c&&!rlGsBusy){rlGsBusy=true;const o=gsTO(9000);
+    try{const u=c.url+(c.url.includes('?')?'&':'?')+new URLSearchParams({token:c.token||'',action:'rget',code:RL.code,since:rlGsCur==null?'now':String(rlGsCur)});
+      const r=await fetch(u,{signal:o.sig});const j=await r.json();
+      if(j&&j.error)throw new Error(j.error);if(!(j&&j.ok&&j.ver>=9))throw new Error('Apps Script ยังเป็นรุ่นเก่า (ต้อง v9)');
+      const first=rlGsCur==null;rlGsCur=j.n||0;RL.gok=Date.now();RL.gerr='';
+      (j.items||[]).forEach(it=>{try{rlRecv(JSON.parse(it.m))}catch(x){}});
+      if(first&&RL.role==='send'){rlHelloT=Date.now();rlPost({v:1,t:'hello',ts:Date.now()}).catch(()=>{})}
+      if(first&&RL.role==='recv'){rlPush(true);try{klibSync();klibPush(true)}catch(e){}}
+    }catch(e){RL.gerr=(e&&e.message)||'ผิดพลาด';if(/รุ่นเก่า|token/i.test(RL.gerr))RL.gskip=Date.now()+60000;wait=5000}
+    finally{clearTimeout(o.t);rlGsBusy=false;try{rlChip()}catch(e){}}}
+  if(document.hidden)wait=Math.max(wait,10000);rlGsTimer=setTimeout(tick,wait)};tick()}
 const RLQ=[];let rlBusy=false,rlHelloT=0;
-function rlPost(m){return new Promise((ok,no)=>{const j={m,ok,no,tries:0};if(m&&m.t==='read')RLQ.splice(rlBusy?1:0,0,j);else RLQ.push(j);rlPump()})}
+function rlPost(m,hook){return new Promise((ok,no)=>{const j={m,ok,no,tries:0,hook};if(m&&m.t==='read')RLQ.splice(rlBusy?1:0,0,j);else RLQ.push(j);rlPump()})}
 async function rlPump(){if(rlBusy)return;rlBusy=true;
-  while(RLQ.length){const j=RLQ[0];
+  while(RLQ.length){const j=RLQ[0];let why='';
     try{if(typeof fetch!=='function')throw new Error('no fetch');
-      const r=await fetch(rlTopic(),{method:'POST',body:JSON.stringify(j.m)});
-      if(r.status===429||r.status>=500){j.tries++;let ra=0;try{ra=+r.headers.get('Retry-After')||0}catch(e){}
-        if(j.tries>6){RLQ.shift();j.no(new Error('HTTP '+r.status+(r.status===429?' — เซิร์ฟเวอร์ ntfy.sh จำกัดจำนวนข้อความ (ส่งถี่/เกินโควต้าวันนี้) ลองใหม่ภายหลัง หรือเปลี่ยนเซิร์ฟเวอร์รีเลย์ในตั้งค่า':'')));continue}
-        RL.err='ถูกจำกัดความถี่ (HTTP '+r.status+') — กำลังลองส่งใหม่ครั้งที่ '+j.tries+'…';try{rlChip();render()}catch(e){}
-        await new Promise(k=>setTimeout(k,Math.max(ra*1000,Math.min(30000,2500*j.tries))));continue}
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      RL.err='';RLQ.shift();j.ok(true);await new Promise(k=>setTimeout(k,600))}
-    catch(e){RLQ.shift();j.no(e)}}
+      const gc=rlTx()?gsCfg():null;
+      if(gc&&!(RL.gskip&&Date.now()<RL.gskip)){try{await gsPut(gc,j.m);RL.via='gs';RL.err='';RL.gerr='';RLQ.shift();j.ok(true);await new Promise(k=>setTimeout(k,120));continue}
+        catch(ge){RL.gerr=(ge&&ge.name==='AbortError')?'Google ตอบช้า':((ge&&ge.message)||'Google ผิดพลาด');if(/รุ่นเก่า|token/i.test(RL.gerr))RL.gskip=Date.now()+60000}}
+      const ac=typeof AbortController==='function'?new AbortController():null,tm=ac?setTimeout(()=>ac.abort(),10000):0;
+      let r;try{r=await fetch(rlTopic(),{method:'POST',body:JSON.stringify(j.m),signal:ac?ac.signal:undefined})}finally{clearTimeout(tm)}
+      if(r.ok){RL.via='ntfy';RL.err='';RLQ.shift();j.ok(true);await new Promise(k=>setTimeout(k,500));continue}
+      if(r.status===429||r.status>=500){why='HTTP '+r.status+(r.status===429?' (ntfy.sh จำกัดความถี่/โควต้า)':'')}
+      else{RLQ.shift();j.no(new Error('HTTP '+r.status));continue}
+      let ra=0;try{ra=+r.headers.get('Retry-After')||0}catch(e){}j.ra=ra}
+    catch(e){why=(e&&e.name==='AbortError')?'ตอบช้าเกิน 10 วินาที (สัญญาณไม่เสถียร/เครือข่ายบล็อก ntfy.sh)':'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ('+((e&&e.message)||'network')+')'}
+    j.tries++;
+    if(j.tries>=7){RLQ.shift();j.no(new Error(why+' — ลองแล้ว 7 ครั้ง'));continue}
+    RL.err=why;const msg='ลองใหม่ครั้งที่ '+j.tries+'/6 · '+why;try{j.hook&&j.hook(msg);rlChip();render()}catch(e){}
+    await new Promise(k=>setTimeout(k,Math.max((j.ra||0)*1000,Math.min(15000,2000*j.tries))))}
   rlBusy=false}
 /* ในแอปมือถือ: ถ้าจับคู่รหัสแล้ว ให้เป็นโหมด “ส่งขึ้นจอ” เสมอ (เดิมค้างเป็น off จึงไม่ขึ้นจอคอม) */
 function rlAuto(){if(rlBridge()&&RL.code&&RL.role!=='send'){RL.role='send';rlSave();try{rlConnect()}catch(e){}}return RL.role==='send'&&!!RL.code}
@@ -384,7 +413,7 @@ function rlSend(r){
   if(!r||(!r.id&&!r.mech)||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
   const m={v:1,t:'read',seq:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id:r.id,size:r.size,k:r.k||null,rev:r.rev,vol:r.vol,rvol:r.rvol,flow:r.flow,time:r.time,date:r.date,ev:r.ev,res:r.res,bat:r.bat,dir:r.dir,uart:r.uart,calc:r.calc,logmin:r.logmin,cmd:r.cmd,issues:r.issues||[],meta:r.meta||null,mech:r.mech?1:0,ts:Date.now()};
   const e={r,t:Date.now(),ok:null};SENT.unshift(e);SENT.length=Math.min(SENT.length,30);RL.sent++;beep('ok');
-  rlPost(m).then(()=>{e.ok=true;render()},er=>{e.ok=false;RL.err=er.message||'ส่งไม่สำเร็จ';render()});
+  e.m=m;rlPost(m,t=>{e.info=t}).then(()=>{e.ok=true;e.via=RL.via;e.info='';render()},er=>{e.ok=false;e.info='';RL.err=er.message||'ส่งไม่สำเร็จ';render()});
   render();return true}
 function rlPush(force){if(IS_MON||RL.role!=='recv'||!RL.code)return;const ids=[];S.meters.forEach((m,i)=>{if(m.id)ids.push([i+1,m.id])});const sig=JSON.stringify(ids);if(!force&&sig===RL.msig)return;RL.msig=sig;rlPost({v:1,t:'meters',ids,ts:Date.now()}).catch(()=>{RL.msig=''})}
 function rlRecv(m){
@@ -397,7 +426,7 @@ function rlRecv(m){
   RL.last=Date.now();RL.n++;
   applyRead(Object.assign({},m,{k8:m.k?m.k.map(k8):null,ts:Date.now(),issues:m.issues||[]}),'phone')}
 function rlConnect(){
-  try{RL.es&&RL.es.close()}catch(e){}RL.es=null;RL.st='off';
+  try{RL.es&&RL.es.close()}catch(e){}RL.es=null;RL.st='off';try{rlGsStart()}catch(e){}
   if(IS_MON||(RL.role!=='recv'&&RL.role!=='send')||!RL.code||typeof EventSource==='undefined'){rlChip();return}
   try{const es=new EventSource(rlTopic()+'/sse'+(RL.role==='send'?'?since=12h':''));RL.es=es;RL.st='conn';
     es.onopen=()=>{RL.st='on';rlChip();if(RL.role==='send'){if(Date.now()-rlHelloT>300000){rlHelloT=Date.now();rlPost({v:1,t:'hello',ts:Date.now()}).catch(()=>{})}}else{rlPush(true);try{klibSync();klibPush(true)}catch(e){}}};es.onerror=()=>{RL.st='retry';rlChip()};
@@ -406,8 +435,8 @@ function rlConnect(){
   rlChip()}
 function rlText(){if(IS_MON)return '🖥 จอแสดงผลแยก'+(RL.code?' · '+RL.code.toUpperCase():'');const ago=RL.last?Math.max(0,Math.round((Date.now()-RL.last)/1000)):null;
   if(RL.role==='off'||!RL.code)return RL.role==='off'?'📡 ใช้เครื่องเดียว':'📡 ยังไม่จับคู่';
-  if(RL.role==='send')return '📱 ส่งขึ้นจอ · รหัส '+RL.code.toUpperCase()+' · ส่งแล้ว '+RL.sent;
-  return (RL.st==='on'?'🟢':RL.st==='conn'?'🟡':'🔴')+' รับจากมือถือ · '+RL.code.toUpperCase()+(RL.st==='on'?' · เชื่อมต่อแล้ว':RL.st==='conn'?' · กำลังเชื่อมต่อ…':' · ขาดการเชื่อมต่อ')+(ago!=null?' · ล่าสุด '+(ago<60?ago+' วิ':Math.floor(ago/60)+' นาที')+'ที่แล้ว':'')}
+  if(RL.role==='send')return '📱 ส่งขึ้นจอ · รหัส '+RL.code.toUpperCase()+' · ส่งแล้ว '+RL.sent+(RL.via==='gs'?' · ผ่าน Google':RL.via==='ntfy'?' · ผ่าน ntfy':'');
+  return ((RL.st==='on'||(RL.gok&&Date.now()-RL.gok<12000))?'🟢':RL.st==='conn'?'🟡':'🔴')+' รับจากมือถือ · '+RL.code.toUpperCase()+((RL.gok&&Date.now()-RL.gok<12000)?' · เชื่อมต่อแล้ว (Google)':RL.st==='on'?' · เชื่อมต่อแล้ว':RL.st==='conn'?' · กำลังเชื่อมต่อ…':' · ขาดการเชื่อมต่อ')+(ago!=null?' · ล่าสุด '+(ago<60?ago+' วิ':Math.floor(ago/60)+' นาที')+'ที่แล้ว':'')}
 function rlChip(){const t=rlText();['#rlchip','#mrl'].forEach(s=>{const el=$(s);if(el)el.textContent=t})}
 function save(){try{localStorage.setItem(LS,JSON.stringify(S));localStorage.setItem(TPLK,JSON.stringify(S.tpl))}catch(e){}try{BC&&!IS_MON&&BC.postMessage({t:'state',S,LAST})}catch(e){}}
 
@@ -1221,7 +1250,7 @@ function vSend(A){
   return`<div class="card" style="border-left:6px solid var(--acc2)"><h2><em>📱</em>โหมดส่งค่าขึ้นจอคอมพิวเตอร์</h2>
    <p class="sub">แตะมิเตอร์ด้วยแอป SMCV4 Reader — ค่าจะถูกส่งไปแสดงบนจอคอมพิวเตอร์ทันที · รหัสจับคู่ <b class="mono">${esc(RL.code.toUpperCase())}</b> · ส่งแล้ว <b>${RL.sent}</b> ครั้ง</p>
    ${dial(r||null,0)}
-   <div style="text-align:center;margin-top:10px">${!e?'<span class="pill mut">รอแตะมิเตอร์…</span>':e.ok===null?'<span class="pill warn">กำลังส่ง…</span>':e.ok?'<span class="pill ok">✔ ส่งขึ้นจอคอมพิวเตอร์แล้ว</span>':'<span class="pill bad">✖ ส่งไม่สำเร็จ ('+esc(RL.err)+') — ตรวจอินเทอร์เน็ตของมือถือ แล้วแตะใหม่</span>'}</div>
+   <div style="text-align:center;margin-top:10px">${!e?'<span class="pill mut">รอแตะมิเตอร์…</span>':e.ok===null?'<span class="pill warn">กำลังส่ง…</span>'+(e.info?'<div style="font-size:.8rem;color:var(--warn);margin-top:6px">'+esc(e.info)+'</div>':''):e.ok?'<span class="pill ok">✔ ส่งขึ้นจอคอมพิวเตอร์แล้ว'+(e.via==='gs'?' (ผ่าน Google)':e.via==='ntfy'?' (ผ่าน ntfy)':'')+'</span>':'<span class="pill bad">✖ ส่งไม่สำเร็จ ('+esc(RL.err)+') </span><div style="margin-top:8px"><button class="btn" data-a="rlresend">↻ ส่งซ้ำ</button></div>'}</div>
    <div class="log" style="margin-top:12px">${SENT.slice(0,8).map(x=>`<div class="${x.ok===false?'bd':''}"><b class="mono">${esc(x.r.id)}</b> · ${fx(x.r.vol/1e5,5)} m³ · ${x.ok===null?'กำลังส่ง':x.ok?'ส่งแล้ว':'ล้มเหลว'} <span class="hint">${fdt(x.t).slice(11)}</span></div>`).join('')||'<div class="hint">ยังไม่มีการส่ง</div>'}</div>
    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm" data-a="relay">⚙ ตั้งค่าการเชื่อมต่อ</button><button class="btn sm" data-a="rltest">🧪 ส่งสัญญาณทดสอบ</button></div></div>`}
 function relayHtml(){const o=(v,t)=>`<option value="${v}" ${RL.role===v?'selected':''}>${t}</option>`;
@@ -1229,11 +1258,12 @@ function relayHtml(){const o=(v,t)=>`<option value="${v}" ${RL.role===v?'selecte
   <p class="hint" style="margin-bottom:8px">แอป SMCV4 Reader บนมือถือแตะอ่านมิเตอร์ → ส่งขึ้นอินเทอร์เน็ต → จอคอมพิวเตอร์แสดงเป็นหน้าปัดมิเตอร์ขนาดใหญ่ทันที ใช้ <b>รหัสจับคู่เดียวกัน</b> ทั้งสองเครื่อง</p>
   <div class="fr"><div class="fld"><label>เครื่องนี้ทำหน้าที่</label><select id="rlRole">${o('recv','🖥 คอมพิวเตอร์ — รับค่า แสดงผล')}${o('send','📱 มือถือ — ส่งค่า')}${o('off','⛔ ปิด — ใช้เครื่องเดียว')}</select></div>
   <div class="fld"><label>รหัสจับคู่ (6–16 ตัว a–z 0–9)</label><input id="rlCode" class="mono" value="${esc(RL.code.toUpperCase())}" maxlength="16" style="text-transform:uppercase"></div></div>
-  <div class="fr"><div class="fld"><label>เซิร์ฟเวอร์รีเลย์ (ขั้นสูง)</label><input id="rlSrv" value="${esc(RL.server)}"></div>
+  <div class="fr"><div class="fld"><label>ช่องทางส่งค่า</label><select id="rlTp"><option value="auto" ${RL.tp!=='ntfy'?'selected':''}>อัตโนมัติ — Google Apps Script ของ FSL (ไม่ติดโควต้า) · สำรอง ntfy</option><option value="ntfy" ${RL.tp==='ntfy'?'selected':''}>ntfy.sh อย่างเดียว (ติดโควต้าฟรีได้)</option></select></div></div>
+  <div class="fr"><div class="fld"><label>เซิร์ฟเวอร์รีเลย์ ntfy (ขั้นสูง)</label><input id="rlSrv" value="${esc(RL.server)}"></div>
   <div class="fld"><label>เสียงเตือน</label><select id="rlBeep"><option value="1" ${RL.beep?'selected':''}>เปิด (ติ๊ง เมื่ออ่านสำเร็จ / ต่ำเมื่อไม่ผ่าน)</option><option value="0" ${RL.beep?'':'selected'}>ปิด</option></select></div></div>
   <ol class="gd" style="margin:10px 0"><li><b>คอมพิวเตอร์</b><span>เลือก “คอมพิวเตอร์” → กด “บันทึก” แล้วจดรหัสจับคู่ (หรือกด สุ่มรหัสใหม่) → กด 📺 Monitor เพื่อขึ้นจอใหญ่</span></li><li><b>มือถือ</b><span>เปิดแอป SMCV4 Reader → แท็บ Test Bench → กดแถบ 📡 → เลือก “มือถือ” ใส่รหัสเดียวกัน → บันทึก</span></li><li><b>ทดสอบ</b><span>กด “ส่งสัญญาณทดสอบ” บนมือถือ จอคอมพิวเตอร์ต้องขึ้นข้อความรับสัญญาณ</span></li></ol>
   <p class="hint">🔒 ค่าที่ส่งคือ Meter ID · ปริมาตร · จำนวนรอบ · K1–K20 ผ่านบริการ ntfy.sh ใครรู้รหัสจะเห็นข้อมูลได้ จึงใช้รหัสสุ่มและเปลี่ยนเมื่อไม่ต้องการแชร์ · องค์กรที่ต้องการความปลอดภัยสูงสามารถตั้งเซิร์ฟเวอร์ ntfy ของตนเองในช่อง “เซิร์ฟเวอร์รีเลย์”</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn p" data-a="rlsave">💾 บันทึกและเชื่อมต่อ</button><button class="btn" data-a="rlnew">🎲 สุ่มรหัสใหม่</button><button class="btn" data-a="rlcopy">📋 คัดลอกรหัส</button><button class="btn" data-a="rltest">🧪 ส่งสัญญาณทดสอบ</button><button class="btn" data-a="mclose">ปิด</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn p" data-a="rlsave">💾 บันทึกและเชื่อมต่อ</button><button class="btn" data-a="rlnew">🎲 สุ่มรหัสใหม่</button><button class="btn" data-a="rlcopy">📋 คัดลอกรหัส</button><button class="btn" data-a="rltest">🧪 ส่งสัญญาณทดสอบ</button> <button class="btn" data-a="rldiag">🩺 ตรวจเครือข่าย</button><button class="btn" data-a="mclose">ปิด</button></div>
   <p class="hint" id="rlst" style="margin-top:8px">${esc(rlText())}</p>`}
 
 /* ---------- Monitor จอใหญ่: หน้าปัดมิเตอร์เสมือนจริง + ผังแท่น ---------- */
@@ -1335,7 +1365,10 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='rlcopy'){const c=($('#rlCode')||{}).value||RL.code;(navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toast('คัดลอกรหัสแล้ว'),()=>toast('รหัส: '+c,6000))}
   else if(a==='rlsave'){const role=$('#rlRole').value,code=($('#rlCode').value||'').toLowerCase().replace(/[^a-z0-9]/g,''),srv=($('#rlSrv').value||'').trim()||'https://ntfy.sh';
     if(role!=='off'&&code.length<6){toast('รหัสจับคู่ต้องยาวอย่างน้อย 6 ตัว');return}
-    RL.role=role;if(role!=='off')RL.code=code;RL.server=srv;RL.beep=$('#rlBeep').value==='1';rlSave();rlConnect();closeModal();if(role==='send')TAB='run';render();toast(role==='recv'?'พร้อมรับค่าจากมือถือ · รหัส '+RL.code.toUpperCase():role==='send'?'พร้อมส่งค่าขึ้นจอ · รหัส '+RL.code.toUpperCase():'ปิดการเชื่อมต่อแล้ว (ใช้เครื่องเดียว)',3200)}
+    RL.role=role;if(role!=='off')RL.code=code;RL.server=srv;RL.tp=($('#rlTp')||{}).value==='ntfy'?'ntfy':'auto';RL.beep=$('#rlBeep').value==='1';rlSave();rlConnect();closeModal();if(role==='send')TAB='run';render();toast(role==='recv'?'พร้อมรับค่าจากมือถือ · รหัส '+RL.code.toUpperCase():role==='send'?'พร้อมส่งค่าขึ้นจอ · รหัส '+RL.code.toUpperCase():'ปิดการเชื่อมต่อแล้ว (ใช้เครื่องเดียว)',3200)}
+  else if(a==='rlresend'){const e=SENT[0];if(!e||!e.m){toast('ไม่มีรายการให้ส่งซ้ำ');return}e.ok=null;e.info='';RL.err='';rlPost(e.m,t=>{e.info=t}).then(()=>{e.ok=true;e.info='';render()},er=>{e.ok=false;RL.err=er.message;render()});render()}
+  else if(a==='rldiag'){toast('กำลังตรวจการเชื่อมต่อกับ '+RL.server+' …',2500);const t0=Date.now(),ac=typeof AbortController==='function'?new AbortController():null,tm=ac?setTimeout(()=>ac.abort(),8000):0;
+    fetch(RL.server.replace(/\/+$/,'')+'/v1/health',{signal:ac?ac.signal:undefined}).then(r=>{clearTimeout(tm);toast(r.ok?'✔ ติดต่อเซิร์ฟเวอร์ได้ ('+(Date.now()-t0)+' มิลลิวินาที) — ถ้ายังส่งไม่ขึ้น แสดงว่าติดโควต้า/ความถี่ ให้รอสักครู่':'⚠ เซิร์ฟเวอร์ตอบ HTTP '+r.status+(r.status===429?' (ถูกจำกัดความถี่/โควต้า)':''),6000)},e=>{clearTimeout(tm);toast('✖ ติดต่อเซิร์ฟเวอร์ไม่ได้ — '+((e&&e.name==='AbortError')?'ช้าเกิน 8 วินาที':'เครือข่ายบล็อกหรือไม่มีสัญญาณ')+' · ลองสลับ Wi-Fi/ข้อมูลมือถือ',6500)})}
   else if(a==='rltest'){if(RL.role!=='send'||!RL.code){toast('ตั้งค่าเครื่องนี้เป็น “มือถือ” และใส่รหัสก่อน',3200);return}rlPost({v:1,t:'ping',ts:Date.now()}).then(()=>toast('ส่งสัญญาณทดสอบแล้ว — ดูที่จอคอมพิวเตอร์',3000),e=>toast('✖ ส่งไม่สำเร็จ: '+e.message,4200))}
   else if(a==='monmode'){const N=Math.max(S.batch.nm,S.meters.length),cur=MONV==='dials'||(MONV==='auto'&&N<=6);MONV=cur?'tiles':'dials';MONH='';renderMon()}
   else if(a==='mclose')closeModal();
