@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v25"
+                  private const val VERSION = "v26"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -376,6 +376,7 @@ jobs:
                               val j = if (json.isNotEmpty()) JSONObject(json) else JSONObject()
                               editResetAll()
                               editPendingRevert = j.optJSONObject("revert")
+                              if (editPendingRevert != null) ed.testMode = false
                               editOpenScreen()
                               if (editPendingRevert != null) toast("แตะ “โหลดค่าจากมิเตอร์” ที่มิเตอร์ ${editPendingRevert!!.optString("newId", "")} เพื่อย้อนกลับ")
                           } catch (e: Exception) { editOpenScreen() }
@@ -1696,6 +1697,7 @@ jobs:
                   var onNfc = false; var nfcVal = 15; var nfcUnit = "min"
                   var onTime = false; var timeMode = 0; var timeAt = 0L
                   var cmdOn = true
+                  var testMode = false
                   var by = ""; var reason = ""; var note = ""; var revOf = ""
                   fun logMin(): Int = if (logUnit == "h") logVal * 60 else logVal
                   fun nfcMin(): Int = if (nfcUnit == "h") nfcVal * 60 else nfcVal
@@ -1727,6 +1729,7 @@ jobs:
               private lateinit var editDiffTv: TextView
               private lateinit var editGoBtn: Button
               private lateinit var editBy: EditText
+              private lateinit var editWhoCard: LinearLayout
               private lateinit var editNoteEt: EditText
               private lateinit var editRecentTv: TextView
               private var editPulse: android.animation.ObjectAnimator? = null
@@ -1767,8 +1770,8 @@ jobs:
                   if (ed.onLog && ed.logMin() !in 1..65535) return "ช่วงบันทึกต้องอยู่ระหว่าง 1–65,535 นาที"
                   if (ed.onNfc && ed.nfcMin() !in 1..65535) return "ช่วงเก็บลง NFC ต้องอยู่ระหว่าง 1–65,535 นาที"
                   if (editCollect().isEmpty()) return "ยังไม่ได้เลือกรายการที่จะแก้ (หรือค่าเท่าเดิม)"
-                  if (editBy.text.toString().trim().isEmpty()) return "กรอกชื่อผู้แก้ไข"
-                  if (ed.reason.isEmpty()) return "เลือกเหตุผลที่แก้ไข"
+                  if (!ed.testMode && editBy.text.toString().trim().isEmpty()) return "กรอกชื่อผู้แก้ไข"
+                  if (!ed.testMode && ed.reason.isEmpty()) return "เลือกเหตุผลที่แก้ไข"
                   return null
               }
 
@@ -1781,6 +1784,8 @@ jobs:
                   editDiffTv.text = sb.toString().trimEnd()
                   val err = editValidate()
                   editGoBtn.alpha = if (err == null) 1f else 0.45f
+                  editGoBtn.text = if (ed.testMode) "✍  แก้ไขเลย แล้วแตะมิเตอร์" else "🔎  ตรวจสอบ & ยืนยันการแก้ไข"
+                  editWhoCard.visibility = if (ed.testMode) View.GONE else View.VISIBLE
                   editHeroId.text = if (ed.id0.isEmpty()) "--------" else ed.id0
                   editHeroCap.text = if (ed.id0.isEmpty()) "" else "${ed.size0} mm  •  ${dirTxt(ed.dir0)}  •  บันทึกทุก ${fmtMin(ed.log0)}  •  เวลาในมิเตอร์ ${ed.time0}"
               }
@@ -1855,6 +1860,17 @@ jobs:
                   titleRow.gravity = Gravity.CENTER_VERTICAL
                   titleRow.addView(titleCol, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                   titleRow.addView(tvNfc3, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+
+                  // ---- สลับโหมด: ทดสอบ (ไม่บันทึก) / Service (บันทึกประวัติ) ----
+                  ed.testMode = prefs.getBoolean("edTest", false)
+                  val modeBox = LinearLayout(this)
+                  modeBox.orientation = LinearLayout.VERTICAL
+                  modeBox.setPadding(dp(12), dp(10), dp(12), dp(10))
+                  modeBox.background = rounded(Color.WHITE, 20, Color.argb(60, 255, 255, 255), 1)
+                  modeBox.addView(provSeg(listOf("🧪 ช่วงทดสอบ" to 1, "🛠 Service" to 0), { if (ed.testMode) 1 else 0 }, { ed.testMode = it == 1; prefs.edit().putBoolean("edTest", ed.testMode).apply() }))
+                  val modeHint = label("", 12f, cGrey)
+                  provRefresh.add { modeHint.text = if (ed.testMode) "ไม่ต้องใส่ชื่อ/เหตุผล · ไม่บันทึกประวัติ · แก้แล้วเขียนทันที — เหมาะกับการแก้ระหว่างทดสอบมิเตอร์" else "ต้องใส่ชื่อผู้แก้ + เหตุผล · บันทึกประวัติขึ้น Google Sheet ทุกครั้ง — ใช้กับมิเตอร์ที่ผลิตแล้ว/หน้างาน" }
+                  modeBox.addView(modeHint, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
 
                   // ---- ขั้น 1: โหลดค่าปัจจุบัน ----
                   editLoadCard = LinearLayout(this)
@@ -1998,6 +2014,7 @@ jobs:
                   })
                   cWho.addView(editNoteEt, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
 
+                  editWhoCard = cWho
                   // ---- สรุป + ปุ่ม ----
                   val cSum = provCard("✓", "สรุปการแก้ไข  (เดิม → ใหม่)", "ตรวจให้ถูกต้องก่อนกดยืนยัน")
                   editDiffTv = label("", 13f, cInk)
@@ -2030,7 +2047,7 @@ jobs:
                   content.orientation = LinearLayout.VERTICAL
                   content.setPadding(dp(16), dp(14), dp(16), dp(24))
                   fun add(v: View, top: Int = 12) = content.addView(v, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(top) })
-                  add(logoRow, 0); add(titleRow, 14); add(editLoadCard, 14); add(editStatusCard); add(editFormBox)
+                  add(logoRow, 0); add(titleRow, 14); add(modeBox, 12); add(editLoadCard, 12); add(editStatusCard); add(editFormBox)
                   add(label("🧾 การแก้ไขล่าสุดบนเครื่องนี้", 13f, Color.WHITE, true), 18); add(editRecentTv, 4)
                   add(footer, 16)
 
@@ -2185,7 +2202,7 @@ jobs:
                       editSetStatus("✔", "แก้ไขและตรวจสอบสำเร็จ",
                           "Meter ID $newId\n" + items.joinToString("\n") { "• ${it.label}:  ${it.from}  →  ${it.to}" } +
                               "\n\n" + (if (kSame) "🔒 ตรวจแล้ว: ค่า K1–K20 เหมือนเดิมทุกไบต์" else "ℹ ไม่ได้เทียบค่า K") +
-                              "\n🧾 บันทึกประวัติแล้ว: ${ed.by} · ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US).format(Date())}",
+                              (if (ed.testMode) "\n🧪 โหมดทดสอบ — ไม่บันทึกประวัติ" else "\n🧾 บันทึกประวัติแล้ว: ${ed.by} · ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US).format(Date())}"),
                           Color.parseColor("#6EE7B7"), Color.argb(70, 52, 211, 153), cGreen, false)
                       editButtons(provSmallBtn("↩ ย้อนกลับ", false) { editStartUndo(items) }, provSmallBtn("แก้ต่อ / ตัวอื่น", true) { editAfterDone() })
                   } else {
@@ -2249,6 +2266,7 @@ jobs:
                   val err = editValidate()
                   if (err != null) { toast(err); return }
                   val items = editCollect()
+                  if (ed.testMode) { editQueueWrite(items); return }
                   val msg = StringBuilder()
                   msg.append("มิเตอร์ ${ed.id0}\n\n")
                   items.forEach { msg.append("• ${it.label}\n    ${it.from}  →  ${it.to}\n") }
@@ -2284,6 +2302,7 @@ jobs:
 
               /** สร้างรายการ Audit แล้วส่งเข้าเว็บ (คิวไว้ถ้าเว็บยังไม่พร้อม) — คืน aid */
               private fun editDeliverAudit(res: JSONObject, ok: Boolean, error: String): String {
+                  if (ed.testMode) return ""
                   val aid = "A" + java.lang.Long.toString(System.currentTimeMillis(), 36).uppercase() + (100 + (Math.random() * 900).toInt())
                   val its = JSONArray()
                   editJobItems.forEach {
