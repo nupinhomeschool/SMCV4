@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v23"
+                  private const val VERSION = "v24"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -352,6 +352,22 @@ jobs:
                       return "OK"
                   }
 
+                  /** หน้าเว็บรายงานผลการเตรียมงานเขียนของฟอร์มลงทะเบียน */
+                  @JavascriptInterface
+                  fun pvResult(json: String) {
+                      val j = try { JSONObject(json) } catch (e: Exception) { return }
+                      runOnUiThread { provOnPlan(j) }
+                  }
+
+                  /** หน้าเว็บขอเปิดฟอร์มลงทะเบียนมิเตอร์ใหม่ (ส่งค่าที่ตั้งไว้มาเป็นค่าเริ่มต้น) */
+                  @JavascriptInterface
+                  fun openProv(json: String) {
+                      runOnUiThread {
+                          try { if (json.isNotEmpty()) pv.load(JSONObject(json)) } catch (e: Exception) {}
+                          provOpenScreen()
+                      }
+                  }
+
                   @JavascriptInterface
                   fun cancelWrite() {
                       runOnUiThread { cancelWriteJob(false) }
@@ -383,6 +399,7 @@ jobs:
                   setContentView(FrameLayout(this).apply {
                       addView(webScreen, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))      // เว็บอยู่ข้างล่าง ไม่ถูกซ่อน
                       addView(readerScreen, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))   // หน้าอ่าน NFC ซ้อนด้านบน
+                      addView(provBuildScreen(), FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) // ฟอร์มลงทะเบียนมิเตอร์ใหม่
                   })
 
                   nfc = NfcAdapter.getDefaultAdapter(this)
@@ -475,6 +492,8 @@ jobs:
                       visibility = View.GONE
                   }
                   val btnWriteTab = pill("✍  เขียนค่าลงมิเตอร์  (K · ทิศทาง · ช่วงบันทึก · เวลา)", false) { openWriteTab() }
+                  val btnProv = pill("🆕  ลงทะเบียน / ตั้งค่ามิเตอร์ใหม่", true) { provOpenScreen() }
+                  btnProv.textSize = 16f
                   val btnCam = pill("📷  ถ่ายหน้าปัดมิเตอร์", true) { openCamera() }
                   val btnPick = pill("🖼 เลือกรูป", false) { openGallery() }
                   camRow = LinearLayout(this).apply {
@@ -510,6 +529,7 @@ jobs:
                       addView(logo, LinearLayout.LayoutParams(MATCH_PARENT, dp(34)))
                       addView(titleRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
                       addView(writeBox, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
+                      addView(btnProv, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(14) })
                       addView(progCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(16) })
                       addView(infoCard, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(14) })
                       addView(cbSave, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
@@ -646,6 +666,7 @@ jobs:
 
               @Deprecated("Deprecated in Java")
               override fun onBackPressed() {
+                  if (provOpen) { provClose(); return }
                   if (readerScreen.visibility == View.GONE) {
                       if (webView.canGoBack()) webView.goBack() else showReaderScreen()
                   } else {
@@ -658,6 +679,7 @@ jobs:
               override fun onTagDiscovered(tag: Tag) {
                   val wj = writeJob
                   if (wj != null) { if (!writing) doWrite(tag, wj); return }
+                  if (provOpen) { runOnUiThread { toast("กด “เตรียมเขียน” ก่อน แล้วจึงแตะมือถือที่มิเตอร์") }; return }
                   if (effectiveMode() == "mech") { runOnUiThread { toast("โหมดกลไก: ใช้ปุ่ม 📷 ถ่ายหน้าปัด (กดปุ่มโหมดเพื่อกลับไปอ่าน NFC)") }; return }
                   if (reading) return
                   reading = true
@@ -1032,6 +1054,7 @@ jobs:
                       !a.isEnabled -> { tvNfc.text = "NFC ปิดอยู่"; tvNfc.background = rounded(Color.parseColor("#B45309"), 20) }
                       else -> { tvNfc.text = "●  NFC พร้อม"; tvNfc.background = rounded(cBlue, 20, Color.argb(120, 255, 255, 255), 1) }
                   }
+                  if (::tvNfc2.isInitialized) { tvNfc2.text = tvNfc.text; tvNfc2.background = tvNfc.background.constantState?.newDrawable()?.mutate() }
                   if (a != null && !a.isEnabled) toast("กรุณาเปิด NFC ในการตั้งค่าของมือถือ")
               }
 
@@ -1134,6 +1157,507 @@ jobs:
                       .show()
               }
 
+              // =====================================================================  ฟอร์มลงทะเบียน / ตั้งค่ามิเตอร์ดิจิทัลใหม่ (บนมือถือ)
+
+              private val cInk = Color.parseColor("#0F2A52")
+              private val cGrey = Color.parseColor("#64748B")
+              private val cLine = Color.parseColor("#DCE6F5")
+              private val cChip = Color.parseColor("#EEF4FF")
+
+              private class ProvState {
+                  var yy = 69; var mo = 11; var lot = 1; var sn = 1
+                  var model = "MJ"; var size = 25
+                  var dir = 1; var uart = 0; var calc = 1
+                  var logVal = 15; var logUnit = "min"
+                  var nfcOn = false; var guard = false
+                  fun id(): String = String.format(Locale.US, "%02d%02d%02d%02d", yy, mo, lot, sn)
+                  fun toJson(): JSONObject = JSONObject().put("yy", yy).put("mo", mo).put("lot", lot).put("sn", sn)
+                      .put("model", model).put("size", size).put("dir", dir).put("uart", uart).put("calc", calc)
+                      .put("logVal", logVal).put("logUnit", logUnit).put("nfcOn", nfcOn).put("guard", guard)
+                  fun load(j: JSONObject) {
+                      yy = j.optInt("yy", yy).coerceIn(0, 99); mo = j.optInt("mo", mo).coerceIn(1, 12)
+                      lot = j.optInt("lot", lot).coerceIn(0, 99); sn = j.optInt("sn", sn).coerceIn(0, 99)
+                      model = if (j.optString("model", model) == "SJ") "SJ" else "MJ"
+                      size = j.optInt("size", size).coerceIn(1, 255)
+                      dir = if (j.optInt("dir", dir) == 0) 0 else 1
+                      uart = if (j.optInt("uart", uart) == 0) 0 else 1
+                      calc = if (j.optInt("calc", calc) == 0) 0 else 1
+                      logVal = j.optInt("logVal", logVal).coerceAtLeast(1)
+                      logUnit = if (j.optString("logUnit", logUnit) == "h") "h" else "min"
+                      nfcOn = j.optBoolean("nfcOn", nfcOn); guard = j.optBoolean("guard", guard)
+                  }
+              }
+
+              private val pv = ProvState()
+              private lateinit var provScreen: View
+              private lateinit var provScroll: ScrollView
+              private lateinit var tvNfc2: TextView
+              private var provOpen = false
+              private var provPhase = 0           // 0 = กรอกฟอร์ม · 1 = เตรียม/รอแตะ/กำลังเขียน · 2 = เขียนสำเร็จ
+              private lateinit var provStatusCard: LinearLayout
+              private lateinit var provIcon: TextView
+              private lateinit var provTitle: TextView
+              private lateinit var provDetail: TextView
+              private lateinit var provBtnRow: LinearLayout
+              private lateinit var provGoBtn: Button
+              private lateinit var provHeroId: TextView
+              private lateinit var provHeroCap: TextView
+              private lateinit var provSummary: TextView
+              private lateinit var provTime: TextView
+              private lateinit var provErr: TextView
+              private val provRefresh = mutableListOf<() -> Unit>()
+              private var provPulse: android.animation.ObjectAnimator? = null
+              private var provWroteId = ""
+              private val provClock = object : Runnable {
+                  override fun run() {
+                      if (!provOpen) return
+                      provTime.text = "🕒  " + SimpleDateFormat("HH:mm:ss  •  dd/MM/yyyy", Locale.US).format(Date())
+                      handler.postDelayed(this, 1000)
+                  }
+              }
+
+              private fun provSave() { prefs.edit().putString("pv", pv.toJson().toString()).apply() }
+              private fun provLoad() {
+                  try { prefs.getString("pv", null)?.let { pv.load(JSONObject(it)) } } catch (_: Exception) {}
+              }
+
+              private fun provLogMin(): Int = if (pv.logUnit == "h") pv.logVal * 60 else pv.logVal
+              private fun provLogText(): String =
+                  if (pv.logUnit == "h") "${pv.logVal} ชั่วโมง" else "${pv.logVal} นาที"
+
+              private fun provUpdate() {
+                  provRefresh.forEach { it() }
+                  val id = pv.id()
+                  val sp = android.text.SpannableString(id)
+                  fun col(a: Int, b: Int, c: Int) { sp.setSpan(android.text.style.ForegroundColorSpan(c), a, b, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE) }
+                  col(0, 2, Color.WHITE); col(2, 4, cAmber); col(4, 6, cSky); col(6, 8, cGreen)
+                  provHeroId.text = sp
+                  provHeroCap.text = "ปี พ.ศ. 25${String.format(Locale.US, "%02d", pv.yy)}  •  เดือน ${pv.mo}  •  Lot ${pv.lot}  •  ลำดับ ${pv.sn}"
+                  provSummary.text = "• Meter ID  $id\n" +
+                      "• รุ่น  ${if (pv.model == "MJ") "Multijet" else "Single Jet"}  ·  ขนาด ${pv.size} mm\n" +
+                      "• ทิศทางใบพัด  ${if (pv.dir == 1) "Backward" else "Forward"}\n" +
+                      "• Log UART  ${if (pv.uart == 1) "เปิด" else "ปิด"}  ·  โหมดคำนวณ  ${if (pv.calc == 1) "Cal FW or BR" else "Cal > FW"}\n" +
+                      "• ช่วงบันทึกค่า  ${provLogText()}" + (if (pv.nfcOn) "  (เก็บลง NFC เท่ากัน)" else "") + "\n" +
+                      "• ค่าคงที่ K1–K20  ตามคลัง K ของรุ่น/ขนาดนี้\n" +
+                      "• เวลา/วันที่  ตั้งให้เท่ามือถือในวินาทีที่แตะ"
+              }
+
+              private fun provCard(num: String, title: String, sub: String): LinearLayout {
+                  val card = LinearLayout(this)
+                  card.orientation = LinearLayout.VERTICAL
+                  card.setPadding(dp(16), dp(14), dp(16), dp(16))
+                  card.background = rounded(Color.WHITE, 22, Color.argb(60, 255, 255, 255), 1)
+                  val head = LinearLayout(this)
+                  head.orientation = LinearLayout.HORIZONTAL
+                  head.gravity = Gravity.CENTER_VERTICAL
+                  val badge = label(num, 14f, Color.WHITE, true)
+                  badge.gravity = Gravity.CENTER
+                  badge.background = rounded(cBlue, 50)
+                  head.addView(badge, LinearLayout.LayoutParams(dp(30), dp(30)))
+                  head.addView(label(title, 16f, cInk, true), LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginStart = dp(10) })
+                  card.addView(head)
+                  if (sub.isNotEmpty()) card.addView(label(sub, 12f, cGrey), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
+                  return card
+              }
+
+              private fun provChip(text: String, selected: () -> Boolean, onClick: () -> Unit): TextView {
+                  val t = label(text, 14f, cInk, true)
+                  t.gravity = Gravity.CENTER
+                  t.setPadding(dp(14), dp(10), dp(14), dp(10))
+                  fun paint() {
+                      if (selected()) {
+                          t.background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(cRoyal, cBlue)).apply { cornerRadius = dp(14).toFloat() }
+                          t.setTextColor(Color.WHITE)
+                      } else {
+                          t.background = rounded(cChip, 14, cLine, 1)
+                          t.setTextColor(cInk)
+                      }
+                  }
+                  t.setOnClickListener { onClick(); provUpdate() }
+                  provRefresh.add { paint() }
+                  paint()
+                  return t
+              }
+
+              private fun provSeg(opts: List<Pair<String, Int>>, get: () -> Int, set: (Int) -> Unit): LinearLayout {
+                  val row = LinearLayout(this)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  opts.forEachIndexed { i, o ->
+                      val c = provChip(o.first, { get() == o.second }, { set(o.second) })
+                      row.addView(c, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { if (i > 0) marginStart = dp(8) })
+                  }
+                  return row
+              }
+
+              private fun provScrollChips(items: List<Pair<String, () -> Unit>>, sel: List<() -> Boolean>): HorizontalScrollView {
+                  val hs = HorizontalScrollView(this)
+                  hs.isHorizontalScrollBarEnabled = false
+                  val row = LinearLayout(this)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  items.forEachIndexed { i, it ->
+                      row.addView(provChip(it.first, sel[i], it.second), LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(8) })
+                  }
+                  hs.addView(row)
+                  return hs
+              }
+
+              private fun provAskNumber(title: String, cur: Int, lo: Int, hi: Int, ok: (Int) -> Unit) {
+                  val e = EditText(this)
+                  e.inputType = InputType.TYPE_CLASS_NUMBER
+                  e.setText(cur.toString())
+                  e.setSelection(e.text.length)
+                  e.setPadding(dp(24), dp(16), dp(24), dp(8))
+                  AlertDialog.Builder(this).setTitle("$title ($lo–$hi)").setView(e)
+                      .setPositiveButton("ตกลง") { _, _ ->
+                          val v = e.text.toString().toIntOrNull()
+                          if (v != null) { ok(v.coerceIn(lo, hi)); provUpdate() }
+                      }
+                      .setNegativeButton("ยกเลิก", null).show()
+              }
+
+              private fun provStepper(name: String, hint: String, get: () -> Int, set: (Int) -> Unit, lo: Int, hi: Int): View {
+                  val col = LinearLayout(this)
+                  col.orientation = LinearLayout.VERTICAL
+                  col.gravity = Gravity.CENTER_HORIZONTAL
+                  col.setPadding(dp(6), dp(10), dp(6), dp(10))
+                  col.background = rounded(Color.parseColor("#F6F9FF"), 18, cLine, 1)
+                  col.addView(label(name, 12f, cGrey, true))
+                  val row = LinearLayout(this)
+                  row.orientation = LinearLayout.HORIZONTAL
+                  row.gravity = Gravity.CENTER_VERTICAL
+                  fun rb(t: String, d: Int): TextView {
+                      val b = label(t, 22f, Color.WHITE, true)
+                      b.gravity = Gravity.CENTER
+                      b.background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(cRoyal, cBlue)).apply { cornerRadius = dp(20).toFloat() }
+                      b.setOnClickListener { set((get() + d).coerceIn(lo, hi)); provUpdate() }
+                      return b
+                  }
+                  val v = label("", 26f, cInk, true)
+                  v.gravity = Gravity.CENTER
+                  v.setOnClickListener { provAskNumber(name, get(), lo, hi, set) }
+                  provRefresh.add { v.text = String.format(Locale.US, "%02d", get()) }
+                  row.addView(rb("−", -1), LinearLayout.LayoutParams(dp(40), dp(40)))
+                  row.addView(v, LinearLayout.LayoutParams(dp(54), WRAP_CONTENT))
+                  row.addView(rb("+", 1), LinearLayout.LayoutParams(dp(40), dp(40)))
+                  col.addView(row, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { topMargin = dp(4) })
+                  col.addView(label(hint, 11f, cGrey))
+                  return col
+              }
+
+              private fun provSwitch(text: String, get: () -> Boolean, set: (Boolean) -> Unit): CheckBox {
+                  val cb = CheckBox(this)
+                  cb.text = text
+                  cb.textSize = 13f
+                  cb.typeface = tfReg
+                  cb.setTextColor(cInk)
+                  cb.buttonTintList = ColorStateList.valueOf(cBlue)
+                  cb.isChecked = get()
+                  cb.setOnCheckedChangeListener { _, c -> set(c); provUpdate() }
+                  return cb
+              }
+
+              private fun provSmallBtn(text: String, filled: Boolean, onClick: () -> Unit): Button = pill(text, filled, onClick).apply {
+                  textSize = 13f
+                  setPadding(dp(10), dp(10), dp(10), dp(10))
+              }
+
+              private fun provBuildScreen(): View {
+                  provLoad()
+                  tvNfc2 = label("", 12f, Color.WHITE, true)
+                  tvNfc2.setPadding(dp(12), dp(6), dp(12), dp(6))
+
+                  // ---- หัว: โลโก้ FSL + ชื่อหน้า + สถานะ NFC ----
+                  val logoRow = LinearLayout(this)
+                  logoRow.orientation = LinearLayout.HORIZONTAL
+                  logoRow.gravity = Gravity.CENTER_VERTICAL
+                  logoRow.addView(logoImage("logo_full.png", ImageView.ScaleType.FIT_START), LinearLayout.LayoutParams(0, dp(34), 1f))
+                  logoRow.addView(provSmallBtn("✕  ปิด", false) { provClose() }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+                  val titleCol = LinearLayout(this)
+                  titleCol.orientation = LinearLayout.VERTICAL
+                  titleCol.addView(label("ลงทะเบียนมิเตอร์ใหม่", 23f, Color.WHITE, true))
+                  titleCol.addView(label("ตั้งค่า  →  แตะ NFC  →  เขียน + ตรวจอัตโนมัติ", 12f, cMuted))
+                  val titleRow = LinearLayout(this)
+                  titleRow.orientation = LinearLayout.HORIZONTAL
+                  titleRow.gravity = Gravity.CENTER_VERTICAL
+                  titleRow.addView(titleCol, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                  titleRow.addView(tvNfc2, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+
+                  // ---- ป้ายรหัสมิเตอร์ใหญ่ ----
+                  provHeroId = label("", 40f, Color.WHITE, true)
+                  provHeroId.gravity = Gravity.CENTER
+                  provHeroId.letterSpacing = 0.12f
+                  provHeroCap = label("", 12f, cMuted)
+                  provHeroCap.gravity = Gravity.CENTER
+                  val hero = LinearLayout(this)
+                  hero.orientation = LinearLayout.VERTICAL
+                  hero.setPadding(dp(14), dp(14), dp(14), dp(14))
+                  hero.background = glassCard()
+                  hero.addView(label("เครื่องถัดไปที่จะเขียน", 12f, cMuted).apply { gravity = Gravity.CENTER })
+                  hero.addView(provHeroId, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  hero.addView(provHeroCap, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+
+                  // ---- การ์ดสถานะการเขียน (ซ่อนจนกว่าจะกดเตรียมเขียน) ----
+                  provIcon = label("📲", 44f, Color.WHITE)
+                  provIcon.gravity = Gravity.CENTER
+                  provTitle = label("", 17f, Color.WHITE, true)
+                  provTitle.gravity = Gravity.CENTER
+                  provDetail = label("", 13f, cMuted)
+                  provDetail.gravity = Gravity.CENTER
+                  provBtnRow = LinearLayout(this)
+                  provBtnRow.orientation = LinearLayout.HORIZONTAL
+                  provStatusCard = LinearLayout(this)
+                  provStatusCard.orientation = LinearLayout.VERTICAL
+                  provStatusCard.gravity = Gravity.CENTER_HORIZONTAL
+                  provStatusCard.setPadding(dp(16), dp(16), dp(16), dp(16))
+                  provStatusCard.background = rounded(Color.argb(70, 251, 191, 36), 22, cAmber, 2)
+                  provStatusCard.addView(provIcon, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  provStatusCard.addView(provTitle, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(4) })
+                  provStatusCard.addView(provDetail, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+                  provStatusCard.addView(provBtnRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
+                  provStatusCard.visibility = View.GONE
+
+                  provErr = label("", 13f, Color.parseColor("#FEE2E2"), true)
+                  provErr.setPadding(dp(14), dp(10), dp(14), dp(10))
+                  provErr.background = rounded(Color.argb(150, 185, 28, 28), 16, cRed, 1)
+                  provErr.visibility = View.GONE
+
+                  // ---- ① รหัสมิเตอร์ ----
+                  val c1 = provCard("1", "รหัสมิเตอร์ (Meter ID 8 หลัก)", "ปี พ.ศ. · เดือนผลิต · Lot · ลำดับในล็อต — ลำดับเพิ่มให้เองหลังเขียนสำเร็จ")
+                  val g1 = LinearLayout(this); g1.orientation = LinearLayout.HORIZONTAL
+                  g1.addView(provStepper("ปี พ.ศ. (2 หลัก)", "เช่น 69 = 2569", { pv.yy }, { pv.yy = it }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginEnd = dp(5) })
+                  g1.addView(provStepper("เดือนผลิต", "1 – 12", { pv.mo }, { pv.mo = it }, 1, 12), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(5) })
+                  val g2 = LinearLayout(this); g2.orientation = LinearLayout.HORIZONTAL
+                  g2.addView(provStepper("Lot", "00 – 99", { pv.lot }, { pv.lot = it }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginEnd = dp(5) })
+                  g2.addView(provStepper("ลำดับเครื่อง", "00 – 99", { pv.sn }, { pv.sn = it }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(5) })
+                  c1.addView(g1, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  c1.addView(g2, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+                  c1.addView(label("แตะที่ตัวเลขเพื่อพิมพ์เองได้", 11f, cGrey), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+
+                  // ---- ② รุ่น / ขนาด ----
+                  val c2 = provCard("2", "รุ่นและขนาดมิเตอร์", "ขนาดจะถูกเก็บที่ตำแหน่ง 76 ของ NFC และใช้เลือกค่า K")
+                  val mseg = provSeg(listOf("Multijet" to 0, "Single Jet" to 1), { if (pv.model == "MJ") 0 else 1 }, { pv.model = if (it == 0) "MJ" else "SJ" })
+                  c2.addView(mseg, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  val sizes = listOf(15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150)
+                  c2.addView(provScrollChips(sizes.map { s -> "$s mm" to { pv.size = s } }, sizes.map { s -> { pv.size == s } }),
+                      LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+
+                  // ---- ③ การทำงานของมิเตอร์ ----
+                  val c3 = provCard("3", "การทำงานของมิเตอร์", "ค่าเริ่มต้น: Backward · Log ปิด · Cal FW or BR")
+                  c3.addView(label("🧭  ทิศทางใบพัด", 13f, cInk, true), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  c3.addView(provSeg(listOf("⬅ Backward" to 1, "➡ Forward" to 0), { pv.dir }, { pv.dir = it }), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+                  c3.addView(label("📟  Log ผ่าน UART", 13f, cInk, true), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
+                  c3.addView(provSeg(listOf("ปิด" to 0, "เปิด" to 1), { pv.uart }, { pv.uart = it }), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+                  c3.addView(label("🧮  โหมดคำนวณ", 13f, cInk, true), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
+                  c3.addView(provSeg(listOf("Cal > FW" to 0, "Cal FW or BR" to 1), { pv.calc }, { pv.calc = it }), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+
+                  // ---- ④ ช่วงเวลาบันทึก ----
+                  val c4 = provCard("4", "ช่วงเวลาบันทึกค่าในมิเตอร์", "เก็บที่ตำแหน่ง 166–167 (นาที)")
+                  c4.addView(provSeg(listOf("นาที" to 0, "ชั่วโมง" to 1), { if (pv.logUnit == "h") 1 else 0 }, {
+                      val h = it == 1
+                      if (h != (pv.logUnit == "h")) { pv.logUnit = if (h) "h" else "min"; pv.logVal = if (h) 1 else 15 }
+                  }), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  val holder = LinearLayout(this)
+                  holder.orientation = LinearLayout.VERTICAL
+                  val minV = listOf(1, 2, 3, 5, 10, 15, 20, 30, 45)
+                  val hrV = listOf(1, 2, 3, 4, 6, 8, 12, 24)
+                  val hsMin = provScrollChips(minV.map { v -> "$v นาที" to { pv.logVal = v } }, minV.map { v -> { pv.logUnit == "min" && pv.logVal == v } })
+                  val hsHr = provScrollChips(hrV.map { v -> "$v ชม." to { pv.logVal = v } }, hrV.map { v -> { pv.logUnit == "h" && pv.logVal == v } })
+                  holder.addView(hsMin); holder.addView(hsHr)
+                  provRefresh.add { hsMin.visibility = if (pv.logUnit == "h") View.GONE else View.VISIBLE; hsHr.visibility = if (pv.logUnit == "h") View.VISIBLE else View.GONE }
+                  c4.addView(holder, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  c4.addView(provSwitch("เขียนช่วงเก็บลง NFC (164–165) เท่ากับช่วงบันทึกด้วย", { pv.nfcOn }, { pv.nfcOn = it }),
+                      LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+
+                  // ---- ⑤ เวลา + ค่า K + ตัวป้องกัน ----
+                  val c5 = provCard("5", "เวลา · ค่าคงที่ K · ความปลอดภัย", "ระบบจัดการให้อัตโนมัติ")
+                  provTime = label("", 20f, cInk, true)
+                  c5.addView(provTime, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  c5.addView(label("เวลา/วันที่ของมือถือจะถูกเขียนลงมิเตอร์ตอนแตะ (ตำแหน่ง 78–83)", 12f, cGrey))
+                  c5.addView(label("🔧  ค่าคงที่ K1–K20 (80 ไบต์ ที่ 84–163) ใช้จากคลัง K Studio ตามรุ่น/ขนาดที่เลือก — ถ้ายังไม่มีค่า K ระบบจะแจ้งก่อนเขียน ไม่เขียนมั่ว", 12f, cInk),
+                      LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  c5.addView(provSwitch("กันเขียนทับมิเตอร์ที่มี ID อยู่แล้ว (แนะนำเมื่อลงทะเบียนเครื่องใหม่จริง)", { pv.guard }, { pv.guard = it }),
+                      LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+
+                  // ---- สรุป + ปุ่มเขียน ----
+                  val c6 = provCard("✓", "สรุปที่จะเขียน", "ตรวจให้ถูกต้องก่อนแตะมิเตอร์")
+                  provSummary = label("", 13f, cInk)
+                  provSummary.setLineSpacing(dp(3).toFloat(), 1f)
+                  c6.addView(provSummary, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(10) })
+                  provGoBtn = pill("📲  เตรียมเขียน  แล้วแตะมือถือที่มิเตอร์", true) { provStart() }
+                  provGoBtn.textSize = 16f
+                  provGoBtn.setPadding(dp(14), dp(16), dp(14), dp(16))
+                  c6.addView(provGoBtn, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(14) })
+
+                  val footer = label("Flo Sensor Lab Co.,Ltd.  •  $VERSION", 11f, cMuted)
+                  footer.gravity = Gravity.CENTER
+
+                  val content = LinearLayout(this)
+                  content.orientation = LinearLayout.VERTICAL
+                  content.setPadding(dp(16), dp(14), dp(16), dp(24))
+                  fun add(v: View, top: Int = 12) = content.addView(v, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(top) })
+                  add(logoRow, 0); add(titleRow, 14); add(hero, 14); add(provStatusCard); add(provErr)
+                  add(c1); add(c2); add(c3); add(c4); add(c5); add(c6)
+                  add(footer, 16)
+
+                  provScroll = ScrollView(this)
+                  provScroll.isFillViewport = true
+                  provScroll.isClickable = true
+                  provScroll.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(cNavy, cRoyal, cBlue))
+                  provScroll.addView(content, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                  provScreen = provScroll
+                  provScreen.visibility = View.GONE
+                  provUpdate()
+                  return provScreen
+              }
+
+              private fun provOpenScreen() {
+                  provOpen = true
+                  provPhase = 0
+                  provErr.visibility = View.GONE
+                  provStatusCard.visibility = View.GONE
+                  provGoBtn.visibility = View.VISIBLE
+                  provScreen.visibility = View.VISIBLE
+                  provUpdate()
+                  refreshNfcChip()
+                  handler.removeCallbacks(provClock)
+                  handler.post(provClock)
+                  provScroll.scrollTo(0, 0)
+              }
+
+              private fun provClose() {
+                  if (writeJob != null) cancelWriteJob(false)
+                  provPulse?.cancel()
+                  provOpen = false
+                  provScreen.visibility = View.GONE
+                  provSave()
+              }
+
+              private fun provSetStatus(icon: String, title: String, detail: String, color: Int, bg: Int, stroke: Int) {
+                  provStatusCard.visibility = View.VISIBLE
+                  provStatusCard.background = rounded(bg, 22, stroke, 2)
+                  provIcon.text = icon
+                  provTitle.text = title
+                  provTitle.setTextColor(color)
+                  provDetail.text = detail
+                  provDetail.setTextColor(Color.WHITE)
+              }
+
+              private fun provPulseOn(on: Boolean) {
+                  provPulse?.cancel()
+                  provIcon.alpha = 1f
+                  if (on) {
+                      provPulse = android.animation.ObjectAnimator.ofFloat(provIcon, "alpha", 1f, 0.25f).apply {
+                          duration = 700
+                          repeatCount = android.animation.ObjectAnimator.INFINITE
+                          repeatMode = android.animation.ObjectAnimator.REVERSE
+                          start()
+                      }
+                  }
+              }
+
+              private fun provButtons(vararg b: Button) {
+                  provBtnRow.removeAllViews()
+                  b.forEachIndexed { i, x -> provBtnRow.addView(x, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { if (i > 0) marginStart = dp(8) }) }
+              }
+
+              private fun provCancel() {
+                  if (writeJob != null) cancelWriteJob(false)
+                  provPulseOn(false)
+                  provPhase = 0
+                  provStatusCard.visibility = View.GONE
+                  provGoBtn.visibility = View.VISIBLE
+              }
+
+              /** กด “เตรียมเขียน”: ให้หน้าเว็บคำนวณงานเขียน (ค่า K จากคลัง) แล้วส่งงานกลับมารอแตะมิเตอร์ */
+              private fun provStart() {
+                  if (!pageLoaded) { toast("หน้าเว็บยังโหลดไม่เสร็จ — รอสักครู่แล้วลองใหม่"); return }
+                  provSave()
+                  provErr.visibility = View.GONE
+                  provPhase = 1
+                  provGoBtn.visibility = View.GONE
+                  provSetStatus("⏳", "กำลังตรวจค่าและเตรียมงานเขียน…", "Meter ID ${pv.id()}  •  ${pv.size} mm", Color.WHITE, Color.argb(60, 255, 255, 255), Color.argb(120, 255, 255, 255))
+                  provButtons(provSmallBtn("ยกเลิก", false) { provCancel() })
+                  provPulseOn(true)
+                  val ph = provPhase
+                  callBench("benchPvGo", pv.toJson().toString())
+                  handler.postDelayed({
+                      if (provOpen && provPhase == 1 && writeJob == null && provPhase == ph && provTitle.text.toString().startsWith("กำลังตรวจ")) {
+                          provCancel()
+                          provShowError("หน้าเว็บไม่ตอบ — ต้องใช้หน้าเว็บเวอร์ชัน v24 (กด ↻ โหลดเว็บใหม่ แล้วลองอีกครั้ง)")
+                      }
+                  }, 9000)
+              }
+
+              private fun provShowError(msg: String) {
+                  provErr.text = "⚠  $msg"
+                  provErr.visibility = View.VISIBLE
+                  provScroll.smoothScrollTo(0, 0)
+              }
+
+              /** หน้าเว็บรายงานผลการเตรียมงาน (ok=false → แสดงสาเหตุ เช่น ไม่มีค่า K) */
+              private fun provOnPlan(j: JSONObject) {
+                  if (!provOpen) return
+                  if (!j.optBoolean("ok", false)) {
+                      provCancel()
+                      provShowError(j.optString("err", "เตรียมงานเขียนไม่สำเร็จ"))
+                  } else {
+                      val k = j.optString("ksrc", "")
+                      if (k.isNotEmpty() && provPhase == 1) {
+                          provDetail.text = provDetail.text.toString() + "\nค่า K: " + k + (if (k.contains("DUMMY")) "\n⚠ เป็นค่าทดแทน ไม่ใช่ชุดจริงของขนาดนี้" else "")
+                      }
+                  }
+              }
+
+              private fun provOnQueued(j: JSONObject) {
+                  provPhase = 1
+                  provGoBtn.visibility = View.GONE
+                  val verify = j.optString("op", "") == "verify"
+                  if (verify) {
+                      provSetStatus("🔍", "แตะมิเตอร์เพื่ออ่านค่ากลับ", "ต้องเป็นมิเตอร์ ${j.optString("id", "")}\nถือมือถือให้นิ่งที่มิเตอร์", Color.WHITE, Color.argb(70, 251, 191, 36), cAmber)
+                  } else {
+                      provSetStatus("📲", "แตะมือถือที่มิเตอร์ใหม่", "จะเขียน Meter ID ${pv.id()}  •  ${pv.size} mm\nถือมือถือให้นิ่งจนขึ้นเครื่องหมาย ✔", Color.WHITE, Color.argb(70, 251, 191, 36), cAmber)
+                  }
+                  provPulseOn(true)
+                  provButtons(provSmallBtn("ยกเลิก", false) { provCancel() })
+                  provScroll.smoothScrollTo(0, 0)
+              }
+
+              private fun provOnWriting(verify: Boolean) {
+                  provSetStatus("✍", if (verify) "กำลังอ่านค่ากลับ…" else "กำลังเขียน…", "ห้ามเลื่อนโทรศัพท์ออกจากมิเตอร์", Color.WHITE, Color.argb(70, 56, 189, 248), cSky)
+                  provPulseOn(true)
+              }
+
+              private fun provOnWarn(msg: String) {
+                  provSetStatus("⚠", "ไม่ตรงกับที่ตั้งไว้", msg, Color.parseColor("#FDE68A"), Color.argb(70, 251, 191, 36), cAmber)
+                  provPulseOn(false)
+              }
+
+              private fun provOnResult(res: JSONObject) {
+                  provPulseOn(false)
+                  val verify = res.optBoolean("verify", false)
+                  if (res.optBoolean("ok", false)) {
+                      provPhase = 2
+                      val id = res.optString("id", "")
+                      if (!verify) {
+                          provWroteId = id
+                          if (id == pv.id() && pv.sn < 99) { pv.sn++; provSave(); provUpdate() }
+                          provSetStatus("✔", "เขียนและตรวจสอบสำเร็จ", "Meter ID $id\nUID ${res.optString("uid", "")}\nเวลาที่ตั้ง ${res.optString("time", "")}\nอ่านกลับตรงกับที่เขียนทุกไบต์\n\nต่อไป: กดทัชสวิตช์ที่มิเตอร์ค้างไว้ 6 วินาที เพื่อให้มิเตอร์โหลดค่าใหม่",
+                              Color.parseColor("#6EE7B7"), Color.argb(70, 52, 211, 153), cGreen)
+                          provButtons(provSmallBtn("🔍 อ่านกลับตรวจ", false) {
+                              startWriteJob(JSONObject().put("v", 1).put("op", "verify").put("id", provWroteId).put("label", "อ่านกลับตรวจสอบ"))
+                          }, provSmallBtn("ตัวถัดไป ▶", true) { provCancel(); provUpdate(); provScroll.smoothScrollTo(0, 0) })
+                      } else {
+                          provSetStatus("🔍", "อ่านค่ากลับสำเร็จ", "Meter ID $id\nดูผลเปรียบเทียบค่าที่เขียน/ที่อ่านได้ในหน้าเว็บ แท็บ ⑦",
+                              Color.parseColor("#6EE7B7"), Color.argb(70, 52, 211, 153), cGreen)
+                          provButtons(provSmallBtn("ตัวถัดไป ▶", true) { provCancel(); provUpdate(); provScroll.smoothScrollTo(0, 0) })
+                      }
+                  } else {
+                      provSetStatus("✗", "เขียนไม่สำเร็จ", res.optString("error", "") + "\n\nแตะมิเตอร์อีกครั้งเพื่อลองใหม่ได้เลย", Color.parseColor("#FCA5A5"), Color.argb(80, 185, 28, 28), cRed)
+                      provButtons(provSmallBtn("ยกเลิก", false) { provCancel() })
+                  }
+                  provScroll.smoothScrollTo(0, 0)
+              }
+
               // =====================================================================  บันทึกไฟล์ / ดาวน์โหลดจากเว็บ
 
               private fun saveDump(data: ByteArray) {
@@ -1227,6 +1751,7 @@ jobs:
               private fun startWriteJob(j: JSONObject) {
                   writeJob = j
                   writing = false
+                  if (provOpen) { provOnQueued(j); return }
                   showReaderScreen()
                   writeBox.visibility = View.VISIBLE
                   btnWc.text = "ยกเลิก"
@@ -1285,6 +1810,7 @@ jobs:
               private fun doWrite(tag: Tag, j: JSONObject) {
                   writing = true
                   val isVerify = j.optString("op", "") == "verify"
+                  runOnUiThread { if (provOpen) provOnWriting(isVerify) }
                   runOnUiThread { tvWrite.text = if (isVerify) "🔍 กำลังอ่านค่ากลับ… ห้ามเลื่อนโทรศัพท์ออกจากมิเตอร์" else "✍ กำลังเขียน… ห้ามเลื่อนโทรศัพท์ออกจากมิเตอร์"; tvWrite.setTextColor(Color.WHITE) }
                   val res = JSONObject()
                   var deliver = true
@@ -1347,7 +1873,7 @@ jobs:
                       }
                   } catch (e: WriteMismatch) {
                       deliver = false
-                      runOnUiThread { tvWrite.text = "⚠ ${e.message}"; tvWrite.setTextColor(Color.parseColor("#FDE68A")) }
+                      runOnUiThread { if (provOpen) provOnWarn(e.message ?: ""); tvWrite.text = "⚠ ${e.message}"; tvWrite.setTextColor(Color.parseColor("#FDE68A")) }
                   } catch (e: Exception) {
                       res.put("ok", false).put("id", j.optString("id", "")).put("label", j.optString("label", "")).put("error", e.message ?: e.toString())
                   }
@@ -1365,6 +1891,7 @@ jobs:
                           tvWrite.text = "✗ เขียนไม่สำเร็จ: ${res.optString("error")}\nแตะมิเตอร์ใหม่เพื่อลองอีกครั้ง"
                           tvWrite.setTextColor(Color.parseColor("#FCA5A5"))
                       }
+                      if (provOpen) provOnResult(res)
                       callBench(if (res.optBoolean("verify")) "benchVerifyResult" else "benchWriteResult", res.toString())
                   }
               }
