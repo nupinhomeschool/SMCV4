@@ -347,6 +347,9 @@ function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||windo
   seq.forEach(([f,t,d])=>{const o=AC.createOscillator(),g=AC.createGain(),t0=AC.currentTime+t;o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.25,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.start(t0);o.stop(t0+d+.02)})}catch(e){}}
 const SENT=[];
 function rlPost(m){if(typeof fetch!=='function')return Promise.reject(new Error('no fetch'));return fetch(rlTopic(),{method:'POST',body:JSON.stringify(m)}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);RL.err='';return true})}
+/* ในแอปมือถือ: ถ้าจับคู่รหัสแล้ว ให้เป็นโหมด “ส่งขึ้นจอ” เสมอ (เดิมค้างเป็น off จึงไม่ขึ้นจอคอม) */
+function rlAuto(){if(rlBridge()&&RL.code&&RL.role!=='send'){RL.role='send';rlSave();try{rlConnect()}catch(e){}}return RL.role==='send'&&!!RL.code}
+function rlNeedPair(){toast('⚠ ยังไม่ได้จับคู่กับจอคอม — ใส่รหัสในหน้านี้ก่อน ค่าจึงจะขึ้นจอคอม',5200);beep('bad');RL.role='send';try{modal(relayHtml())}catch(e){}return false}
 function rlSend(r){
   if(r&&r.id&&!r.bad){S.recent=(S.recent||[]).filter(x=>x[0]!==r.id);S.recent.unshift([r.id,Date.now()]);S.recent=S.recent.slice(0,12);try{save()}catch(e){}}
   if(!r||(!r.id&&!r.mech)||r.bad||r.vol==null){toast('อ่านไม่สมบูรณ์ — แตะมิเตอร์ใหม่',3200);beep('bad');return false}
@@ -510,7 +513,7 @@ window.load=benchLoad;
 window.benchFeed=function(p){if(p&&p.hex)appGo(ingest(hexToBytes(p.hex),p.partial&&p.ranges?p.ranges:null,p.verify?{verify:true,verified:!!p.verified,attempts:p.attempts,same:p.same}:null,'app'))};
 /* รับค่าจากแอป → พาเข้าหน้า “ทดสอบ” ทันที (เดิมค้างอยู่หน้าเดิม ผู้ใช้ไม่เห็นว่าค่าเข้าแล้ว) */
 function appGo(ok){try{if(!IS_MON&&TAB!=='wr'&&TAB!=='pv'&&TAB!=='run'){TAB='run';render();scrollTo(0,0)}}catch(e){}return ok}
-window.benchMech=function(p){if(!p)return;if(p.img){mrOpen(p.img,{reading:p.reading,id:p.id,slot:p.slot});if(!IS_MON&&TAB!=='run'){TAB='run';render()}return true}
+window.benchMech=function(p){if(!p)return;if(p.img){mrOpen(p.img,{reading:p.reading,id:p.id,slot:p.slot,lcd:!!p.lcd});if(!IS_MON&&TAB!=='run'){TAB='run';render()}return true}
   const ok=mechIn(p,'app');if(!IS_MON){TAB='run';render();scrollTo(0,0)}return ok};
 addEventListener('message',e=>{const d=e.data;if(d&&d.type==='nfc-dump'&&d.hex)window.benchFeed(d);if(d&&d.type==='mech-read')window.benchMech(d)});
 
@@ -667,7 +670,8 @@ function mechIn(p,src){
   let id=String(p.id||'').trim().toUpperCase().replace(/\s+/g,''),i=(p.slot!=null&&p.slot!=='')?+p.slot:null;
   if(i!=null){while(S.meters.length<=i)S.meters.push({id:'',size:null,k:null});if(id&&S.meters[i].id&&S.meters[i].id!==id&&!S.meters.some(x=>x.id===id))renameMeter(i,id);SELSLOT=i}
   const r={id,size:p.size||null,vol:Math.round(m3*1e5),mech:1,rev:null,k:null,bat:null,ts:Date.now(),issues:[],raw:String(p.reading),by:p.by||src};
-  if(RL.role==='send'&&RL.code&&src==='app')return rlSend(r);
+  if(src==='app'&&rlBridge()&&!rlAuto())return rlNeedPair();
+  if(src==='app'&&rlAuto())return rlSend(r);
   return applyRead(r,src)}
 function kbSave(){const pi=Math.min(S.cur,S.plan.length-1),st=pointState(pi);
   if(st.step!=='start'&&st.step!=='end'){toast('ตอนนี้อยู่ขั้นปล่อยน้ำ — กด ■ หยุดน้ำ ก่อน แล้วจึงคีย์ค่าสิ้นสุด',3200);return}
@@ -943,7 +947,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
-  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v25</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v27</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
    <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small><button class="btn" style="margin-top:8px" data-a="pvedit">🛠 แก้ไขค่ามิเตอร์ที่ใช้งานอยู่ (Service) — บนมือถือ</button></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
@@ -1026,7 +1030,7 @@ function vPv(A){const p=S.pv=Object.assign(defPv(),S.pv||{}),b=pvBuild(),br=wrBr
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="pvgo" ${b.errs.length?'disabled':''}>📲 เขียนมิเตอร์ ${esc(id)} แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}</div>`;
   const nextIds=Array.from({length:5},(_,i)=>p.sn+i<=99?pvId(Object.assign({},p,{sn:p.sn+i})):null).filter(Boolean);
   const showVf=WR.kind==='prov'&&WR.state==='ok';
-  return`<div class="wrh pvh"><h2>🏭 ลงทะเบียนมิเตอร์ดิจิทัลใหม่ <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">v25</small></h2><p>ตั้งรหัสมิเตอร์ · ขนาด · ค่า K · ทิศทาง · เวลา แล้วเขียนลงมิเตอร์เครื่องใหม่ทีละตัวด้วยมือถือ</p>
+  return`<div class="wrh pvh"><h2>🏭 ลงทะเบียนมิเตอร์ดิจิทัลใหม่ <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">v27</small></h2><p>ตั้งรหัสมิเตอร์ · ขนาด · ค่า K · ทิศทาง · เวลา แล้วเขียนลงมิเตอร์เครื่องใหม่ทีละตัวด้วยมือถือ</p>
    <div class="wsteps"><div><b>① ตั้งรหัสรุ่น/Lot</b>ปี · เดือน · Lot · ลำดับ + ขนาด</div><div><b>② ตรวจค่าที่จะเขียน</b>K · ทิศทาง · ช่วงบันทึก · เวลา</div><div><b>③ แตะมือถือที่มิเตอร์ใหม่</b>แอปเขียน → อ่านกลับยืนยัน</div><div><b>④ ตรวจสอบ → ทัชสวิตช์ 6 วินาที</b>แล้วไปตัวถัดไป ลำดับเพิ่มเอง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>เขียนมิเตอร์ใหม่ได้จากหน้านี้ · มิเตอร์ที่ลงทะเบียนแล้วจะส่งไปแสดงที่จอคอม (ถ้าจับคู่ไว้)</small><button class="btn p" style="margin-top:8px" data-a="pvphone">📱 เปิดฟอร์มลงทะเบียนบนมือถือ (ใช้ง่ายกว่า)</button></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>ใช้ดูรายการมิเตอร์ที่ลงทะเบียนแล้ว (รับจากมือถือที่จับคู่) และ “นำเข้าสู่ Batch ทดสอบ” · การเขียนต้องทำบนมือถือ</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🔢</em>รหัสมิเตอร์ (Meter ID)</h2><p class="sub">8 หลัก = ปี พ.ศ. (2 หลัก) · เดือนที่ผลิต · Lot ที่ผลิต · ลำดับเครื่องใน Lot — ลำดับจะเพิ่มให้เองหลังเขียนสำเร็จ</p>
@@ -1487,8 +1491,8 @@ function mrPtrOverlay(x,ox,oy,sx,sy,S0){const d=MR.pdet;if(!d)return;const cx=(d
     x.fillStyle='#22d3ee';x.font='bold '+Math.max(10,Math.round(R*.14))+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(String(k),cx+ux*R*.6,cy+uy*R*.6)}
   x.strokeStyle='#4ade80';x.lineWidth=3;x.beginPath();x.moveTo(cx,cy);x.lineTo((d.tip.x-ox)*sx+(d.tip.x-d.base.x)*sx*.35,(d.tip.y-oy)*sy+(d.tip.y-d.base.y)*sy*.35);x.stroke();x.fillStyle='#4ade80';x.beginPath();x.arc(cx,cy,4,0,7);x.fill()}
 const mrFmt=v=>String(Number(v.toFixed(5)));
-function mrOpen(src,opt){opt=opt||{};MR.open=true;MR.step=1;MR.cells=[];MR.busy='';MR.msg='';MR.src=null;MR.box=null;MR.pbox=null;MR.pdet=null;MR.pval=null;MR.pzero=0;MR.zeroSet=false;MR.zeroOk=false;MR.act='drum';MR.tapZero=false;MR.id=opt.id||'';MR.slot=opt.slot!=null?opt.slot:null;MR.hint=opt.reading?String(opt.reading):'';
-  if(opt.n)MR.n=opt.n;mrRender();if(src)mrLoad(src)}
+function mrOpen(src,opt){opt=opt||{};MR.open=true;MR.step=1;MR.cells=[];MR.busy='';MR.msg='';MR.src=null;MR.box=null;MR.pbox=null;MR.pdet=null;MR.pval=null;MR.pzero=0;MR.zeroSet=false;MR.zeroOk=false;MR.act='drum';MR.tapZero=false;MR.id=(opt.id&&/\d/.test(opt.id)&&String(opt.id).length>=4)?opt.id:'';MR.slot=opt.slot!=null?opt.slot:null;MR.hint=opt.reading?String(opt.reading):'';
+  if(opt.n)MR.n=opt.n;if(opt.lcd){MR.n=6;MR.red=5;MR.ptrOn=false}mrRender();if(src)mrLoad(src)}
 function mrLoad(src){const img=new Image();img.onload=()=>{const mx=1800,sc=Math.min(1,mx/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
     MR.src=c;MR.step=2;MR.act='drum';MR.pbox=null;MR.pdet=null;MR.pval=null;MR.pzero=0;MR.zeroSet=false;MR.zeroOk=false;mrFit();if(MR.ptrOn)mrPtrAuto();mrZoom(MR.autoOk);mrRender();if(typeof src==='string'&&src.indexOf('blob:')===0)URL.revokeObjectURL(src)};img.onerror=()=>{toast('เปิดรูปไม่ได้ ลองถ่ายหรือเลือกรูปใหม่');MR.step=1;mrRender()};img.src=src}
 function mrClose(){MR.open=false;const o=document.getElementById('mr');if(o)o.remove();document.body.classList.remove('mro')}
@@ -1520,7 +1524,7 @@ function mrRender(){let o=document.getElementById('mr');if(!MR.open){if(o)o.remo
   if(MR.step===1)body=`<div class="mr-pick"><div class="mr-ico">📷</div><h3>ถ่ายหน้าปัดมาตรแมคคานิค</h3><p>ถ่ายให้เห็น “ช่องตัวเลข” ชัดและตรง หลีกเลี่ยงแสงสะท้อน แล้วระบบจะให้ครอบเฉพาะช่องตัวเลข</p>
     <label class="btn p mr-b">📷 ถ่ายภาพ<input type="file" accept="image/*" capture="environment" hidden data-mrf></label> <label class="btn mr-b">🖼 เลือกรูปจากเครื่อง<input type="file" accept="image/*" hidden data-mrf></label>
     <p class="mr-tip">ถ้าอ่านรูปไม่ได้ ปิดหน้านี้แล้วพิมพ์ค่าในช่อง “คีย์ / รับค่าหน้าปัด” ได้ตามปกติ</p></div>`;
-  else if(MR.step===2)body=`<div class="mr-chips"><button class="${MR.act==='drum'?'on':''}" data-a="mract" data-v="0">① ช่องตัวเลข</button><button class="${MR.act==='ptr'?'on':''}" data-a="mract" data-v="1" ${MR.ptrOn?'':'disabled'}>② เข็มละเอียด ×${MR.pmult}</button><label class="mr-ck"><input type="checkbox" data-a="mrptron" ${MR.ptrOn?'checked':''}> อ่านเข็มละเอียดด้วย</label></div>
+  else if(MR.step===2)body=`<div class="mr-chips"><button class="${MR.act==='drum'?'on':''}" data-a="mract" data-v="0">① ช่องตัวเลข</button><button class="${MR.act==='ptr'?'on':''}" data-a="mract" data-v="1" ${MR.ptrOn?'':'disabled'}>② เข็มละเอียด ×${MR.pmult}</button><button class="${(!MR.ptrOn&&MR.n===6&&MR.red===5)?'on':''}" data-a="mrlcd">🔢 จอ LCD SMCV4</button><label class="mr-ck"><input type="checkbox" data-a="mrptron" ${MR.ptrOn?'checked':''}> อ่านเข็มละเอียดด้วย</label></div>
     ${MR.act==='ptr'?`<p class="mr-h">ลากกรอบให้ครอบ <b>หน้าปัดวงกลมเล็ก (x${MR.pmult})</b> · เส้นฟ้า = ขีด 0–9 (เส้นหนา = เลข 0) · เส้นเขียว = เข็มที่ระบบหาเจอ<br>ถ้าเส้น 0 ไม่ตรงกับเลข “0” บนหน้าปัด กด <b>🎯 แตะตั้งเลข 0</b> แล้วแตะที่เลข 0 บนรูป</p><div class="mr-pd" id="mrPd"></div>`:`<p class="mr-h">ลากมุมสี่เหลี่ยมให้ <b>ครอบเฉพาะช่องตัวเลข</b> พอดี — เส้นประคือการแบ่งหลัก (ฟ้า = เลขดำ m³ · แดง = เศษ m³) เส้นต้องตรงกับแต่ละลูกกลิ้ง</p>`}
     <canvas id="mrCv" class="mr-cv"></canvas>
     <div class="mr-ctl"><div class="mr-stp"><span>จำนวนหลักทั้งหมด</span><button data-a="mrn" data-v="-1">−</button><b>${MR.n}</b><button data-a="mrn" data-v="1">+</button></div>
@@ -1542,6 +1546,7 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   else if(a==='mrclose'){mrClose()}
   else if(a==='mrnew'){MR.step=1;MR.src=null;MR.cells=[];mrRender()}
   else if(a==='mrback'){MR.step=2;mrRender()}
+  else if(a==='mrlcd'){MR.n=6;MR.red=5;MR.ptrOn=false;MR.act='drum';MR.pbox=null;MR.cells=[];mrSaveCfg();mrFit();mrZoom(true);toast('โหมด LCD: 6 หลัก (1 หลักจำนวนเต็ม + 5 ทศนิยม) — ลากกรอบครอบเฉพาะตัวเลขบนจอ แล้วกด “อ่านตัวเลข” และตรวจทีละหลัก',5200);mrRender()}
   else if(a==='mrn'){MR.n=Math.max(4,Math.min(9,MR.n+v));if(MR.red>MR.n-1)MR.red=MR.n-1;mrSaveCfg();mrRender()}
   else if(a==='mrr'){MR.red=Math.max(0,Math.min(Math.min(5,MR.n-1),MR.red+v));mrSaveCfg();mrRender()}
   else if(a==='mrauto'){const b=mrAuto();if(b){MR.box=b;const s=MR.src;b.x=Math.max(0,b.x);b.y=Math.max(0,b.y);b.w=Math.min(s.width-b.x,b.w);b.h=Math.min(s.height-b.y,b.h);toast('พบช่องตัวเลขแล้ว — ตรวจเส้นแบ่งหลัก และลากมุมปรับได้');mrZoom(true);mrRender()}else toast('หาช่องอัตโนมัติไม่เจอ — ลากมุมกรอบครอบช่องตัวเลขเอง',3200);mrDraw()}
@@ -1555,7 +1560,8 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   else if(a==='mrread'){mrSaveCfg();mrRead()}
   else if(a==='mrok'){const val=mrReading();if(!val){toast('ใส่ตัวเลขให้ครบทุกหลักก่อน');return}
     const id=(document.getElementById('mrId')||{}).value||'',sl=document.getElementById('mrSlot'),slot=sl&&sl.value!==''?+sl.value:null;
-    const ok=mechIn({id:id.trim(),reading:val,slot,by:'photo'},(RL.role==='send'&&RL.code)?'app':'web');if(ok!==false){mrClose();TAB='run';render();scrollTo(0,0)}}});
+    if(rlBridge()&&!rlAuto()){mrClose();TAB='run';render();rlNeedPair();return}
+    const ok=mechIn({id:id.trim(),reading:val,slot,by:'photo'},rlBridge()?'app':'web');if(ok!==false){mrClose();TAB='run';render();scrollTo(0,0)}}});
 document.addEventListener('change',e=>{const f=e.target;if(f&&f.dataset&&f.dataset.a==='mrmult'){MR.pmult=+f.value;mrSaveCfg();mrRender();return}
   if(f&&f.hasAttribute&&f.hasAttribute('data-mrf')&&f.files&&f.files[0]){MR.fname=f.files[0].name;mrLoad(URL.createObjectURL(f.files[0]));f.value=''}});
 document.addEventListener('input',e=>{const f=e.target;if(!f||!f.dataset||f.dataset.mrd==null)return;const i=+f.dataset.mrd,v=String(f.value).replace(/\D/g,'').slice(-1);f.value=v;if(MR.cells[i]){MR.cells[i].d=v;MR.cells[i].conf=v?1:0}mrUpdVal();
