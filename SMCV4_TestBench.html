@@ -13,7 +13,7 @@
 body{font-family:'Sarabun',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
 .mono{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace}
 button,input,select,textarea{font:inherit;color:inherit}
-.top{background:linear-gradient(135deg,#0a2a43 0%,#0b6d94 58%,#14b8a6 120%);color:#fff;padding:14px 22px 0;position:sticky;top:0;z-index:30;box-shadow:0 6px 22px rgba(10,42,67,.28)}
+.top{background:linear-gradient(135deg,var(--h1,#0a2a43) 0%,var(--h2,#0b6d94) 58%,var(--h3,#14b8a6) 120%);color:#fff;padding:14px 22px 0;position:sticky;top:0;z-index:30;box-shadow:0 6px 22px rgba(10,42,67,.28)}
 .top .row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .logo{width:46px;height:46px;flex:none}
 .top h1{margin:0;font-size:1.35rem;font-weight:700;letter-spacing:.2px;line-height:1.15}.top h1 small{display:block;font-size:.78rem;font-weight:400;opacity:.85;letter-spacing:.3px}
@@ -92,6 +92,13 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 #mon .t b{display:block;font-size:2.1vh;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mon .t .e{font-size:6.4vh;font-weight:700;line-height:1.1}#mon .t .d{font-size:1.9vh;opacity:.8}
 #mon .bar{height:2.2vh;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;display:flex}#mon .bar i{display:block;height:100%}
 #mon .x{position:absolute;right:1.5vw;top:1.5vh}
+#pgpal{position:fixed;left:14px;bottom:14px;z-index:60}#mon.on~#pgpal{display:none}body.monitor #pgpal{display:none}
+#pgpb{width:44px;height:44px;border-radius:50%;border:1px solid rgba(10,42,67,.25);background:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(10,42,67,.25);opacity:.8}#pgpb:hover{opacity:1}
+#pgpp{display:none;position:absolute;left:0;bottom:54px;width:270px;background:#fff;color:#0d2b3e;border-radius:14px;padding:12px;box-shadow:0 10px 36px rgba(10,42,67,.35);border:1px solid #d3e2ec}#pgpal.o #pgpp{display:block}
+#pgsw{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:8px 0}#pgsw i{height:34px;border-radius:9px;border:2px solid #fff;box-shadow:0 0 0 1px #c5d4de;cursor:pointer}#pgsw i.on{box-shadow:0 0 0 3px #0b7ea4}
+#pgpp .mpr{display:flex;gap:10px}#pgpp .mpr label{flex:1;font-size:12px;display:flex;flex-direction:column;gap:3px}#pgpp input[type=color]{width:100%;height:34px;border:0;padding:0;background:none}
+@media print{#pgpal,#monpal{display:none!important}}
+
 #monpal{display:none;position:fixed;right:1.5vw;bottom:1.5vh;z-index:95;font-family:inherit}#mon.on~#monpal{display:block}
 #monpb{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.45);color:#fff;font-size:22px;cursor:pointer;opacity:.55}#monpb:hover{opacity:1}
 #monpp{display:none;position:absolute;right:0;bottom:56px;width:270px;background:#fff;color:#0d2b3e;border-radius:14px;padding:12px;box-shadow:0 10px 36px rgba(0,0,0,.5)}#monpal.o #monpp{display:block}#monpal.o #monpb{opacity:1}
@@ -283,6 +290,7 @@ body.mro{overflow:hidden}
 <main id="view"></main>
 
 <div id="mon" aria-label="Monitor"></div>
+<div id="pgpal"><button id="pgpb" type="button" title="เปลี่ยนสีหน้า Test Bench">🎨</button><div id="pgpp"><b>สีหน้า Test Bench</b><small style="margin:0 0 6px">แยกจากสีจอ Monitor</small><div id="pgsw"></div><div class="mpr"><label>สีหัวเรื่อง<input type="color" id="pgc1"></label><label>สีพื้นหลังหน้า<input type="color" id="pgc2"></label></div><button id="pgrst" type="button" class="btn" style="margin-top:8px;width:100%">↺ กลับสีเดิม</button></div></div>
 <div id="monpal"><button id="monpb" type="button" title="เปลี่ยนสีพื้นหลังจอ">🎨</button><div id="monpp"><b>สีพื้นหลังจอ</b><div id="monsw"></div><div class="mpr"><label>สีบน<input type="color" id="monc1"></label><label>สีล่าง<input type="color" id="monc2"></label></div><small>เลือกสีเอง หรือกดชุดสีสำเร็จรูป · จำค่าไว้ในเครื่องนี้</small></div></div>
 <div id="rep"></div>
 <div class="modal" id="modal"><div class="box" id="mbox"></div></div>
@@ -1628,6 +1636,22 @@ function pvRegCard(p){const h=qrHost();
   sw.onclick=e=>{const i=e.target.closest('i');if(i)apply(i.dataset.a,i.dataset.b,true)};
   const f=()=>apply(document.getElementById('monc1').value,document.getElementById('monc2').value,true);
   document.getElementById('monc1').oninput=f;document.getElementById('monc2').oninput=f}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init()})();
+
+/* ---------- ปรับสีหน้า Test Bench (แยกจากสีจอ Monitor) ---------- */
+(function(){const K='smcv4.pgbg',P=[['#0a2a43','#0b6d94','#14b8a6','#e8f1f6'],['#052e1c','#0f766e','#4ade80','#e6f4ee'],['#2e1065','#6d28d9','#a78bfa','#f0ebfa'],['#4c0519','#be123c','#fb7185','#fbeaee'],['#1f2937','#475569','#94a3b8','#eef0f3'],['#082f49','#0369a1','#38bdf8','#e6f1fb'],['#431407','#c2410c','#fb923c','#fbefe6'],['#111827','#111827','#374151','#e5e7eb'],['#0b6d94','#14b8a6','#a7f3d0','#f4fbf9'],['#78350f','#d97706','#fcd34d','#fdf6e3']];
+ const mix=(h,t,k)=>{const n=parseInt(h.slice(1),16),r=[n>>16,(n>>8)&255,n&255].map(c=>Math.round(c+(t-c)*k));return'#'+r.map(c=>c.toString(16).padStart(2,'0')).join('')};
+ function apply(c,save){const r=document.documentElement.style;r.setProperty('--h1',c[0]);r.setProperty('--h2',c[1]);r.setProperty('--h3',c[2]);r.setProperty('--bg',c[3]);
+  const a=document.getElementById('pgc1'),b=document.getElementById('pgc2');if(a)a.value=c[1];if(b)b.value=c[3];
+  document.querySelectorAll('#pgsw i').forEach(i=>i.classList.toggle('on',i.dataset.c===c.join()));
+  if(save)try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}}
+ function init(){const sw=document.getElementById('pgsw');if(!sw)return;sw.innerHTML=P.map(p=>`<i data-c="${p.join()}" style="background:linear-gradient(135deg,${p[0]},${p[1]} 55%,${p[2]});outline:4px solid ${p[3]};outline-offset:-4px"></i>`).join('');
+  let v=null;try{v=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}if(!v||v.length<4)v=P[0];apply(v,false);
+  document.getElementById('pgpb').onclick=()=>document.getElementById('pgpal').classList.toggle('o');
+  sw.onclick=e=>{const i=e.target.closest('i');if(i)apply(i.dataset.c.split(','),true)};
+  const f=()=>{const h=document.getElementById('pgc1').value;apply([mix(h,0,.55),h,mix(h,255,.45),document.getElementById('pgc2').value],true)};
+  document.getElementById('pgc1').oninput=f;document.getElementById('pgc2').oninput=f;
+  document.getElementById('pgrst').onclick=()=>{try{localStorage.removeItem(K)}catch(e){}apply(P[0],false)}}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init()})();
 </script>
 </body>
