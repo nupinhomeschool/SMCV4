@@ -92,6 +92,18 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 #mon .t b{display:block;font-size:2.1vh;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mon .t .e{font-size:6.4vh;font-weight:700;line-height:1.1}#mon .t .d{font-size:1.9vh;opacity:.8}
 #mon .bar{height:2.2vh;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;display:flex}#mon .bar i{display:block;height:100%}
 #mon .x{position:absolute;right:1.5vw;top:1.5vh}
+.sl .lcd{font-size:1.7rem;padding:7px 40px 5px 10px;border-radius:12px}.sl .lcd .gh{right:40px;top:7px}.sl .lcd i{font-size:.8rem;right:9px;top:6px}.sl .lcd.rv{font-size:1.4rem;margin-top:5px}.sl .lcd.rv .gh{right:40px}
+.sl .odo b{font-size:1.45rem}.sl .idr{font-size:1.02rem;margin-top:8px}.sl .idr b{font-size:1.2rem;letter-spacing:.5px}.sl .idr .szp2{font-size:.9rem;padding:2px 11px}.sl .bt{font-size:.95rem;font-weight:600}
+.sl .er{font-size:2.7rem;margin-top:4px}.sl .sm{font-size:.84rem}
+.sl .stt{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.sl .stt>div{background:#f1f7fb;border:1px solid #d9e8f1;border-radius:12px;padding:6px 8px;text-align:center;min-width:0}
+.sl.pass .stt>div{background:#e9faf2;border-color:#a7ebcb}.sl.fail .stt>div{background:#ffeef0;border-color:#fbc0c9}
+.sl .stt small{display:block;font-size:.72rem;color:var(--mut);font-weight:600}.sl .stt b{display:block;font-size:1.45rem;line-height:1.15;font-family:'JetBrains Mono',ui-monospace,monospace;color:var(--navy);letter-spacing:-.5px}.sl .stt em{display:block;font-style:normal;font-size:.68rem;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vact{margin-top:12px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:16px;padding:10px 14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}.vact.chg{background:rgba(251,191,36,.22);border-color:#fbbf24}
+.vact .vl b{display:block;font-size:1.02rem}.vact .vl small{opacity:.85;font-size:.8rem}
+.vact .vst{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto}.vact .vst button{border:0;border-radius:10px;background:rgba(255,255,255,.92);color:var(--navy);font:700 .95rem Sarabun,sans-serif;padding:8px 12px;min-width:48px;cursor:pointer}.vact .vst button.rs{background:#fbbf24}
+.vact .vin{display:flex;align-items:center;background:#fff;border-radius:12px;padding:0 12px;gap:4px}.vact .vin input{width:96px;border:0;outline:0;background:none;font:700 1.7rem 'JetBrains Mono',ui-monospace,monospace;color:var(--navy);text-align:right;padding:5px 0}.vact .vin i{font-style:normal;font-weight:700;color:var(--mut)}
+@media(max-width:680px){.vact .vst{margin-left:0;width:100%}.vact .vin{flex:1}.vact .vin input{width:100%}.sl .stt b{font-size:1.2rem}}
+
 #pgpal{position:fixed;left:14px;bottom:14px;z-index:60}#mon.on~#pgpal{display:none}body.monitor #pgpal{display:none}
 #pgpb{width:44px;height:44px;border-radius:50%;border:1px solid rgba(10,42,67,.25);background:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(10,42,67,.25);opacity:.8}#pgpb:hover{opacity:1}
 #pgpp{display:none;position:absolute;left:0;bottom:54px;width:270px;background:#fff;color:#0d2b3e;border-radius:14px;padding:12px;box-shadow:0 10px 36px rgba(10,42,67,.35);border:1px solid #d3e2ec}#pgpal.o #pgpp{display:block}
@@ -350,8 +362,8 @@ const RLK='smcv4_bench_relay';
 const RL={code:'',role:'',beep:true,server:'https://ntfy.sh',st:'off',last:0,n:0,sent:0,err:'',es:null,seen:new Set()};
 const rlBridge=()=>{try{return !!(window.NfcBridge||(window.parent&&window.parent.NfcBridge))}catch(e){return false}};
 const rlGen=()=>{const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';const a=new Uint8Array(8);(window.crypto||{getRandomValues:x=>x.forEach((_,i)=>x[i]=Math.random()*256)}).getRandomValues(a);a.forEach(x=>s+=c[x%c.length]);return s};
-function rlSave(){try{localStorage.setItem(RLK,JSON.stringify({code:RL.code,role:RL.role,beep:RL.beep,server:RL.server,tp:RL.tp||'auto'}))}catch(e){}}
-function rlLoad(){try{const j=JSON.parse(localStorage.getItem(RLK)||'null');if(j)Object.assign(RL,{code:j.code||'',role:j.role||'',beep:j.beep!==false,server:j.server||RL.server,tp:j.tp||'auto'})}catch(e){}
+function rlSave(){try{localStorage.setItem(RLK,JSON.stringify({code:RL.code,role:RL.role,beep:RL.beep,server:RL.server,tp:RL.tp||'auto',gs:RL.gs||null}))}catch(e){}}
+function rlLoad(){try{const j=JSON.parse(localStorage.getItem(RLK)||'null');if(j)Object.assign(RL,{code:j.code||'',role:j.role||'',beep:j.beep!==false,server:j.server||RL.server,tp:j.tp||'auto',gs:j.gs&&j.gs.url?j.gs:null})}catch(e){}
   try{const q=new URLSearchParams(location.search),pc=q.get('pair');if(pc){RL.code=pc.toLowerCase().replace(/[^a-z0-9]/g,'');RL.role=q.get('role')||(rlBridge()?'send':'recv')}}catch(e){}
   if(!RL.role)RL.role=rlBridge()?'off':'recv';
   if(RL.role==='recv'&&!RL.code)RL.code=rlGen();
@@ -363,7 +375,7 @@ function beep(kind){if(!RL.beep)return;try{AC=AC||new(window.AudioContext||windo
   seq.forEach(([f,t,d])=>{const o=AC.createOscillator(),g=AC.createGain(),t0=AC.currentTime+t;o.type='sine';o.frequency.value=f;o.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.25,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.start(t0);o.stop(t0+d+.02)})}catch(e){}}
 const SENT=[];
 /* ---------- ช่องทางส่งผ่าน Google Apps Script ของ FSL (ไม่ติดโควต้าฟรีของ ntfy) ---------- */
-function gsCfg(){for(const w of [window.parent,window.top,window.opener]){try{if(w&&typeof w.smcvGsCfg==='function'){const c=w.smcvGsCfg();if(c&&c.url)return c}}catch(e){}}return RL.gs&&RL.gs.url?RL.gs:null}
+function gsCfg(){if(RL.gs&&RL.gs.url)return RL.gs;for(const w of [window.parent,window.top,window.opener]){try{if(w&&typeof w.smcvGsCfg==='function'){const c=w.smcvGsCfg();if(c&&c.url)return c}}catch(e){}}return RL.gs&&RL.gs.url?RL.gs:null}
 const gsTO=(ms)=>{const ac=typeof AbortController==='function'?new AbortController():null;return{ac,sig:ac?ac.signal:undefined,t:ac?setTimeout(()=>ac.abort(),ms):0}};
 async function gsPut(c,m){const o=gsTO(10000);let r;try{r=await fetch(c.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:c.token||'',action:'rput',code:RL.code,msg:JSON.stringify(m)}),signal:o.sig})}finally{clearTimeout(o.t)}
   let j;try{j=await r.json()}catch(e){throw new Error('Google ตอบไม่ใช่ JSON (ตรวจ Deploy “ผู้มีสิทธิ์เข้าถึง = ทุกคน”)')}
@@ -478,7 +490,7 @@ const revVolStr=d=>String(d||0).padStart(12,'0');
 /* ---------- คำนวณผลต่อมิเตอร์/จุดทดสอบ ---------- */
 function calc(pi,id){
   const r=(S.rd[pi]||{})[id],p=S.plan[pi];if(!r||!r.s||!r.e||!p||p.off||r.s.vol==null||r.e.vol==null)return null;
-  const vref=r.vref||p.v,dVol=(r.e.vol-r.s.vol)/100,o={dVol,vref,lim:p.lim,flags:[]};
+  const vref=r.vref||((S.pt[pi]||{}).va>0?S.pt[pi].va:p.v),dVol=(r.e.vol-r.s.vol)/100,o={dVol,vref,lim:p.lim,flags:[]};
   o.valid=dVol>0&&vref>0;
   if(!o.valid){o.flags.push(dVol<=0?'ปริมาตรสิ้นสุด ≤ เริ่มต้น':'ปริมาตรอ้างอิงไม่ถูกต้อง');return o}
   o.err=(dVol-vref)/vref*100;o.pass=Math.abs(o.err)<=p.lim+1e-9;
@@ -500,7 +512,7 @@ function calc(pi,id){
   const un=[r.s,r.e].some(x=>x.meta&&x.meta.verify&&x.meta.verified===false);if(un)o.flags.push('การอ่านยังไม่ยืนยัน');
   if(r.s.carried)o.carried=true;
   return o}
-function flowAct(pi){const st=S.pt[pi]||{},p=S.plan[pi];if(!st.t0||!st.t1||st.t1<=st.t0||!p)return null;return p.v*3600/((st.t1-st.t0)/1000)}   // L/h จริงจากเวลา
+function flowAct(pi){const st=S.pt[pi]||{},p=S.plan[pi];if(!st.t0||!st.t1||st.t1<=st.t0||!p)return null;return (st.va>0?st.va:p.v)*3600/((st.t1-st.t0)/1000)}   // L/h จริงจากเวลา
 
 function agg(){
   const mids=S.meters.filter(m=>m.id).map(m=>m.id),np=S.plan.filter(p=>!p.off).length,A={mids,np,M:{},P:[],kRec:null};
@@ -531,6 +543,7 @@ const k8=k=>k==null?'':String(Math.round(k)).padStart(8,'0');
 
 /* ---------- รับข้อมูลจาก NFC ---------- */
 function slotFor(id,hint){let m=S.meters.find(x=>x.id===id);if(m)return m;if(hint!=null&&S.meters[hint]&&!S.meters[hint].id)return S.meters[hint];m=S.meters.find(x=>!x.id);if(!m){m={id:'',size:null,k:null};S.meters.push(m);S.batch.nm=S.meters.length}return m}
+const rdV=i=>{const q=S.plan[i],t=S.pt[i]||{};return t.va>0?t.va:(q?q.v:0)};
 function pointState(i){return S.pt[i]||(S.pt[i]={step:'start'})}
 function enterPoint(j){S.cur=j;const st=pointState(j);
   if(S.batch.carry&&j>0)S.meters.filter(m=>m.id).forEach(m=>{const pr=(S.rd[j-1]||{})[m.id],rd=(S.rd[j]=S.rd[j]||{})[m.id]=(S.rd[j]||{})[m.id]||{};
@@ -828,14 +841,16 @@ function vRun(A){
     return`<div class="sl ${cls} ${j?'just':''}" data-a="slotdet" data-v="${i}"><div class="sh"><span class="no">${i+1}</span>${lab}</div>${lcd(shown)}${lcdRev(rd.e?rd.e.rev:rd.s?rd.s.rev:null)}
     ${MECH()?'':(()=>{const r0=rd.e||rd.s,b1=r0?r0.bat:null,b0=rd.s?rd.s.bat:null;return`<div class="bt ${batCls(b1)}">🔋 ${rd.s&&rd.e&&b0!=null&&b1!=null&&rd.s!==rd.e?b0.toFixed(2)+' → '+b1.toFixed(2)+' V <small>('+((b1-b0)>0?'+':'')+(b1-b0).toFixed(2)+')</small>':batT(b1)}</div>`})()}<div class="idr"><b class="mono">${esc(m.id)}</b><span class="szp2">${m.size?m.size+' mm':'? mm'}</span></div>
     <div class="er ${c&&c.valid?(c.pass?'p':'f'):'n'}">${c&&c.valid?sg(c.err)+'%':'—'}</div>
-    <div class="pb"><i style="width:${pr}%"></i></div><div class="sm">${c&&c.valid?'ใช้น้ำ '+fx(c.dVol,2)+' / '+fx(c.vref,2)+' L'+(c.dRev!=null?' · Δรอบ '+fx(c.dRev)+(c.wrap?' ↻วนรอบ':'')+' · K'+(c.idx+1):''):rd.s&&!rd.e?'รอค่าสิ้นสุด · อ้างอิง '+p.v+' L':'อ้างอิง '+p.v+' L'}${(c?c.flags:[]).length?' · ⚠ '+esc(c.flags[0]):''}</div></div>`};
+    <div class="pb"><i style="width:${pr}%"></i></div>${c&&c.valid?`<div class="stt"><div><small>น้ำที่ใช้</small><b>${fx(c.dVol,2)}</b><em>L · อ้างอิง ${fx(c.vref,2)}</em></div><div><small>จำนวนรอบ Δ</small><b>${c.dRev!=null?fx(c.dRev):'—'}</b><em>${c.dRev!=null?'รอบ'+(c.wrap?' ↻วน':''):'ไม่มีข้อมูล'}</em></div><div><small>K ที่ต้องใช้</small><b>${c.kNeed!=null?fx(c.kNeed,c.kNeed<1000?1:0):'—'}</b><em>µL/รอบ${c.kUsed!=null?' · มิเตอร์ใช้ '+fx(c.kUsed,0):''}</em></div></div>`:''}<div class="sm">${c&&c.valid?(c.dRev!=null?'ช่วง K'+(c.idx+1)+(c.mins?' · '+fx(c.mins,1)+' นาที':''):''):rd.s&&!rd.e?'รอค่าสิ้นสุด · อ้างอิง '+fx(rdV(pi),2)+' L':'อ้างอิง '+fx(rdV(pi),2)+' L'}${(c?c.flags:[]).length?' · ⚠ '+esc(c.flags[0]):''}</div></div>`};
   const rows=Math.ceil(N/2),lr=LAST&&LAST.r,lc=lr&&LAST.pi===pi?calc(pi,lr.id):null;
   const doneP=A.P.filter(x=>x.state==='done'||x.state==='fail').length;
   const cfg=`<details class="card cfgd" ${anyData?'':'open'}><summary>🔧 <b>ตั้งค่าการทดสอบ</b> · ${MODEL(S.batch.model)} · ${S.batch.size} mm · R${S.batch.R} · ${N} ตัวบนแท่น <small>(แตะเพื่อแก้ไข)</small></summary><div class="cfgr">${sel('ชนิดมิเตอร์','batch.model',[['SJ','Single Jet'],['MJ','Multijet']])}${sel('ขนาด (mm)','batch.size',SIZES.map(s=>[s,s+' mm']))}${sel('คลาส R','batch.R',RCL.map(r=>[r,'R'+r]))}${fld('จำนวนมิเตอร์บนแท่น','batch.nm','number','min="1" max="40"')}</div>${q3Info()}<p class="hint" style="margin-top:8px">เปลี่ยนขนาด / คลาส R แล้วระบบปรับอัตราการไหลและแผนทดสอบให้อัตโนมัติ · ข้อมูลอื่น (ผู้ทดสอบ เกณฑ์ ความดัน อุณหภูมิ) อยู่ที่แท็บ ①</p></details>`;
   return`${cfg}${keyBar(pi,st,N)}${anyData?'':`<div class="card guide"><h2><em>📖</em>เริ่มใช้งานใน 6 ขั้น</h2>${guideHtml()}</div>`}
   <div class="steps">${S.plan.map((q,i)=>q.off?'':`<div class="pt ${i===pi?'cur':''} ${A.P[i].state==='done'?'done':A.P[i].state==='fail'?'fail':''}" data-a="goto" data-v="${i}"><span class="st">${A.P[i].state==='done'?'✅':A.P[i].state==='fail'?'⚠️':''}</span><b>${esc(q.l)}</b><small>${flowT(q.f)} L/h · ${q.v} L</small><small>±${q.lim}% · ${A.P[i].n?A.P[i].pass+'/'+A.P[i].n+' ผ่าน':'รอทดสอบ'}</small></div>`).join('')}</div>
   <div class="banner"><div><div style="opacity:.8;font-size:.9rem">จุดทดสอบที่ ${ordOn(pi)} / ${np} · ยืนยันแล้ว ${doneP} จุด</div><h3>${esc(p.l)} <small>· ${flowT(p.f)} L/h · ${p.v} L</small></h3>
-   <div class="k"><span>เกณฑ์ ±${p.lim}%</span><span>เวลาโดยประมาณ ${fx(p.v/p.f*60,1)} นาที</span><span>${regs.length}/${N} มิเตอร์</span>${fa?`<span style="${devBad?'background:#fb7185;color:#fff':''}">อัตราไหลจริง ${fx(fa,fa<100?1:0)} L/h (${sg(dev,1)}%)</span>`:''}</div>
+   <div class="k"><span>เกณฑ์ ±${p.lim}%</span><span>เวลาโดยประมาณ ${fx(rdV(pi)/p.f*60,1)} นาที</span><span>${regs.length}/${N} มิเตอร์</span>${fa?`<span style="${devBad?'background:#fb7185;color:#fff':''}">อัตราไหลจริง ${fx(fa,fa<100?1:0)} L/h (${sg(dev,1)}%)</span>`:''}</div>
+   <div class="vact ${(st0=>st0.va>0&&st0.va!==p.v)(S.pt[pi]||{})?'chg':''}"><div class="vl"><b>💧 ปริมาตรน้ำที่ทดสอบจริง</b><small>${(S.pt[pi]||{}).va>0&&(S.pt[pi]||{}).va!==p.v?'แก้จากแผน '+p.v+' L · ระบบคำนวณ %error ใหม่แล้ว':'ตามแผน '+p.v+' L · ปล่อยไม่ครบ/เกิน แก้ตรงนี้ได้เลย'}</small></div>
+    <div class="vst"><button data-a="vaadj" data-v="-1">−1</button><button data-a="vaadj" data-v="-0.1">−0.1</button><span class="vin"><input id="vaIn" inputmode="decimal" value="${fx(rdV(pi),(rdV(pi)%1===0)?0:(String(rdV(pi)).split('.')[1]||'').length>2?3:2).replace(/,/g,'')}" aria-label="ปริมาตรน้ำที่ทดสอบจริง (ลิตร)"><i>L</i></span><button data-a="vaadj" data-v="0.1">+0.1</button><button data-a="vaadj" data-v="1">+1</button>${(S.pt[pi]||{}).va>0&&(S.pt[pi]||{}).va!==p.v?'<button class="rs" data-a="vareset">↺ กลับเป็น '+p.v+' L</button>':''}</div></div>
    <div class="todo">${todo}</div>
    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">${ctl}<button class="btn g sm" data-a="howto">📖 วิธีใช้</button></div></div>
    <div><div class="stage">${stg.map((g,i)=>`<div class="stg ${order[i]===st.step?'on':si>i?'ok':''}">${g[1]}<small>${g[2]}</small></div>`).join('')}</div><div class="tmr mono" id="tm">${tmv}</div></div></div>
@@ -1006,7 +1021,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
-  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v27</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v28</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
    <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small><button class="btn" style="margin-top:8px" data-a="pvedit">🛠 แก้ไขค่ามิเตอร์ที่ใช้งานอยู่ (Service) — บนมือถือ</button></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
@@ -1089,7 +1104,7 @@ function vPv(A){const p=S.pv=Object.assign(defPv(),S.pv||{}),b=pvBuild(),br=wrBr
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="pvgo" ${b.errs.length?'disabled':''}>📲 เขียนมิเตอร์ ${esc(id)} แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}</div>`;
   const nextIds=Array.from({length:5},(_,i)=>p.sn+i<=99?pvId(Object.assign({},p,{sn:p.sn+i})):null).filter(Boolean);
   const showVf=WR.kind==='prov'&&WR.state==='ok';
-  return`<div class="wrh pvh"><h2>🏭 ลงทะเบียนมิเตอร์ดิจิทัลใหม่ <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">v27</small></h2><p>ตั้งรหัสมิเตอร์ · ขนาด · ค่า K · ทิศทาง · เวลา แล้วเขียนลงมิเตอร์เครื่องใหม่ทีละตัวด้วยมือถือ</p>
+  return`<div class="wrh pvh"><h2>🏭 ลงทะเบียนมิเตอร์ดิจิทัลใหม่ <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">v28</small></h2><p>ตั้งรหัสมิเตอร์ · ขนาด · ค่า K · ทิศทาง · เวลา แล้วเขียนลงมิเตอร์เครื่องใหม่ทีละตัวด้วยมือถือ</p>
    <div class="wsteps"><div><b>① ตั้งรหัสรุ่น/Lot</b>ปี · เดือน · Lot · ลำดับ + ขนาด</div><div><b>② ตรวจค่าที่จะเขียน</b>K · ทิศทาง · ช่วงบันทึก · เวลา</div><div><b>③ แตะมือถือที่มิเตอร์ใหม่</b>แอปเขียน → อ่านกลับยืนยัน</div><div><b>④ ตรวจสอบ → ทัชสวิตช์ 6 วินาที</b>แล้วไปตัวถัดไป ลำดับเพิ่มเอง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>เขียนมิเตอร์ใหม่ได้จากหน้านี้ · มิเตอร์ที่ลงทะเบียนแล้วจะส่งไปแสดงที่จอคอม (ถ้าจับคู่ไว้)</small><button class="btn p" style="margin-top:8px" data-a="pvphone">📱 เปิดฟอร์มลงทะเบียนบนมือถือ (ใช้ง่ายกว่า)</button></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>ใช้ดูรายการมิเตอร์ที่ลงทะเบียนแล้ว (รับจากมือถือที่จับคู่) และ “นำเข้าสู่ Batch ทดสอบ” · การเขียนต้องทำบนมือถือ</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🔢</em>รหัสมิเตอร์ (Meter ID)</h2><p class="sub">8 หลัก = ปี พ.ศ. (2 หลัก) · เดือนที่ผลิต · Lot ที่ผลิต · ลำดับเครื่องใน Lot — ลำดับจะเพิ่มให้เองหลังเขียนสำเร็จ</p>
@@ -1260,11 +1275,14 @@ function relayHtml(){const o=(v,t)=>`<option value="${v}" ${RL.role===v?'selecte
   <div class="fr"><div class="fld"><label>เครื่องนี้ทำหน้าที่</label><select id="rlRole">${o('recv','🖥 คอมพิวเตอร์ — รับค่า แสดงผล')}${o('send','📱 มือถือ — ส่งค่า')}${o('off','⛔ ปิด — ใช้เครื่องเดียว')}</select></div>
   <div class="fld"><label>รหัสจับคู่ (6–16 ตัว a–z 0–9)</label><input id="rlCode" class="mono" value="${esc(RL.code.toUpperCase())}" maxlength="16" style="text-transform:uppercase"></div></div>
   <div class="fr"><div class="fld"><label>ช่องทางส่งค่า</label><select id="rlTp"><option value="auto" ${RL.tp!=='ntfy'?'selected':''}>อัตโนมัติ — Google Apps Script ของ FSL (ไม่ติดโควต้า) · สำรอง ntfy</option><option value="ntfy" ${RL.tp==='ntfy'?'selected':''}>ntfy.sh อย่างเดียว (ติดโควต้าฟรีได้)</option></select></div></div>
+  <div class="fr"><div class="fld" style="flex:2"><label>ลิงก์ Google Apps Script (.../exec) — <b>ทั้งมือถือและคอมต้องเป็นลิงก์เดียวกัน</b></label><input id="rlGsUrl" value="${esc((RL.gs&&RL.gs.url)||'')}" placeholder="${esc((()=>{try{const c=window.parent.smcvGsCfg();return c.url}catch(e){return 'เว้นว่าง = ใช้ลิงก์ในการ์ด ☁️ ของแดชบอร์ด'}})())}" autocomplete="off"></div>
+  <div class="fld"><label>Token</label><input id="rlGsTk" type="password" value="${esc((RL.gs&&RL.gs.token)||'')}" placeholder="เว้นว่าง = ใช้ค่าในแดชบอร์ด" autocomplete="off"></div></div>
+  <p class="hint" style="margin:-4px 0 8px">ใช้อยู่ตอนนี้: <b>${esc((()=>{const c=gsCfg();return c?'…'+c.url.replace(/\/exec.*$/,'').slice(-14)+'/exec':'ไม่พบลิงก์'})())}</b> · ถ้ามือถือขึ้น “Google: Failed to fetch” แปลว่าลิงก์บนมือถือไม่ตรงกับคอม — กด <b>⎘ คัดลอกลิงก์ Google</b> ที่คอม แล้ววางช่องนี้บนมือถือ</p>
   <div class="fr"><div class="fld"><label>เซิร์ฟเวอร์รีเลย์ ntfy (ขั้นสูง)</label><input id="rlSrv" value="${esc(RL.server)}"></div>
   <div class="fld"><label>เสียงเตือน</label><select id="rlBeep"><option value="1" ${RL.beep?'selected':''}>เปิด (ติ๊ง เมื่ออ่านสำเร็จ / ต่ำเมื่อไม่ผ่าน)</option><option value="0" ${RL.beep?'':'selected'}>ปิด</option></select></div></div>
   <ol class="gd" style="margin:10px 0"><li><b>คอมพิวเตอร์</b><span>เลือก “คอมพิวเตอร์” → กด “บันทึก” แล้วจดรหัสจับคู่ (หรือกด สุ่มรหัสใหม่) → กด 📺 Monitor เพื่อขึ้นจอใหญ่</span></li><li><b>มือถือ</b><span>เปิดแอป SMCV4 Reader → แท็บ Test Bench → กดแถบ 📡 → เลือก “มือถือ” ใส่รหัสเดียวกัน → บันทึก</span></li><li><b>ทดสอบ</b><span>กด “ส่งสัญญาณทดสอบ” บนมือถือ จอคอมพิวเตอร์ต้องขึ้นข้อความรับสัญญาณ</span></li></ol>
   <p class="hint">🔒 ค่าที่ส่งคือ Meter ID · ปริมาตร · จำนวนรอบ · K1–K20 ผ่านบริการ ntfy.sh ใครรู้รหัสจะเห็นข้อมูลได้ จึงใช้รหัสสุ่มและเปลี่ยนเมื่อไม่ต้องการแชร์ · องค์กรที่ต้องการความปลอดภัยสูงสามารถตั้งเซิร์ฟเวอร์ ntfy ของตนเองในช่อง “เซิร์ฟเวอร์รีเลย์”</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn p" data-a="rlsave">💾 บันทึกและเชื่อมต่อ</button><button class="btn" data-a="rlnew">🎲 สุ่มรหัสใหม่</button><button class="btn" data-a="rlcopy">📋 คัดลอกรหัส</button><button class="btn" data-a="rltest">🧪 ส่งสัญญาณทดสอบ</button> <button class="btn" data-a="rldiag">🩺 ตรวจเครือข่าย</button><button class="btn" data-a="mclose">ปิด</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn p" data-a="rlsave">💾 บันทึกและเชื่อมต่อ</button><button class="btn" data-a="rlnew">🎲 สุ่มรหัสใหม่</button><button class="btn" data-a="rlcopy">📋 คัดลอกรหัส</button><button class="btn" data-a="rltest">🧪 ส่งสัญญาณทดสอบ</button> <button class="btn" data-a="rlcopygs">⎘ คัดลอกลิงก์ Google</button> <button class="btn" data-a="rldiag">🩺 ตรวจเครือข่าย</button><button class="btn" data-a="mclose">ปิด</button></div>
   <p class="hint" id="rlst" style="margin-top:8px">${esc(rlText())}</p>`}
 
 /* ---------- Monitor จอใหญ่: หน้าปัดมิเตอร์เสมือนจริง + ผังแท่น ---------- */
@@ -1344,6 +1362,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   if(a==='tab'){TAB=v;render();scrollTo(0,0)}
   else if(a==='goto'){enterPoint(+v);TAB='run';render()}
   else if(a==='startrun'){const st=pointState(S.cur);st.step='run';st.t0=Date.now();delete st.t1;save();render()}
+  else if(a==='vaadj'){const st=pointState(S.cur),p=S.plan[S.cur];st.va=Math.max(.01,Math.round(((st.va>0?st.va:p.v)+ +v)*1000)/1000);if(st.va===p.v)delete st.va;save();render();toast('ปริมาตรทดสอบจริง '+fx(rdV(S.cur),2)+' L · คำนวณ %error ใหม่แล้ว',2200)}
+  else if(a==='vareset'){const st=pointState(S.cur);delete st.va;save();render();toast('กลับเป็นปริมาตรตามแผน '+S.plan[S.cur].v+' L',2200)}
   else if(a==='stoprun'){const st=pointState(S.cur);st.t1=Date.now();st.step='end';save();render()}
   else if(a==='confirm'){const st=pointState(S.cur),lbl=S.plan[S.cur].l;st.step='done';const nx=nextOn(S.cur);save();if(nx!=null){enterPoint(nx)}render();toast('บันทึกจุด '+lbl+' แล้ว'+(nx<S.plan.length?' — ไปจุดถัดไป':''))}
   else if(a==='redo'){const st=pointState(S.cur);st.step=(S.rd[S.cur]&&Object.values(S.rd[S.cur]).some(x=>x.s))?'end':'start';save();render()}
@@ -1366,8 +1386,11 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='rlcopy'){const c=($('#rlCode')||{}).value||RL.code;(navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toast('คัดลอกรหัสแล้ว'),()=>toast('รหัส: '+c,6000))}
   else if(a==='rlsave'){const role=$('#rlRole').value,code=($('#rlCode').value||'').toLowerCase().replace(/[^a-z0-9]/g,''),srv=($('#rlSrv').value||'').trim()||'https://ntfy.sh';
     if(role!=='off'&&code.length<6){toast('รหัสจับคู่ต้องยาวอย่างน้อย 6 ตัว');return}
-    RL.role=role;if(role!=='off')RL.code=code;RL.server=srv;RL.tp=($('#rlTp')||{}).value==='ntfy'?'ntfy':'auto';RL.beep=$('#rlBeep').value==='1';rlSave();rlConnect();closeModal();if(role==='send')TAB='run';render();toast(role==='recv'?'พร้อมรับค่าจากมือถือ · รหัส '+RL.code.toUpperCase():role==='send'?'พร้อมส่งค่าขึ้นจอ · รหัส '+RL.code.toUpperCase():'ปิดการเชื่อมต่อแล้ว (ใช้เครื่องเดียว)',3200)}
+    RL.role=role;if(role!=='off')RL.code=code;{const gu=(($('#rlGsUrl')||{}).value||'').trim(),gt=(($('#rlGsTk')||{}).value||'').trim();if(gu&&!/^https:\/\/script\.google\.com\//.test(gu)){toast('ลิงก์ Google ต้องขึ้นต้นด้วย https://script.google.com/');return}
+      let cur=null;try{cur=window.parent.smcvGsCfg()}catch(e){}RL.gs=gu?{url:gu,token:gt||(cur&&cur.token)||''}:null;RL.gskip=0;RL.gerr=''}
+    RL.server=srv;RL.tp=($('#rlTp')||{}).value==='ntfy'?'ntfy':'auto';RL.beep=$('#rlBeep').value==='1';rlSave();rlConnect();closeModal();if(role==='send')TAB='run';render();toast(role==='recv'?'พร้อมรับค่าจากมือถือ · รหัส '+RL.code.toUpperCase():role==='send'?'พร้อมส่งค่าขึ้นจอ · รหัส '+RL.code.toUpperCase():'ปิดการเชื่อมต่อแล้ว (ใช้เครื่องเดียว)',3200)}
   else if(a==='rlresend'){const e=SENT[0];if(!e||!e.m){toast('ไม่มีรายการให้ส่งซ้ำ');return}e.ok=null;e.info='';RL.err='';rlPost(e.m,t=>{e.info=t}).then(()=>{e.ok=true;e.info='';render()},er=>{e.ok=false;RL.err=er.message;render()});render()}
+  else if(a==='rlcopygs'){const c=gsCfg();if(!c){toast('ไม่พบลิงก์ Google');return}try{navigator.clipboard.writeText(c.url).then(()=>toast('คัดลอกลิงก์แล้ว — ไปวางในช่อง “ลิงก์ Google Apps Script” บนมือถือ',4200),()=>toast(c.url,9000))}catch(e){toast(c.url,9000)}}
   else if(a==='rldiag'){toast('กำลังตรวจ Google Apps Script และ ntfy …',2500);
     (async()=>{const out=[],c=gsCfg();
       if(!c)out.push('✖ Google: ไม่พบลิงก์ Apps Script');
@@ -1396,6 +1419,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='q3keep'){S.batch.q3Custom=true;save();render()}
   else if(a==='q3std'){const s=q3Std();if(!s)return;const go=()=>{S.batch.q3=s;S.batch.q3Custom=false;S.plan=buildPlan();S.rd={};S.pt={};S.cur=0;save();render();toast('ใช้ Q3 มาตรฐาน '+fx(s)+' L/h และสร้างแผนใหม่แล้ว',3200)};Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length)?askConfirm('จะสร้างแผนอัตราการไหลใหม่ตาม Q3 มาตรฐาน และล้างผลที่อ่านไว้ของ Batch นี้\nดำเนินการต่อหรือไม่?',go):go()}});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-a="kbsave"]'))kbSave()});
+document.addEventListener('change',e=>{const t=e.target;if(!t||t.id!=='vaIn')return;const x=parseFloat(String(t.value).replace(/,/g,'.'));if(!(x>0)){toast('ใส่ปริมาตรเป็นตัวเลข เช่น 9.6');render();return}const st=pointState(S.cur),p=S.plan[S.cur];st.va=Math.round(x*1000)/1000;if(st.va===p.v)delete st.va;save();render();toast('ปริมาตรทดสอบจริง '+fx(rdV(S.cur),2)+' L · คำนวณ %error ใหม่แล้ว',2400)});
+document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='vaIn'&&e.key==='Enter'){e.preventDefault();e.target.blur()}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&(e.target.id==='kbVal'||e.target.id==='kbId')){e.preventDefault();kbSave()}});
 document.addEventListener('change',e=>{const t=e.target;if(t.id==='kbSlot'){KEYSLOT=+t.value;KBCLR=true;KBFOCUS='kbVal';render();return}
   if(t.id==='file'){handleFiles([...t.files]);t.value='';return}
