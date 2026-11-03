@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v27"
+                  private const val VERSION = "v28"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -388,12 +388,22 @@ jobs:
                       runOnUiThread { cancelWriteJob(false) }
                   }
 
+                  @Volatile private var pendingFileName: String = ""
+
+                  /** เว็บบอกชื่อไฟล์ที่ต้องการ (ชื่อสั้นตามรุ่น/วันที่) ก่อนสั่งดาวน์โหลด */
+                  @JavascriptInterface
+                  fun nextName(n: String) {
+                      pendingFileName = n
+                  }
+
                   @JavascriptInterface
                   fun saveFile(mime: String, b64: String) {
                       try {
                           val bytes = Base64.decode(b64, Base64.DEFAULT)
                           val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) ?: "bin"
-                          val name = "SMCV4_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + "." + ext
+                          val want = pendingFileName.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
+                          pendingFileName = ""
+                          val name = if (want.isNotEmpty()) want else "SMCV4_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + "." + ext
                           saveToDownloads(name, bytes, mime)
                           runOnUiThread { toast("บันทึกไฟล์ $name ลงโฟลเดอร์ Download แล้ว") }
                       } catch (e: Exception) {
