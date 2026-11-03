@@ -92,6 +92,14 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 #mon .t b{display:block;font-size:2.1vh;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#mon .t .e{font-size:6.4vh;font-weight:700;line-height:1.1}#mon .t .d{font-size:1.9vh;opacity:.8}
 #mon .bar{height:2.2vh;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden;display:flex}#mon .bar i{display:block;height:100%}
 #mon .x{position:absolute;right:1.5vw;top:1.5vh}
+.btn.nb{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3b2400;border:0;font-weight:700;box-shadow:0 3px 10px rgba(245,158,11,.4)}.btn.nb:hover{filter:brightness(1.05)}
+.nbbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1.5px solid #6ee7b7;border-radius:16px;padding:12px 16px;margin-bottom:16px}.nbbar b{font-size:1.1rem;color:#065f46;display:block}.nbbar small{color:#047857}
+.nbinfo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}.nbinfo>div{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center}.nbinfo small{display:block;color:var(--mut);font-size:.72rem}.nbinfo b{font-size:1.05rem;word-break:break-all}
+.nbs{margin-top:12px}.nbs>b{display:block;margin-bottom:6px}.nbr{display:flex;gap:8px;flex-wrap:wrap}
+.nbo{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;font-family:inherit;color:var(--ink)}.nbo:hover{border-color:var(--acc)}.nbo.rec{border-color:#14b8a6;background:linear-gradient(180deg,#f0fdfa,#fff)}
+.nbo>span{font-size:1.7rem}.nbo b{display:block;font-size:1rem}.nbo b em{font-style:normal;font-size:.72rem;background:#14b8a6;color:#fff;border-radius:99px;padding:1px 9px;margin-left:6px}.nbo small{display:block;color:var(--mut);font-size:.8rem;margin-top:2px;line-height:1.35}
+@media(max-width:560px){.nbinfo{grid-template-columns:repeat(2,1fr)}}
+
 .rtb{position:relative;background:linear-gradient(135deg,#0a2a43,#0b6d94);color:#fff;border-radius:16px;padding:12px 16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(10,42,67,.25)}
 .rtb .rt1{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.rtb .rt1 b{font-size:1.15rem}.rtb .rt1 small{display:block;opacity:.8;font-size:.82rem}.rtb .rbt{display:flex;gap:8px;flex-wrap:wrap}
 .rtb .rt2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:.85rem}.rtb .rt2>span{opacity:.8}
@@ -308,6 +316,7 @@ body.mro{overflow:hidden}
     <button class="btn g" data-a="monitor">📺 Monitor</button>
     <button class="btn g" data-a="xlsx">⬇ Excel</button>
     <button class="btn g" data-a="pdf">🖨 PDF</button>
+    <button class="btn nb" data-a="newbatch" title="เริ่มทดสอบ Batch ใหม่">🆕 Batch ใหม่</button>
     <button class="btn g" data-a="more">⋯</button>
   </div>
   <nav class="tabs" id="tabs"></nav>
@@ -557,6 +566,24 @@ const k8=k=>k==null?'':String(Math.round(k)).padStart(8,'0');
 /* ---------- รับข้อมูลจาก NFC ---------- */
 function slotFor(id,hint){let m=S.meters.find(x=>x.id===id);if(m)return m;if(hint!=null&&S.meters[hint]&&!S.meters[hint].id)return S.meters[hint];m=S.meters.find(x=>!x.id);if(!m){m={id:'',size:null,k:null};S.meters.push(m);S.batch.nm=S.meters.length}return m}
 const rdV=i=>{const q=S.plan[i],t=S.pt[i]||{};return t.va>0?t.va:(q?q.v:0)};
+
+/* ---------- เริ่ม Batch ใหม่ ---------- */
+const rdCount=()=>{let n=0;Object.keys(S.rd||{}).forEach(i=>Object.keys(S.rd[i]||{}).forEach(id=>{const r=S.rd[i][id];if(r&&r.s)n++;if(r&&r.e)n++}));return n};
+function newBatchHtml(){const A=agg(),np=S.plan.filter(p=>!p.off).length,n=rdCount(),regs=S.meters.filter(m=>m.id).length,saved=S.expN===n&&S.expAt;
+  const st=!n?'<span class="pill mut">ยังไม่มีผลอ่านใน Batch นี้</span>':saved?'<span class="pill ok">✔ บันทึกผลล่าสุดแล้ว '+hhmm(S.expAt)+' น.</span>':'<span class="pill warn">⚠ ผลของ Batch นี้ยังไม่ได้บันทึก — บันทึกก่อนล้างจะปลอดภัยกว่า</span>';
+  return`<h3>🆕 เริ่ม Batch ใหม่</h3>
+  <div class="nbinfo"><div><small>Batch ปัจจุบัน</small><b>${esc(S.batch.id)}</b></div><div><small>มิเตอร์ในแท่น</small><b>${regs}</b></div><div><small>จุดทดสอบที่ยืนยัน</small><b>${A.ptsDone}/${np}</b></div><div><small>ผลที่อ่านไว้</small><b>${n}</b></div></div>
+  <div style="margin:10px 0">${st}</div>
+  ${n?`<div class="nbs"><b>① บันทึกผลเดิมก่อน (แนะนำ)</b><div class="nbr"><button class="btn" data-a="nbxl">⬇ Excel</button><button class="btn" data-a="nbpdf">🖨 PDF</button><button class="btn" data-a="nbjson">💾 โปรเจกต์ (.json)</button></div></div>`:''}
+  <div class="nbs"><b>${n?'② ':''}เลือกวิธีเริ่มใหม่</b>
+   <button class="nbo rec" data-a="nbgo" data-v="keep"><span>🔁</span><div><b>เริ่มใหม่ · ใช้ค่าตั้งเดิม <em>แนะนำ</em></b><small>เก็บ ชนิด · ขนาด · คลาส R · จำนวนมิเตอร์ · ผู้ทดสอบ · หน่วยงาน · ล้างผลอ่านและรายชื่อมิเตอร์ · ได้ Batch ID ใหม่ → พร้อมอ่านมิเตอร์ชุดใหม่ทันที</small></div></button>
+   <button class="nbo" data-a="nbgo" data-v="all"><span>🧹</span><div><b>ล้างทั้งหมด · ตั้งค่าใหม่ทั้งหมด</b><small>กลับค่าเริ่มต้นทุกอย่าง แล้วไปแท็บ ① ตั้งค่า เช่น เปลี่ยนรุ่น/ขนาด/คลาส R</small></div></button></div>
+  <button class="btn" data-a="mclose" style="margin-top:6px">ยกเลิก</button>`}
+function newBatchGo(mode){const t=S.tpl,qm=S.q3map,kl=S.klib,ro=S.repOpt,old=S.batch;S=defState();S.tpl=t;S.q3map=qm||{};if(kl)S.klib=kl;if(ro)S.repOpt=ro;
+  if(mode==='keep'){S.batch=Object.assign({},old,{id:S.batch.id,date:Date.now(),note:''})}
+  S.plan=buildPlan();while(S.meters.length<S.batch.nm)S.meters.push({id:'',size:null,k:null});S.cur=0;SELSLOT=null;try{LAST=null}catch(e){}save();TAB=mode==='keep'?'run':'setup';render();scrollTo(0,0);closeModal();toast(mode==='keep'?'เริ่ม Batch ใหม่แล้ว · '+S.batch.id+' — แตะอ่านมิเตอร์ชุดใหม่ได้เลย':'ล้างข้อมูลแล้ว — ตั้งค่า Batch ใหม่ในแท็บ ①',3600)}
+const markExp=()=>{S.expN=rdCount();S.expAt=Date.now();save()};
+
 function pointState(i){return S.pt[i]||(S.pt[i]={step:'start'})}
 function enterPoint(j){S.cur=j;const st=pointState(j);
   if(S.batch.carry&&j>0)S.meters.filter(m=>m.id).forEach(m=>{const pr=(S.rd[j-1]||{})[m.id],rd=(S.rd[j]=S.rd[j]||{})[m.id]=(S.rd[j]||{})[m.id]||{};
@@ -891,7 +918,8 @@ function kPtsTable(A){const rows=A.kPts.filter(r=>r.n).map(r=>`<tr><td><b>${esc(
 function vRes(A){const v=VD[A.verdict],pts=S.plan;
   const warn=planWarn();
   const ser=A.mids.map(id=>({id,pass:A.M[id].verdict!=='fail',pts:A.M[id].cells.map((c,i)=>c&&c.valid?{e:c.err,ok:c.pass,f:pts[i].f}:null)}));
-  return`${warn}<div class="grid g4" style="margin-bottom:18px"><div class="kpi" style="--c:${A.verdict==='pass'?'var(--ok)':A.verdict==='fail'?'var(--bad)':'#94a3b8'}"><small>ผลสรุป Batch</small><b><span class="verdict ${v[0]}" style="font-size:1.25rem;padding:2px 14px">${v[1]}</span></b><em>เกณฑ์: มาตรผ่านครบ ≥ ${S.batch.passPct}%</em></div>
+  const nbBar=(S.plan.filter(p=>!p.off).length&&A.ptsDone===S.plan.filter(p=>!p.off).length)?`<div class="nbbar"><div><b>🎉 ทดสอบครบทุกจุดแล้ว</b><small>บันทึกผล (Excel / PDF) แล้วเริ่ม Batch ถัดไปได้ทันที</small></div><button class="btn nb" data-a="newbatch">🆕 เริ่ม Batch ใหม่</button></div>`:'';
+  return`${warn}${nbBar}<div class="grid g4" style="margin-bottom:18px"><div class="kpi" style="--c:${A.verdict==='pass'?'var(--ok)':A.verdict==='fail'?'var(--bad)':'#94a3b8'}"><small>ผลสรุป Batch</small><b><span class="verdict ${v[0]}" style="font-size:1.25rem;padding:2px 14px">${v[1]}</span></b><em>เกณฑ์: มาตรผ่านครบ ≥ ${S.batch.passPct}%</em></div>
    <div class="kpi" style="--c:var(--ok)"><small>มิเตอร์ที่ผ่านครบทุกจุด</small><b>${A.full}/${A.nm}</b><em>${fx(A.pct,1)}% · ตก ${A.nfail} · รอ ${A.pend}</em></div>
    <div class="kpi" style="--c:var(--acc)"><small>จุดทดสอบที่ผ่าน (ทุกมิเตอร์)</small><b>${A.cellsPass}/${A.cellsAll}</b><em>${A.cellsAll?fx(A.cellsPass/A.cellsAll*100,1):0}% · ${A.ptsDone}/${pts.length} อัตราไหล</em></div>
    <div class="kpi" style="--c:#f59e0b"><small>error เฉลี่ย / สูงสุด</small><b>${sg(A.mean)} / ${sg(A.worst)}</b><em>% (สูงสุดคือค่าที่ห่างศูนย์มากสุด)</em></div></div>
@@ -1034,7 +1062,7 @@ function vWr(A){const w=S.wr,b=wrBuild(),br=wrBridge(),ids=S.meters.filter(m=>m.
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="wrgo" ${b.errs.length?'disabled':''}>📲 เตรียมเขียน แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}${!br?'<span class="pill mut" style="white-space:normal">💻 หน้านี้ดูแผนการเขียนได้ — ต้องเปิดจากแอป SMCV4 Reader (v18) บนมือถือเพื่อเขียนจริง</span>':''}</div>`;
   const planRows=b.rows.map(r=>`<tr><td class="mono"><b>${r[0]}</b></td><td class="mono">${esc(r[1])}</td><td class="l">${esc(r[2])}</td></tr>`).join('')||'<tr><td colspan="3" class="hint">ยังไม่ได้เลือกรายการ</td></tr>';
   const log=(S.cfglog||[]).slice(0,12).map(e=>`<tr><td>${fdt(e.t)}</td><td class="mono">${esc(e.id||'—')}</td><td class="l">${esc(e.label||'')}${e.err?' — '+esc(e.err):''}</td><td><span class="pill ${e.ok?'ok':'bad'}">${e.ok?'สำเร็จ':'ไม่สำเร็จ'}</span></td></tr>`).join('');
-  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v30</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
+  return`<div class="wrh"><h2>✍ เขียนค่าลงมิเตอร์ผ่าน NFC <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">หน้าเว็บ v31</small></h2><p>ตั้งค่าคงที่ K · ทิศทางใบพัด · ช่วงเวลาบันทึก · เวลา/วันที่ แล้วเขียนลงมิเตอร์ด้วยมือถือ</p>
    <div class="wsteps"><div><b>① เลือกและตั้งค่า</b>บนมือถือ: เลือกวิธีระบุมิเตอร์ แล้วเปิดสวิตช์ค่าที่ต้องการแก้</div><div><b>② แตะมือถือที่มิเตอร์</b>แอปตรวจ ID → เขียน → อ่านกลับยืนยัน</div><div><b>③ แตะอ่านกลับตรวจสอบ</b>ดูค่าในมิเตอร์เทียบกับที่เขียน ก่อนทัช</div><div><b>④ กดทัชสวิตช์ค้าง 6 วินาที</b>มิเตอร์โหลดค่าแล้วเคลียร์คำสั่งเอง · แตะอ่านยืนยันอีกครั้ง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>ตั้งค่าและเขียนลงมิเตอร์จากหน้านี้ได้เลย · ค่าที่ตั้งในหน้านี้จะอยู่เฉพาะเครื่องนี้</small><button class="btn" style="margin-top:8px" data-a="pvedit">🛠 แก้ไขค่ามิเตอร์ที่ใช้งานอยู่ (Service) — บนมือถือ</button></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>การเขียนต้องทำบนมือถือในแอป SMCV4 Reader · การเลือกมิเตอร์และค่าตั้งบนคอมพิวเตอร์ <u>ไม่ถูกส่งไปมือถือ</u> ให้ตั้งค่าใหม่บนมือถือที่ใช้แตะมิเตอร์</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🎯</em>จะเขียนให้มิเตอร์ตัวไหน?</h2><p class="sub">เลือกวิธีที่เข้าใจง่ายที่สุด · แอปจะแสดงเลขมิเตอร์ที่เขียนจริงทุกครั้งหลังเขียนเสร็จ</p>
@@ -1117,7 +1145,7 @@ function vPv(A){const p=S.pv=Object.assign(defPv(),S.pv||{}),b=pvBuild(),br=wrBr
    :`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn p wbig" data-a="pvgo" ${b.errs.length?'disabled':''}>📲 เขียนมิเตอร์ ${esc(id)} แล้วแตะมือถือที่มิเตอร์</button>${b.errs.length?`<span class="pill warn" style="white-space:normal">⚠ ${esc(b.errs[0])}</span>`:''}</div>`;
   const nextIds=Array.from({length:5},(_,i)=>p.sn+i<=99?pvId(Object.assign({},p,{sn:p.sn+i})):null).filter(Boolean);
   const showVf=WR.kind==='prov'&&WR.state==='ok';
-  return`<div class="wrh pvh"><h2>🏭 ลงทะเบียนมิเตอร์ดิจิทัลใหม่ <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">v30</small></h2><p>ตั้งรหัสมิเตอร์ · ขนาด · ค่า K · ทิศทาง · เวลา แล้วเขียนลงมิเตอร์เครื่องใหม่ทีละตัวด้วยมือถือ</p>
+  return`<div class="wrh pvh"><h2>🏭 ลงทะเบียนมิเตอร์ดิจิทัลใหม่ <small style="font-size:.6em;opacity:.85;background:#ffffff33;border-radius:99px;padding:2px 10px;vertical-align:middle">v31</small></h2><p>ตั้งรหัสมิเตอร์ · ขนาด · ค่า K · ทิศทาง · เวลา แล้วเขียนลงมิเตอร์เครื่องใหม่ทีละตัวด้วยมือถือ</p>
    <div class="wsteps"><div><b>① ตั้งรหัสรุ่น/Lot</b>ปี · เดือน · Lot · ลำดับ + ขนาด</div><div><b>② ตรวจค่าที่จะเขียน</b>K · ทิศทาง · ช่วงบันทึก · เวลา</div><div><b>③ แตะมือถือที่มิเตอร์ใหม่</b>แอปเขียน → อ่านกลับยืนยัน</div><div><b>④ ตรวจสอบ → ทัชสวิตช์ 6 วินาที</b>แล้วไปตัวถัดไป ลำดับเพิ่มเอง</div></div></div>
   ${br?`<div class="devb ph"><span>📱</span><div><b>คุณกำลังใช้งานบนมือถือ (แอป SMCV4 Reader)</b><small>เขียนมิเตอร์ใหม่ได้จากหน้านี้ · มิเตอร์ที่ลงทะเบียนแล้วจะส่งไปแสดงที่จอคอม (ถ้าจับคู่ไว้)</small><button class="btn p" style="margin-top:8px" data-a="pvphone">📱 เปิดฟอร์มลงทะเบียนบนมือถือ (ใช้ง่ายกว่า)</button></div></div>`:`<div class="devb pc"><span>💻</span><div><b>หน้าจอนี้ไม่ใช่มือถือ — เขียนลงมิเตอร์ไม่ได้</b><small>ใช้ดูรายการมิเตอร์ที่ลงทะเบียนแล้ว (รับจากมือถือที่จับคู่) และ “นำเข้าสู่ Batch ทดสอบ” · การเขียนต้องทำบนมือถือ</small></div></div>`}
   <div class="card" style="margin-top:14px"><h2><em>🔢</em>รหัสมิเตอร์ (Meter ID)</h2><p class="sub">8 หลัก = ปี พ.ศ. (2 หลัก) · เดือนที่ผลิต · Lot ที่ผลิต · ลำดับเครื่องใน Lot — ลำดับจะเพิ่มให้เองหลังเขียนสำเร็จ</p>
@@ -1288,7 +1316,7 @@ function qcList(A){const out=[];A.mids.forEach(id=>A.M[id].cells.forEach((c,i)=>
   const bad=A.P.filter((p,i)=>{const fa=p.fa;return fa&&Math.abs(fa-S.plan[i].f)/S.plan[i].f*100>S.batch.flowTol}).map(p=>`<tr><td class="l">—</td><td>${esc(S.plan[p.i].l)}</td><td class="l">อัตราไหลจริง ${fx(p.fa,1)} L/h เบี่ยงจากที่ตั้ง ${flowT(S.plan[p.i].f)} เกิน ±${S.batch.flowTol}%</td></tr>`);
   const rows=[...out,...bad];return rows.length?`<div class="tw"><table><thead><tr><th class="l">มิเตอร์</th><th>จุด</th><th class="l">ข้อสังเกต</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`:'<p class="pill ok">✔ ไม่พบข้อสังเกตด้านคุณภาพข้อมูล</p>'}
 function vRep(A){const o=RO(),tg=(k,t)=>`<button class="rtg ${o[k]?'on':''}" data-a="rotg" data-v="${k}"><i>${o[k]?'✓':''}</i>${t}</button>`,nD=detRows().reduce((n,d)=>n+d.rows.length,0);
-  return`<div class="rtb noprint"><div class="rt1"><div><b>🖨 ตัวอย่างรายงาน</b><small>A4 แนวนอน · ${nD} แถวข้อมูลการอ่าน · แก้ปริมาตรอ้างอิงในตารางได้ทันที</small></div><div class="rbt"><button class="btn p" data-a="pdf">🖨 พิมพ์ / บันทึก PDF</button><button class="btn" data-a="xlsx">⬇ Excel</button></div></div>
+  return`<div class="rtb noprint"><div class="rt1"><div><b>🖨 ตัวอย่างรายงาน</b><small>A4 แนวนอน · ${nD} แถวข้อมูลการอ่าน · แก้ปริมาตรอ้างอิงในตารางได้ทันที</small></div><div class="rbt"><button class="btn p" data-a="pdf">🖨 พิมพ์ / บันทึก PDF</button><button class="btn" data-a="xlsx">⬇ Excel</button><button class="btn nb" data-a="newbatch">🆕 Batch ใหม่</button></div></div>
    <div class="rt2"><span>เลือกหัวข้อที่จะแสดง/พิมพ์:</span>${tg('det','ตารางปริมาตร·รอบ·K')}${tg('chart','กราฟ')}${tg('k','ค่า K1–K20')}${tg('bat','แบตเตอรี่')}${tg('cfg','ค่าตั้งมิเตอร์')}${tg('qc','ตรวจคุณภาพ')}</div></div>
   <div class="sheetw">${reportHtml(A,true)}</div>`}
 
@@ -1446,9 +1474,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='demo'){demo()}
   else if(a==='kcopy'){const A=agg(),f=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),txt=f.map((k,i)=>`K${i+1}\t${k||''}\t${k8(k)}`).join('\n');(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('คัดลอกค่า K แล้ว'),()=>modal('<h3>ค่า K</h3><pre class="mono">'+esc(txt)+'</pre><button class="btn" data-a="mclose">ปิด</button>'))}
   else if(a==='xlsx')modal(`<h3>⬇ ส่งออก Excel</h3><div style="display:grid;gap:10px"><button class="btn p" data-a="xrep">📘 สมุดงานรายงานรวม (สรุป · ผล · K · ทุกอัตราไหล)</button><button class="btn" data-a="xbat">🔗 ไฟล์ Batch สำหรับ Web App (1 ไฟล์ต่อ 1 อัตราการไหล)</button><button class="btn" data-a="mclose">ปิด</button></div><p class="hint" style="margin-top:10px">ไฟล์ Batch ใช้รูปแบบเดียวกับที่ Web App นำเข้า (ปฏิบัติงาน → นำเข้าผลทดสอบ) จึงต่อกับ Studio K ได้ทันที</p>`);
-  else if(a==='xrep'){closeModal();wbReport().then(()=>toast('บันทึกไฟล์ Excel แล้ว'),e=>toast('⚠ '+e.message,4200))}
+  else if(a==='xrep'){closeModal();wbReport().then(()=>{markExp();toast('บันทึกไฟล์ Excel แล้ว')},e=>toast('⚠ '+e.message,4200))}
   else if(a==='xbat'){closeModal();batchFiles().catch(e=>toast('⚠ '+e.message,4200))}
-  else if(a==='pdf'){printReport()}
+  else if(a==='pdf'){markExp();printReport()}
   else if(a==='rotg'){const o=RO();o[v]=o[v]?0:1;save();render()}
   else if(a==='vapreset'){const st=S.pt[+v];if(st){delete st.va;save();render();toast('กลับเป็นปริมาตรตามแผน',2000)}}
   else if(a==='monitor')modal(`<h3>📺 Monitor หน้าแท่นทดสอบ</h3><div style="display:grid;gap:10px"><button class="btn p" data-a="openmon">เต็มจอในหน้านี้ (ต่อ HDMI / Cast)</button><button class="btn" data-a="winmon">เปิดหน้าต่างแยก — ลากไปจอที่สองได้ (อัปเดตสด)</button><button class="btn" data-a="mclose">ปิด</button></div><p class="hint" style="margin-top:10px">หน้าต่างแยกต้องเปิดในเบราว์เซอร์เดียวกัน ข้อมูลซิงก์อัตโนมัติทุกครั้งที่มีการอ่านค่า</p>`);
@@ -1456,7 +1484,12 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='winmon'){closeModal();const emb=!/^https?:|^file:/.test(location.protocol),w2=window.open(emb?'':location.href.split(/[?#]/)[0]+'?monitor=1','smcv4mon','width=1280,height=720');if(emb&&w2){w2.document.open();w2.document.write('<!DOCTYPE html>'+document.documentElement.outerHTML);w2.document.close()}}
   else if(a==='closemon'){MON=false;$('#mon').classList.remove('on');try{document.fullscreenElement&&document.exitFullscreen()}catch(x){}if(IS_MON)window.close()}
   else if(a==='more')modal(`<h3>เมนู</h3><div style="display:grid;gap:10px"><button class="btn" data-a="pickfile">📂 เปิดไฟล์ (.xlsx Batch เดิม / .json โปรเจกต์ / .bin)</button><button class="btn" data-a="savejson">💾 บันทึกโปรเจกต์ (.json)</button><button class="btn" data-a="demo">🎬 โหลดข้อมูลตัวอย่าง (Demo)</button><button class="btn bad" data-a="reset">🗑 เริ่ม Batch ใหม่ (ล้างข้อมูล)</button><button class="btn" data-a="mclose">ปิด</button></div>`);
-  else if(a==='savejson'){closeModal();saveJson()}
+  else if(a==='savejson'){closeModal();saveJson();markExp()}
+  else if(a==='newbatch'){modal(newBatchHtml())}
+  else if(a==='nbxl'){wbReport().then(()=>{markExp();modal(newBatchHtml());toast('บันทึก Excel แล้ว',2200)},e=>toast('⚠ '+e.message,4200))}
+  else if(a==='nbpdf'){closeModal();markExp();printReport()}
+  else if(a==='nbjson'){saveJson();markExp();modal(newBatchHtml())}
+  else if(a==='nbgo'){const go=()=>newBatchGo(v);if(rdCount()&&!(S.expN===rdCount()&&S.expAt))askConfirm('ผลของ Batch นี้ยังไม่ได้บันทึก (Excel / PDF / โปรเจกต์) — ล้างเลยหรือไม่? ล้างแล้วกู้คืนไม่ได้',go);else go()}
   else if(a==='reset'){askConfirm('ล้างข้อมูล Batch ปัจจุบันทั้งหมด?',()=>{const t=S.tpl,qm=S.q3map;S=defState();S.tpl=t;S.q3map=qm||{};S.plan=buildPlan();while(S.meters.length<S.batch.nm)S.meters.push({id:'',size:null,k:null});save();TAB='setup';render()})}
   else if(a==='cfok'){closeModal();const f=CFN;CFN=null;f&&f()}
   else if(a==='q3keep'){S.batch.q3Custom=true;save();render()}
