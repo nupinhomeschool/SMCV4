@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v31"
+                  private const val VERSION = "v38"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -1200,11 +1200,13 @@ jobs:
                   var yy = 69; var mo = 11; var lot = 1; var sn = 1
                   var model = "MJ"; var size = 25
                   var dir = 1; var uart = 0; var calc = 1
+                  var fwOn = true; var fwa = 1; var fwb = 7; var fwc = 2      // เวอร์ชันเฟิร์มแวร์ → NFC Addr 180–183
                   var logVal = 15; var logUnit = "min"
                   var nfcOn = false; var guard = false
                   fun id(): String = String.format(Locale.US, "%02d%02d%02d%02d", yy, mo, lot, sn)
                   fun toJson(): JSONObject = JSONObject().put("yy", yy).put("mo", mo).put("lot", lot).put("sn", sn)
                       .put("model", model).put("size", size).put("dir", dir).put("uart", uart).put("calc", calc)
+                      .put("fwOn", fwOn).put("fwa", fwa).put("fwb", fwb).put("fwc", fwc).put("fwv", if (fwOn) "$fwa.$fwb.$fwc" else "")
                       .put("logVal", logVal).put("logUnit", logUnit).put("nfcOn", nfcOn).put("guard", guard)
                   fun load(j: JSONObject) {
                       yy = j.optInt("yy", yy).coerceIn(0, 99); mo = j.optInt("mo", mo).coerceIn(1, 12)
@@ -1214,6 +1216,7 @@ jobs:
                       dir = if (j.optInt("dir", dir) == 0) 0 else 1
                       uart = if (j.optInt("uart", uart) == 0) 0 else 1
                       calc = if (j.optInt("calc", calc) == 0) 0 else 1
+                      fwOn = j.optBoolean("fwOn", fwOn); fwa = j.optInt("fwa", fwa).coerceIn(0, 99); fwb = j.optInt("fwb", fwb).coerceIn(0, 99); fwc = j.optInt("fwc", fwc).coerceIn(0, 99)
                       logVal = j.optInt("logVal", logVal).coerceAtLeast(1)
                       logUnit = if (j.optString("logUnit", logUnit) == "h") "h" else "min"
                       nfcOn = j.optBoolean("nfcOn", nfcOn); guard = j.optBoolean("guard", guard)
@@ -1270,6 +1273,7 @@ jobs:
                       "• รุ่น  ${if (pv.model == "MJ") "Multijet" else "Single Jet"}  ·  ขนาด ${pv.size} mm\n" +
                       "• ทิศทางใบพัด  ${if (pv.dir == 1) "Backward" else "Forward"}\n" +
                       "• Log UART  ${if (pv.uart == 1) "เปิด" else "ปิด"}  ·  โหมดคำนวณ  ${if (pv.calc == 1) "Cal FW or BR" else "Cal > FW"}\n" +
+                      "• เฟิร์มแวร์  ${if (pv.fwOn) "v${pv.fwa}.${pv.fwb}.${pv.fwc}  (บันทึกที่ตำแหน่ง 180–183)" else "ไม่บันทึกเวอร์ชัน"}\n" +
                       "• ช่วงบันทึกค่า  ${provLogText()}" + (if (pv.nfcOn) "  (เก็บลง NFC เท่ากัน)" else "") + "\n" +
                       "• ค่าคงที่ K1–K20  ตามคลัง K ของรุ่น/ขนาดนี้\n" +
                       "• เวลา/วันที่  ตั้งให้เท่ามือถือในวินาทีที่แตะ"
@@ -1482,6 +1486,17 @@ jobs:
                   c3.addView(provSeg(listOf("ปิด" to 0, "เปิด" to 1), { pv.uart }, { pv.uart = it }), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
                   c3.addView(label("🧮  โหมดคำนวณ", 13f, cInk, true), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
                   c3.addView(provSeg(listOf("Cal > FW" to 0, "Cal FW or BR" to 1), { pv.calc }, { pv.calc = it }), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+                  c3.addView(label("🔖  เวอร์ชันเฟิร์มแวร์ของมิเตอร์", 13f, cInk, true), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(12) })
+                  c3.addView(label("บันทึกลง NFC ตำแหน่ง 180–183 ครั้งเดียว ครั้งต่อไปอ่านกลับมาดูได้เลย ไม่ต้องยุ่งกับ MCU", 11f, cGrey), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(2) })
+                  c3.addView(provSwitch("บันทึกเวอร์ชันเฟิร์มแวร์ลงมิเตอร์", { pv.fwOn }, { pv.fwOn = it }), LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+                  val fwRow = LinearLayout(this); fwRow.orientation = LinearLayout.HORIZONTAL
+                  fwRow.addView(provStepper("MAJOR", "ตัวแรก", { pv.fwa }, { pv.fwa = it }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginEnd = dp(4) })
+                  fwRow.addView(provStepper("MINOR", "ตัวกลาง", { pv.fwb }, { pv.fwb = it }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(4); marginEnd = dp(4) })
+                  fwRow.addView(provStepper("PATCH", "ตัวท้าย", { pv.fwc }, { pv.fwc = it }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(4) })
+                  c3.addView(fwRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+                  val fwCap = label("", 12f, cInk, true)
+                  c3.addView(fwCap, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+                  provRefresh.add { fwRow.visibility = if (pv.fwOn) View.VISIBLE else View.GONE; fwCap.visibility = fwRow.visibility; fwCap.text = "จะเขียน: v${pv.fwa}.${pv.fwb}.${pv.fwc}   (ไบต์ ${FwFmt.hex(pv.fwa, pv.fwb, pv.fwc).chunked(2).joinToString(" ")})" }
 
                   // ---- ④ ช่วงเวลาบันทึก ----
                   val c4 = provCard("4", "ช่วงเวลาบันทึกค่าในมิเตอร์", "เก็บที่ตำแหน่ง 166–167 (นาที)")
@@ -1703,6 +1718,7 @@ jobs:
                   var onDir = false; var dir1 = 1
                   var onUart = false; var uart1 = 0
                   var onCalc = false; var calc1 = 1
+                  var fw0 = ""; var onFw = false; var fwa = 1; var fwb = 7; var fwc = 2; var fwRaw: String? = null
                   var onLog = false; var logVal = 15; var logUnit = "min"
                   var onNfc = false; var nfcVal = 15; var nfcUnit = "min"
                   var onTime = false; var timeMode = 0; var timeAt = 0L
@@ -1714,6 +1730,8 @@ jobs:
                   fun resetEdits() {
                       onId = false; id1 = id0; onSize = false; size1 = if (size0 > 0) size0 else 25
                       onDir = false; dir1 = dir0; onUart = false; uart1 = uart0; onCalc = false; calc1 = calc0
+                      onFw = false; fwRaw = null
+                      val t0 = FwFmt.txt(fw0); if (t0.startsWith("v")) { val p = t0.substring(1).split('.'); fwa = p[0].toInt(); fwb = p[1].toInt(); fwc = p[2].toInt() }
                       onLog = false; if (log0 >= 60 && log0 % 60 == 0) { logUnit = "h"; logVal = log0 / 60 } else { logUnit = "min"; logVal = if (log0 > 0) log0 else 15 }
                       onNfc = false; if (nfc0 >= 60 && nfc0 % 60 == 0) { nfcUnit = "h"; nfcVal = nfc0 / 60 } else { nfcUnit = "min"; nfcVal = if (nfc0 > 0) nfc0 else 15 }
                       onTime = false; timeMode = 0; timeAt = System.currentTimeMillis(); cmdOn = true
@@ -1766,6 +1784,11 @@ jobs:
                   if (ed.onDir && ed.dir1 != ed.dir0) o.add(EdItem("dir", "ทิศทางใบพัด", dirTxt(ed.dir0), dirTxt(ed.dir1), 168, hex2s(ed.dir0), hex2s(ed.dir1)))
                   if (ed.onUart && ed.uart1 != ed.uart0) o.add(EdItem("uart", "Log UART", onOff(ed.uart0), onOff(ed.uart1), 169, hex2s(ed.uart0), hex2s(ed.uart1)))
                   if (ed.onCalc && ed.calc1 != ed.calc0) o.add(EdItem("calc", "โหมดคำนวณ", calcTxt(ed.calc0), calcTxt(ed.calc1), 170, hex2s(ed.calc0), hex2s(ed.calc1)))
+                  if (ed.onFw) {
+                      val nh = ed.fwRaw ?: FwFmt.hex(ed.fwa, ed.fwb, ed.fwc)
+                      val oh = if (ed.fw0.length == 8) ed.fw0.uppercase() else "00000000"
+                      if (nh != oh) o.add(EdItem("fw", "เวอร์ชันเฟิร์มแวร์", FwFmt.txt(oh), FwFmt.txt(nh), 180, oh, nh))
+                  }
                   if (ed.onLog && ed.logMin() != ed.log0) o.add(EdItem("logMin", "ช่วงบันทึกค่า (EEPROM)", fmtMin(ed.log0), fmtMin(ed.logMin()), 166, hex4s(ed.log0), hex4s(ed.logMin())))
                   if (ed.onNfc && ed.nfcMin() != ed.nfc0) o.add(EdItem("nfcMin", "ช่วงเก็บลง NFC", fmtMin(ed.nfc0), fmtMin(ed.nfcMin()), 164, hex4s(ed.nfc0), hex4s(ed.nfcMin())))
                   if (ed.onTime) {
@@ -1957,6 +1980,10 @@ jobs:
                   val dirEd = provSeg(listOf("⬅ Backward" to 1, "➡ Forward" to 0), { ed.dir1 }, { ed.dir1 = it })
                   val uartEd = provSeg(listOf("ปิด" to 0, "เปิด" to 1), { ed.uart1 }, { ed.uart1 = it })
                   val calcEd = provSeg(listOf("Cal > FW" to 0, "Cal FW or BR" to 1), { ed.calc1 }, { ed.calc1 = it })
+                  val fwEd = LinearLayout(this); fwEd.orientation = LinearLayout.HORIZONTAL
+                  fwEd.addView(provStepper("MAJOR", "ตัวแรก", { ed.fwa }, { ed.fwa = it; ed.fwRaw = null }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginEnd = dp(4) })
+                  fwEd.addView(provStepper("MINOR", "ตัวกลาง", { ed.fwb }, { ed.fwb = it; ed.fwRaw = null }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(4); marginEnd = dp(4) })
+                  fwEd.addView(provStepper("PATCH", "ตัวท้าย", { ed.fwc }, { ed.fwc = it; ed.fwRaw = null }, 0, 99), LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginStart = dp(4) })
                   val logEd = editIntervalEditor({ ed.logVal }, { ed.logVal = it }, { ed.logUnit }, { ed.logUnit = it })
                   val nfcEd = editIntervalEditor({ ed.nfcVal }, { ed.nfcVal = it }, { ed.nfcUnit }, { ed.nfcUnit = it })
 
@@ -1994,6 +2021,7 @@ jobs:
                   addRow(editRow("🧭", "ทิศทางใบพัด", { dirTxt(ed.dir0) }, { ed.onDir }, { ed.onDir = it }, dirEd))
                   addRow(editRow("📟", "Log ผ่าน UART", { onOff(ed.uart0) }, { ed.onUart }, { ed.onUart = it }, uartEd))
                   addRow(editRow("🧮", "โหมดคำนวณ", { calcTxt(ed.calc0) }, { ed.onCalc }, { ed.onCalc = it }, calcEd))
+                  addRow(editRow("🔖", "เวอร์ชันเฟิร์มแวร์ (180–183)", { FwFmt.txt(ed.fw0) }, { ed.onFw }, { ed.onFw = it }, fwEd))
                   addRow(editRow("⏱", "ช่วงบันทึกค่าในมิเตอร์ (166–167)", { fmtMin(ed.log0) }, { ed.onLog }, { ed.onLog = it }, logEd))
                   addRow(editRow("🗂", "ช่วงเก็บลง NFC (164–165)", { fmtMin(ed.nfc0) }, { ed.onNfc }, { ed.onNfc = it }, nfcEd))
                   addRow(editRow("🕒", "เวลา / วันที่ในมิเตอร์", { ed.time0 }, { ed.onTime }, { ed.onTime = it }, timeBox))
@@ -2174,6 +2202,7 @@ jobs:
                   ed.id0 = a.optString("id", res.optString("id", ""))
                   ed.size0 = a.optInt("size", 0); ed.dir0 = a.optInt("dir", 0); ed.uart0 = a.optInt("uart", 0); ed.calc0 = a.optInt("calc", 0)
                   ed.log0 = a.optInt("logMin", 0); ed.nfc0 = a.optInt("nfcMin", 0); ed.time0 = a.optString("time", "")
+                  ed.fw0 = a.optString("fwv", "")
                   ed.k0 = a.optJSONArray("k8")?.toString() ?: ""
                   ed.before = a
                   ed.resetEdits()
@@ -2245,6 +2274,7 @@ jobs:
                           "dir" -> fh.toIntOrNull(16)?.let { v -> ed.onDir = true; ed.dir1 = if (v == 0) 0 else 1 }
                           "uart" -> fh.toIntOrNull(16)?.let { v -> ed.onUart = true; ed.uart1 = if (v == 0) 0 else 1 }
                           "calc" -> fh.toIntOrNull(16)?.let { v -> ed.onCalc = true; ed.calc1 = if (v == 0) 0 else 1 }
+                          "fw" -> if (fh.length == 8) { ed.onFw = true; ed.fwRaw = fh.uppercase() }
                           "logMin" -> fh.toIntOrNull(16)?.let { v -> ed.onLog = true; if (v >= 60 && v % 60 == 0) { ed.logUnit = "h"; ed.logVal = v / 60 } else { ed.logUnit = "min"; ed.logVal = v } }
                           "nfcMin" -> fh.toIntOrNull(16)?.let { v -> ed.onNfc = true; if (v >= 60 && v % 60 == 0) { ed.nfcUnit = "h"; ed.nfcVal = v / 60 } else { ed.nfcUnit = "min"; ed.nfcVal = v } }
                           "time" -> {
@@ -2985,6 +3015,19 @@ jobs:
               private fun toast(s: String) = Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
 
               private fun ByteArray.toHex() = joinToString("") { "%02X".format(it) }
+          }
+
+          /** รูปแบบเวอร์ชันเฟิร์มแวร์ใน NFC Addr 180–183 : MAJOR MINOR PATCH A5 */
+          object FwFmt {
+              fun hex(a: Int, b: Int, c: Int) = String.format(Locale.US, "%02X%02X%02X%02X", a, b, c, 0xA5)
+              /** → "v1.7.2" หรือ "ยังไม่ระบุ" (ตัวยืนยัน Addr 183 ต้องเป็น A5) */
+              fun txt(h: String): String {
+                  if (h.length != 8 || !h.substring(6).equals("A5", true)) return "ยังไม่ระบุ"
+                  val a = h.substring(0, 2).toIntOrNull(16) ?: return "ยังไม่ระบุ"
+                  val b = h.substring(2, 4).toIntOrNull(16) ?: return "ยังไม่ระบุ"
+                  val c = h.substring(4, 6).toIntOrNull(16) ?: return "ยังไม่ระบุ"
+                  return if (a > 99 || b > 99 || c > 99) "ยังไม่ระบุ" else "v$a.$b.$c"
+              }
           }
 
           /** ตรวจความถูกต้องของข้อมูลล่าสุด (Addr 188–211) และอ่านซ้ำจนกว่าค่าจะตรงกัน — ใช้แยกค่า "ปริมาตร 0 จริง" ออกจาก "อ่านพลาด" */
