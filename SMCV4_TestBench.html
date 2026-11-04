@@ -114,7 +114,7 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 @media print{.noprint{display:none!important}.sheetw{background:none;padding:0}.ptb{break-inside:avoid}.paper table.dt td{font-size:.78rem}}
 
 .sl .lcd{font-size:1.7rem;padding:7px 40px 5px 10px;border-radius:12px}.sl .lcd .gh{right:40px;top:7px}.sl .lcd i{font-size:.8rem;right:9px;top:6px}.sl .lcd.rv{font-size:1.4rem;margin-top:5px}.sl .lcd.rv .gh{right:40px}
-.sl .odo b{font-size:1.45rem}.sl .idr{font-size:1.02rem;margin-top:8px}.sl .idr b{font-size:1.2rem;letter-spacing:.5px}.sl .idr .szp2{font-size:.9rem;padding:2px 11px}.sl .bt{font-size:.95rem;font-weight:600}
+.sl .idr{font-size:1.02rem;margin-top:8px}.sl .idr b{font-size:1.2rem;letter-spacing:.5px}.sl .idr .szp2{font-size:.9rem;padding:2px 11px}.sl .bt{font-size:.95rem;font-weight:600}
 .sl .er{font-size:2.7rem;margin-top:4px}.sl .sm{font-size:.84rem}
 .sl .stt{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.sl .stt>div{background:#f1f7fb;border:1px solid #d9e8f1;border-radius:12px;padding:6px 8px;text-align:center;min-width:0}
 .sl.pass .stt>div{background:#e9faf2;border-color:#a7ebcb}.sl.fail .stt>div{background:#ffeef0;border-color:#fbc0c9}
@@ -221,11 +221,6 @@ th{background:var(--card2);color:var(--mut);font-weight:700;font-size:.8rem;posi
 @media(max-width:900px){#mon{overflow:auto}#mon .mmain{grid-template-columns:1fr}}
 .card.cfgd{padding:12px 16px;margin-bottom:14px}.cfgd summary{cursor:pointer;font-size:1rem}.cfgd summary small{color:var(--mut)}.cfgr{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}@media(max-width:700px){.cfgr{grid-template-columns:1fr 1fr}}
 #rlchip{cursor:pointer}
-.odo{display:flex;align-items:stretch;justify-content:center;gap:2px;padding:6px 8px;background:#1b2530;border-radius:8px;border:2px solid #0a2a43;box-shadow:inset 0 2px 6px #0008;margin-top:4px}
-.odo b{min-width:1.05em;text-align:center;font:700 1.3rem/1.4 ui-monospace,Menlo,Consolas,monospace;padding:0 3px;border-radius:3px}
-.odo b.bk{background:linear-gradient(#0c0c0c,#2e2e2e 50%,#0a0a0a);color:#f4f4f4}.odo b.rd{background:linear-gradient(#e6e6e6,#fff 50%,#d4d4d4);color:#c1121f}
-.odo i{font-style:normal;color:#9db6c8;align-self:flex-end;margin-left:6px;font-size:.72rem;padding-bottom:3px}
-.dial .odo b{font-size:1.1rem}#mon .odo b{font-size:clamp(.9rem,2vw,1.9rem)}#mon .mmain .dial .odo b{font-size:1.5rem}
 body.mech .kx{display:none}
 .ptsw{width:46px;height:26px;border-radius:20px;background:#cbd5e1;position:relative;cursor:pointer;display:inline-block;transition:.2s}.ptsw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px #0004;transition:.2s}.ptsw.on{background:#10b981}.ptsw.on i{left:23px}
 tr.ptoff td{opacity:.45}tr.ptoff td:first-child{opacity:1}
@@ -315,6 +310,58 @@ body.mro{overflow:hidden}
 .mr-fl{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mr-fl label{font-size:.78rem;color:#5d7586;display:block}.mr-fl select,.mr-fl input{width:100%;padding:10px;border:1px solid #cfe0ea;border-radius:10px;font-size:.95rem;margin-top:3px}
 @media(max-width:560px){.mr-fl{grid-template-columns:1fr}.mr-c input{font-size:1.5rem}.mr-in{padding:12px}}
 .keybar .mrb{margin-left:auto}
+/* ===== MX : หน้าอ่านมาตรแมคคานิคจากภาพ ===== */
+#mx{position:fixed;inset:0;z-index:310;background:rgba(7,26,42,.68);backdrop-filter:blur(4px);overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:14px;-webkit-overflow-scrolling:touch}
+.mx-in{background:linear-gradient(#fff,#f5fafd);border-radius:24px;width:min(920px,100%);padding:18px 20px 20px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.mx-hd{display:flex;justify-content:space-between;align-items:center;gap:10px}.mx-tt{display:flex;gap:12px;align-items:center}
+.mx-ic{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:1.5rem;background:linear-gradient(135deg,#0a2a43,#0b7ea4 62%,#14b8a6);box-shadow:0 8px 20px rgba(11,126,164,.35)}
+.mx-tt h2{margin:0;font-size:1.22rem;color:var(--navy);line-height:1.2}.mx-tt small{color:var(--mut);font-size:.8rem}
+.mx-pick,.mx-fail{text-align:center;padding:22px 8px}.mx-pk-ic{font-size:3.4rem}.mx-pick h3,.mx-fail h3{margin:6px 0;color:var(--navy)}.mx-pick p,.mx-fail p{color:#5d7586;font-size:.92rem;margin:6px auto;max-width:560px}
+.mx-tips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0 14px}.mx-tips span{background:#eef6fb;border:1px solid #d3e2ec;border-radius:99px;padding:5px 12px;font-size:.8rem;color:#36566c;font-weight:600}
+.mxh{display:flex;gap:18px;align-items:center;justify-content:space-between;border-radius:22px;padding:16px 20px;margin:6px 0 14px;color:#fff;background:radial-gradient(130% 150% at 0% 0%,#10516f 0%,#0a2a43 55%,#071a2a 100%);box-shadow:0 14px 34px rgba(10,42,67,.32),inset 0 0 0 2px rgba(255,255,255,.08);position:relative;overflow:hidden}
+.mxh.ok{box-shadow:0 14px 34px rgba(10,42,67,.32),inset 0 0 0 2px rgba(52,211,153,.6)}.mxh.wn{box-shadow:0 14px 34px rgba(10,42,67,.32),inset 0 0 0 2px rgba(251,191,36,.65)}
+.mxh::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.09) 50%,transparent 60%);pointer-events:none}
+.mxh-l{min-width:0}.mxh-l>small{display:block;opacity:.78;letter-spacing:.4px;font-size:.8rem}
+.mxreg{display:inline-flex;align-items:stretch;gap:3px;padding:7px 9px;background:#090d12;border-radius:11px;border:2px solid #2b3946;box-shadow:inset 0 3px 8px #000a,0 2px 0 rgba(255,255,255,.1);margin:8px 0 8px;max-width:100%}
+.mxreg b{min-width:1.12em;text-align:center;font:700 clamp(1.55rem,5.6vw,2.5rem)/1.3 'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;padding:0 4px;border-radius:4px;background:linear-gradient(90deg,#bfc6cd,#fff 20%,#fff 80%,#b9c1c8);box-shadow:inset 0 -7px 9px rgba(0,0,0,.12),inset 0 7px 9px rgba(0,0,0,.08)}
+.mxreg b.bk{color:#0e1216}.mxreg b.rd{color:#d21a2b}.mxreg .mxdot{font-style:normal;color:#ff7a86;align-self:flex-end;font-weight:900;font-size:2rem;line-height:1;padding:0 1px 4px}.mxreg small{align-self:flex-end;color:#9db6c8;margin-left:7px;font-size:.78rem;padding-bottom:4px}
+.mxh-v{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.mxh-v b{font:800 clamp(1.7rem,6vw,2.3rem)/1.1 'JetBrains Mono',ui-monospace,monospace;color:#6ee7b7}.mxh-v span{font-weight:700;opacity:.9}.mxh-v em{font-style:normal;opacity:.7;font-size:.86rem;font-family:'JetBrains Mono',monospace}
+.mxh-c{margin-top:8px;display:inline-block;border-radius:99px;padding:4px 12px;font-size:.82rem;font-weight:700}.mxh-c.ok{background:rgba(52,211,153,.18);color:#a7f3d0;border:1px solid rgba(52,211,153,.5)}.mxh-c.wn{background:rgba(251,191,36,.18);color:#fde68a;border:1px solid rgba(251,191,36,.55)}
+.mxh-r{flex:none;text-align:center;filter:drop-shadow(0 6px 14px rgba(0,0,0,.4))}.mxh-r small{display:block;margin-top:4px;opacity:.85}.mxh-r b{color:#fca5a5}.mxh-s{opacity:.8;margin-top:6px}.mxh.idle .mxh-v b{color:#7dd3fc;opacity:.7}
+.mxs{margin:16px 0}.mxs-h{display:flex;gap:10px;align-items:center;margin-bottom:9px}.mxs-n{width:28px;height:28px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}.mxs-h h4{margin:0;font-size:1.04rem;color:var(--navy)}.mxs-h h4 small{font-weight:400;color:var(--mut);font-size:.78rem;margin-left:6px}
+.mxg-w{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,3fr);gap:12px}.mxg-h{font-size:.74rem;font-weight:700;border-radius:99px;padding:3px 10px;display:inline-block;margin-bottom:6px}.mxg-h.bk{background:#e5ebf0;color:#1b2530}.mxg-h.rd{background:#fee2e2;color:#b91c1c}
+.mxg-t{display:grid;grid-template-columns:repeat(var(--c,4),minmax(0,1fr));gap:7px}
+.mxt{border:2.5px solid #cfe0ea;border-radius:16px;padding:5px;text-align:center;background:#fff;transition:.15s;box-shadow:0 2px 6px rgba(10,42,67,.05)}.mxt.ok{border-color:#22c55e;background:#f4fdf7}.mxt.wn{border-color:#f59e0b;background:#fffbeb}.mxt.bad{border-color:#f59e0b;background:#fff7ed;border-style:dashed}
+.mxt-i{position:relative;display:block;width:100%;border:0;padding:0;background:#fff;border-radius:11px;overflow:hidden;cursor:zoom-in;line-height:0}.mxt-i img{width:100%;display:block}.mxt-i span{position:absolute;right:3px;bottom:3px;background:rgba(10,42,67,.78);color:#fff;border-radius:99px;font-size:.62rem;line-height:1;padding:3px 5px}
+.mxt-n{width:100%;margin-top:4px;border:0;background:transparent;text-align:center;font:800 clamp(1.5rem,5vw,2rem)/1.15 'JetBrains Mono',ui-monospace,monospace;color:#0a2a43;outline:none;padding:0}.mxt.rd .mxt-n{color:#d21a2b}.mxt-n:focus{background:#e0f2fe;border-radius:8px}
+.mxt-b{height:4px;background:#e5edf2;border-radius:9px;overflow:hidden;margin:2px 4px}.mxt-b i{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#22c55e);border-radius:9px}.mxt small{font-size:.64rem;color:#7a8fa0}
+.mx-as{font-size:.8rem;color:#0b7ea4;margin-top:6px;min-height:1em}
+.mxp{display:grid;grid-template-columns:minmax(190px,270px) minmax(0,1fr);gap:14px;align-items:start}
+.mxp-d{position:relative;border:0;padding:0;border-radius:18px;overflow:hidden;cursor:zoom-in;line-height:0;box-shadow:0 8px 22px rgba(10,42,67,.25);background:#14202b}.mxp-d img{width:100%;display:block}.mxp-d span{position:absolute;right:8px;bottom:8px;background:rgba(10,42,67,.82);color:#fff;border-radius:99px;font-size:.72rem;line-height:1;padding:5px 9px}
+.mxp-ru{display:block;width:100%;border:0;padding:0;border-radius:14px;overflow:hidden;cursor:zoom-in;line-height:0;box-shadow:0 6px 18px rgba(10,42,67,.22);background:#14202b}.mxp-ru img{width:100%;display:block}.mxp-cap{display:block;color:var(--mut);font-size:.74rem;margin:5px 2px 0}
+.mxp-v{display:flex;gap:12px;align-items:center;justify-content:center;margin:10px 0;background:linear-gradient(135deg,#fff7f7,#fff);border:1px solid #fecaca;border-radius:16px;padding:8px 12px}.mxp-v b{font:800 2rem 'JetBrains Mono',monospace;color:#d21a2b;display:block;text-align:center;min-width:3.2rem}.mxp-v small{display:block;color:#7a8fa0;font-size:.7rem;text-align:center}.mxp-v button{border:1px solid #c9dbe7;background:#fff;border-radius:12px;padding:10px 14px;font-weight:800;color:#0a2a43;cursor:pointer;font-size:.95rem}.mxp-v button:active{background:#e0f2fe}
+.mxp-m{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.78rem}.mxp-m .ok{color:#15803d;font-weight:700}.mxp-m .wn,.mx-wn{color:#b45309;font-weight:700}.mxp-z{margin-left:auto;color:#5d7586}.mxp-z button{border:1px solid #d3e2ec;background:#fff;border-radius:99px;padding:3px 10px;margin-left:5px;font-size:.74rem;cursor:pointer}
+.mxp-no{background:#fffbeb;border:1px solid #fcd34d;border-radius:14px;padding:12px;color:#92400e}
+.mxn{background:linear-gradient(135deg,#eef6ff,#f5fbff);border:1px solid #bfdbfe;border-radius:16px;padding:12px 14px;margin:14px 0}.mxn-t{font-weight:800;color:#1e40af;margin-bottom:4px}.mxn p{margin:4px 0 8px;font-size:.9rem;color:#1e3a5f;line-height:1.6}
+.mxn-s{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.78rem;color:#475569}.mxn-s button{border:1.5px solid #bfdbfe;background:#fff;border-radius:99px;padding:5px 12px;font-weight:700;color:#1e40af;cursor:pointer;font-size:.78rem}.mxn-s button.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.mx-hint{background:#f1f7fb;border-radius:10px;padding:6px 10px;font-size:.8rem;color:#5d7586;margin:0 0 10px}
+.mx-adv{margin:12px 0}.mx-adv summary{cursor:pointer;font-weight:700;color:#36566c}.mx-act .sp{flex:1}.mx-ok{padding:13px 22px!important;font-size:1.02rem;box-shadow:0 8px 20px rgba(11,126,164,.3)}.mx-ok[disabled]{opacity:.45}
+#mxz{position:fixed;inset:0;z-index:330;background:rgba(3,12,20,.88);display:flex;align-items:center;justify-content:center;padding:12px}.mxz-in{background:#0e1c28;color:#fff;border-radius:20px;width:min(1000px,100%);max-height:96vh;display:flex;flex-direction:column;padding:12px 14px;box-shadow:0 30px 90px #000a}
+.mxz-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.mxz-hd button{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;border-radius:10px;padding:6px 12px;font-weight:700;margin-left:5px;cursor:pointer}
+.mxz-sc{overflow:auto;border-radius:12px;background:#050d14;flex:1;min-height:200px;display:flex;justify-content:center;align-items:flex-start;-webkit-overflow-scrolling:touch}.mxz-sc img{display:block;max-width:none}
+.mxz-ft{margin-top:8px}.mxz-ft small{color:#9db6c8}.mxz-k{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:8px 0}.mxz-k button{border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;border-radius:12px;padding:10px 0;font:800 1.3rem 'JetBrains Mono',monospace;cursor:pointer}.mxz-k button.on{background:#0b7ea4;border-color:#22d3ee}.mxz-k button:active{background:#14b8a6}
+#mxz .mxp-v{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2)}#mxz .mxp-v b{color:#fca5a5}#mxz .mxp-v button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25)}
+@media(max-width:640px){.mxg-w{grid-template-columns:1fr}.mxp{grid-template-columns:1fr}.mxh{flex-direction:column;align-items:flex-start}.mxh-r{align-self:center}.mx-in{padding:14px 12px}.mxz-k{grid-template-columns:repeat(5,1fr)}}
+/* ===== หน้าปัดมาตรแมคคานิคจำลอง (ลูกกลิ้งขาว ตัวเลขคม + หน้าปัดเข็มเล็ก) ===== */
+.odo{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;background:none;border:0;box-shadow:none;padding:0;--dg:1.3rem}
+.odo .odw{display:inline-flex;align-items:stretch;gap:2px;padding:4px 6px;background:#0a0e13;border-radius:8px;border:2px solid #2a3744;box-shadow:inset 0 2px 6px #000b,0 1px 0 rgba(255,255,255,.14)}
+.odo b{min-width:1.08em;text-align:center;font:700 var(--dg)/1.34 'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;padding:0 3px;border-radius:3px;background:linear-gradient(90deg,#c3cad1,#fff 22%,#fff 78%,#bcc4cb);box-shadow:inset 0 -5px 7px rgba(0,0,0,.12),inset 0 5px 7px rgba(0,0,0,.07)}
+.odo b.bk{color:#0e1216}.odo b.rd{color:#d21a2b}.odo i{font-style:normal;color:#8aa6b9;align-self:flex-end;font-size:.72rem;padding-bottom:3px;margin-left:-2px}
+.odo .mdl{height:calc(var(--dg)*2.35);width:calc(var(--dg)*2.35);flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+.sl .odo{--dg:1.2rem}.dial .odo{--dg:.84rem;gap:4px}.dial .dt.mc{font-size:.95rem;letter-spacing:2px;font-weight:800;white-space:nowrap}.dial .odo .mdl{height:calc(var(--dg)*2.2);width:calc(var(--dg)*2.2)}.dial .odo .mdl{position:static;inset:auto}.dial .odo i{display:none}#mon .odo{--dg:clamp(.9rem,2vw,1.9rem)}#mon .mmain .dial .odo{--dg:1.4rem}
+.sl .odo b,.dial .odo b,#mon .odo b,#mon .mmain .dial .odo b{font-size:var(--dg)}
+.mro-btn{background:linear-gradient(135deg,#0a2a43,#0b7ea4 70%,#14b8a6)!important;color:#fff!important;border:0!important;box-shadow:0 6px 16px rgba(11,126,164,.35)}
+
 /* ===== การ์ดลงทะเบียนเข้าทะเบียนคุณภาพ ===== */
 .qrg{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#eef9f6,#eef6fd);border:1px solid #cfe9e3;border-radius:14px;padding:12px 14px;margin-top:6px}.qrg b{color:#0a2a43}
 #mon .mab{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 6px;margin-top:4px;background:linear-gradient(rgba(7,26,42,0),rgba(7,26,42,.97) 28%)}
@@ -527,7 +574,7 @@ function fwSummary(){const by={},none=[],unk=[];const ids=S.meters.filter(m=>m.i
   ids.forEach(id=>{const f=fwFor(id);if(f===undefined)unk.push(id);else if(f===null)none.push(id);else(by[f]=by[f]||[]).push(id)});
   const kinds=Object.keys(by).length;return{by,none,unk,n:ids.length,kinds,mixed:kinds>1||(kinds>=1&&none.length>0)}}
 const FWSVG='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx=".8"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></svg>';
-function fwBanner(r){const sm=fwSummary(),f=r?r.fw:undefined,st=!r?'idle':f===undefined?'unk':f===null?'none':'ok';
+function fwBanner(r){if(MECH())return'';const sm=fwSummary(),f=r?r.fw:undefined,st=!r?'idle':f===undefined?'unk':f===null?'none':'ok';
   const big=st==='ok'?'v'+esc(f):st==='none'?'ยังไม่ระบุ':'—';
   const sub={ok:'อ่านจาก NFC ตำแหน่ง 180–183 · ตัวยืนยัน A5 ✓',none:'ยังไม่มีเวอร์ชันบันทึกไว้ในมิเตอร์ตัวนี้',unk:'การอ่านรอบนี้ไม่ได้รวมตำแหน่ง 180–183 — ใช้โหมด “แท่นเทส” หรือ “อ่านทั้งหมด”',idle:'แตะมิเตอร์ด้วยแอป เพื่อดูเวอร์ชันเฟิร์มแวร์'}[st];
   const chips=Object.keys(sm.by).sort().map(v=>`<span class="fwc">v${esc(v)} <b>×${sm.by[v].length}</b></span>`).join('')+(sm.none.length?`<span class="fwc w">ยังไม่ระบุ <b>×${sm.none.length}</b></span>`:'')+(sm.unk.length&&sm.n?`<span class="fwc u">ยังไม่ได้อ่าน <b>×${sm.unk.length}</b></span>`:'');
@@ -641,7 +688,7 @@ function enterPoint(j){S.cur=j;const st=pointState(j);
   save()}
 function applyRead(r,src){
   if(r&&(!!r.mech!==MECH())){const has=Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length);
-    if(!has){S.batch.mtype=r.mech?'mech':'nfc';toast('สลับประเภทมิเตอร์เป็น '+(r.mech?'แมคคานิค':'ดิจิทัล NFC')+' ตามค่าที่รับเข้ามา',3200)}
+    if(!has){S.batch.mtype=r.mech?'mech':'nfc';if(r.mech&&S.batch.R===160){S.batch.R=80;S.plan=buildPlan()}if(!r.mech&&S.batch.R===80){S.batch.R=160;S.plan=buildPlan()}toast('สลับประเภทมิเตอร์เป็น '+(r.mech?'แมคคานิค':'ดิจิทัล NFC')+' ตามค่าที่รับเข้ามา',3200)}
     else{toast('ค่าที่รับเป็นมิเตอร์'+(r.mech?'แมคคานิค':'ดิจิทัล')+' แต่ Batch นี้เป็นแบบ'+(MECH()?'แมคคานิค':'ดิจิทัล')+' — เปลี่ยนที่แท็บ ① ตั้งค่า',4200);beep('bad');return false}}
   if(r&&r.mech&&!r.id&&S.plan.length){const pi0=Math.min(S.cur,S.plan.length-1);let i=SELSLOT!=null?SELSLOT:nextSlot(pi0,pointState(pi0));
     if(i==null){toast('ช่องมิเตอร์เต็มแล้ว — เพิ่มจำนวนช่อง หรือใส่ Meter ID',3600);return false}
@@ -675,7 +722,7 @@ window.load=benchLoad;
 window.benchFeed=function(p){if(p&&p.hex)appGo(ingest(hexToBytes(p.hex),p.partial&&p.ranges?p.ranges:null,p.verify?{verify:true,verified:!!p.verified,attempts:p.attempts,same:p.same}:null,'app'))};
 /* รับค่าจากแอป → พาเข้าหน้า “ทดสอบ” ทันที (เดิมค้างอยู่หน้าเดิม ผู้ใช้ไม่เห็นว่าค่าเข้าแล้ว) */
 function appGo(ok){try{if(!IS_MON&&TAB!=='wr'&&TAB!=='pv'&&TAB!=='run'){TAB='run';render();scrollTo(0,0)}}catch(e){}return ok}
-window.benchMech=function(p){if(!p)return;if(p.img){mrOpen(p.img,{reading:p.reading,id:p.id,slot:p.slot,lcd:!!p.lcd});if(!IS_MON&&TAB!=='run'){TAB='run';render()}return true}
+window.benchMech=function(p){if(!p)return;if(p.img){mxOpen(p.img,{reading:p.reading,id:p.id,slot:p.slot,lcd:!!p.lcd});if(!IS_MON&&TAB!=='run'){TAB='run';render()}return true}
   const ok=mechIn(p,'app');if(!IS_MON){TAB='run';render();scrollTo(0,0)}return ok};
 addEventListener('message',e=>{const d=e.data;if(d&&d.type==='nfc-dump'&&d.hex)window.benchFeed(d);if(d&&d.type==='mech-read')window.benchMech(d)});
 
@@ -720,7 +767,7 @@ function addImported(im,reset){
 <script>
 /* ============ SMCV4 Test Bench · UI ============ */
 const TABS=[['setup','ตั้งค่า'],['plan','แผนทดสอบ'],['run','ทดสอบ'],['res','ผลสรุป'],['rep','รายงาน'],['wr','เขียนค่า NFC'],['pv','ลงทะเบียนมิเตอร์ใหม่']];
-const MODEL=m=>m==='MJ'?'Multijet':'Single Jet';
+const MECH_BRAND='ASAHI',MECH_MODEL='GMK';const MODEL=m=>MECH()?MECH_BRAND+' '+MECH_MODEL:(m==='MJ'?'Multijet':'Single Jet');
 const heat=(e,l)=>{if(e==null)return'hn';const u=Math.abs(e)/l;return u>1?'h3':u>.8?'h2':u>.5?'h1':'h0'};
 const flowT=f=>f==null?'–':fx(f,f<100?(f%1?1:0):0);
 const VD={pass:['ok','ผ่าน PASS'],fail:['bad','ไม่ผ่าน FAIL'],pend:['mut','รอทดสอบ'],none:['mut','ยังไม่มีข้อมูล']};
@@ -818,10 +865,11 @@ const mfracN=()=>S.batch.mfrac==null?3:+S.batch.mfrac;
 function parseReading(s,frac){s=String(s==null?'':s).trim().replace(/\s+/g,'').replace(/,/g,'.');if(!s)return null;
   if(/^\d+\.\d*$|^\.\d+$/.test(s))return parseFloat(s);
   if(/^\d+$/.test(s))return parseInt(s,10)/Math.pow(10,frac);return null}
-function odo(vol,cls=''){const f=mfracN(),ni=5;let ds=null;if(vol!=null)ds=String(Math.floor(vol/1e5*Math.pow(10,f)+1e-6)).padStart(ni+f,'0');
+function odo(vol,cls=''){const f=mfracN(),ni=4;let ds=null;if(vol!=null)ds=String(Math.floor(vol/1e5*Math.pow(10,f)+1e-6)).padStart(ni+f,'0');
   const cell=(c,red)=>`<b class="${red?'rd':'bk'}">${c}</b>`;
   const hh=ds==null?Array.from({length:ni+f},(_,i)=>cell('–',i>=ni)).join(''):[...ds].map((c,i)=>cell(c,i>=ds.length-f)).join('');
-  return`<div class="odo ${cls}" title="มาตรแมคคานิค · ตัวเลขสีดำ = m³ · สีแดง = เศษ m³">${hh}<i>m³</i></div>`}
+  const pd=(vol!=null&&f===3)?mdialSvg((vol%100)/10):'';
+  return`<div class="odo ${cls}" title="มาตรแมคคานิค · ลูกกลิ้งดำ = m³ · ลูกกลิ้งแดง = ลิตร · หน้าปัดเล็ก = เศษลิตร (เข็มละเอียด)"><span class="odw">${hh}</span>${pd}<i>m³</i></div>`}
 let KEYSLOT=null,KBFOCUS=null,KBCLR=false;
 function nextSlot(pi,st){const key=st.step==='start'?'s':'e',N=Math.max(S.batch.nm,S.meters.length);
   for(let i=0;i<N;i++){const m=S.meters[i];if(!m||!m.id)return i;const rd=((S.rd[pi]||{})[m.id])||{};if(!rd[key])return i}return null}
@@ -848,7 +896,7 @@ function keyBar(pi,st,N){if(!MECH())return'';
   const i=KEYSLOT!=null?KEYSLOT:nextSlot(pi,st),m=i!=null?S.meters[i]:null,key=st.step==='start'?'s':'e';
   const opt=Array.from({length:N},(_,k)=>{const mm=S.meters[k]||{id:''},rd=mm.id?(((S.rd[pi]||{})[mm.id])||{}):{};return`<option value="${k}" ${k===i?'selected':''}>#${k+1} ${mm.id?esc(mm.id):'(ว่าง)'} ${rd[key]?'✔':''}</option>`}).join('');
   const idv=m&&m.id&&!/^POS\d+$/.test(m.id)?m.id:'';
-  return`<div class="card keybar"><h2><em>⌨</em>คีย์ / รับค่าหน้าปัดมาตรแมคคานิค <button class="btn p mrb" data-a="mropen">📷 อ่านจากรูปหน้าปัด</button></h2>
+  return`<div class="card keybar"><h2><em>⌨</em>คีย์ / รับค่าหน้าปัดมาตรแมคคานิค <button class="btn p mrb mro-btn" data-a="mropen">📷 อ่านจากรูป · ซูมตรวจได้</button></h2>
    <p class="sub">${st.step==='start'?'อ่านค่าเริ่มต้น':'อ่านค่าสิ้นสุด'} · พิมพ์ตัวเลขที่เห็นบนหน้าปัด (เช่น <b>00123.456</b> หรือ <b>00123456</b> — ใช้ทศนิยม ${mfracN()} หลักตามที่ตั้งไว้) แล้วกด Enter ระบบจะข้ามไปตำแหน่งถัดไปให้ · หรือถ่ายหน้าปัดด้วยแอป SMCV4 Reader โหมด “กลไก (กล้อง)” ค่าจะเข้ามาที่นี่เอง</p>
    <div class="kbr"><div class="fld"><label>ตำแหน่ง</label><select id="kbSlot">${opt}</select></div>
    <div class="fld"><label>Meter ID / เลขซีเรียล (ไม่บังคับ)</label><input id="kbId" type="text" value="${esc(idv)}" placeholder="${m&&m.id?esc(m.id):'เว้นว่างได้'}" autocomplete="off"></div>
@@ -878,9 +926,9 @@ const lcdRev=rev=>MECH()?'':`<div class="lcd rv"><span class="gh">888888</span><
 const lcd=(vol,cls='')=>{if(MECH())return odo(vol,cls);const t=vol==null?'':Math.floor(vol/1e5)+'.'+String(vol%1e5).padStart(5,'0');return`<div class="lcd ${cls}"><span class="gh">8888888.88888</span><span class="vv">${t||'&nbsp;'}</span><i>m³</i></div>`};
 function dial(r,prog){const C=2*Math.PI*118,p=Math.max(0,Math.min(1,prog||0));
   return`<div class="dial"><svg viewBox="0 0 280 280" aria-hidden="true"><circle cx="140" cy="140" r="134" fill="#eef3f6" stroke="#cfdbe3" stroke-width="4"/><circle cx="140" cy="140" r="118" fill="none" stroke="#0a2a43" stroke-width="20"/><circle cx="140" cy="140" r="118" fill="none" stroke="#34d399" stroke-width="13" stroke-linecap="round" stroke-dasharray="${C*.75*p} ${C}" transform="rotate(135 140 140)"/></svg>
-  <div class="dc"><b class="dt">SMCV.4</b><small class="mut">WATER METER</small><small class="mut" style="margin-top:4px">TOTAL VOLUME</small>${lcd(r?r.vol:null)}
+  <div class="dc"><b class="dt${MECH()?' mc':''}">${MECH()?MECH_BRAND+' '+MECH_MODEL:'SMCV.4'}</b><small class="mut">WATER METER</small><small class="mut" style="margin-top:4px">TOTAL VOLUME</small>${lcd(r?r.vol:null)}
   <div class="did"><small>METER ID</small><b class="mono">${r?esc(r.id):'—'}</b></div><small class="mono">${r&&r.time?esc(r.time.replace('.',':')):'&nbsp;'}${r&&r.rev!=null?' · รอบ '+pad6(r.rev):''}</small>
-  <div class="pl"><span class="szp">SIZE <b>${r&&r.size?r.size:'–'}</b> mm</span>${MECH()?'<span class="szp bat ok">MECHANICAL</span>':`<span class="szp bat ${batCls(r&&r.bat)}">BAT <b>${r&&r.bat!=null?r.bat.toFixed(2):'–'}</b> V</span>`}${r&&r.fw?`<span class="szp fwd">FW <b>${esc(r.fw)}</b></span>`:''}</div></div></div>`}
+  <div class="pl"><span class="szp">SIZE <b>${r&&r.size?r.size:'–'}</b> mm</span>${MECH()?'<span class="szp bat ok">'+MECH_BRAND+' '+MECH_MODEL+'</span>':`<span class="szp bat ${batCls(r&&r.bat)}">BAT <b>${r&&r.bat!=null?r.bat.toFixed(2):'–'}</b> V</span>`}${r&&r.fw?`<span class="szp fwd">FW <b>${esc(r.fw)}</b></span>`:''}</div></div></div>`}
 function guideSteps(){if(MECH())return mechSteps();return guideSteps0()}
 function mechSteps(){const b=S.batch,N=Math.max(b.nm,S.meters.filter(m=>m.id).length),f0=S.plan[0];return[
   ['ตั้งค่าแท่น',`แท็บ ① ตั้ง <b>ประเภทมิเตอร์ = แมคคานิค</b> เลือก ${MODEL(b.model)} · ${b.size} mm · R${b.R} จำนวน <b>${N} ตัว</b> และ <b>ทศนิยมบนหน้าปัด ${mfracN()} หลัก</b> (ตัวเลขสีแดง) ให้ตรงกับมาตรที่ทดสอบ`],
@@ -1689,6 +1737,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t.id==='kbSlot'){KEYS
     let nq=b.q3;if(k==='size'||k==='model'){const s=q3Of(k==='model'?v:b.model,k==='size'?v:b.size);if(s)nq=s}else if(k==='q3')nq=v;
     const eff=['size','R','q3','model'].includes(k)&&v!==old&&((k==='R')||nq!==b.q3||k==='size');
     const apply=()=>{o[k]=v;
+      if(k==='mtype'){const nr=v==='mech'?80:160;if(b.R===(v==='mech'?160:80)){b.R=nr;S.plan=buildPlan();S.rd={};S.pt={};S.cur=0;toast('ตั้งคลาส R'+nr+' (Q3/Q1) ตามมาตรแบบ'+(v==='mech'?'แมคคานิค ASAHI GMK':'ดิจิทัล'),3200)}}
       if(k==='size'||k==='model'){b.q3Custom=false;b.q3=nq}
       if(k==='q3'){const s=q3Std();b.q3Custom=!(s&&Math.abs(v-s)<1e-9)}
       if(k==='nm'){while(S.meters.length<b.nm)S.meters.push({id:'',size:null,k:null});while(S.meters.length>b.nm&&!S.meters[S.meters.length-1].id)S.meters.pop()}
@@ -1727,7 +1776,7 @@ function qrBuild(A){const b=S.batch,q3=+b.q3||q3Std()||0,out=[];
       if(F[sl]==null||sev>sc[sl]){sc[sl]=sev;F[sl]={flow:p.f,err:+c.err,batch:b.id,pass:!!c.pass}}});
     const cc=cfgCell(id).r||{},cfg=cc.dir!=null?((cc.dir?'Backward':'Forward')+(cc.logMin?' · log '+cc.logMin+' นาที':'')):'';
     const ks=(S.pvlog||[]).filter(e=>e.id===id).slice(-1)[0];
-    out.push({id,lot:'L'+String(id).slice(0,6),date,model:b.model==='SJ'?'Single Jet':'Multijet',size:m.size||b.size,rclass:'R'+(b.R||160),tester:b.tester||'',hw:MECH()?'':(b.hw||''),K:!MECH()&&m.k&&m.k.length===20?m.k:null,bench:b.id,kset:ks?ks.ksrc||'':'',cfg,ref:b.ref||'',approver:b.checker||'',type:MECH()?'แมคคานิค':'อิเล็กทรอนิกส์ (Hall)',F})});
+    out.push({id,lot:'L'+String(id).slice(0,6),date,model:MECH()?MECH_BRAND+' '+MECH_MODEL:(b.model==='SJ'?'Single Jet':'Multijet'),size:m.size||b.size,rclass:'R'+(b.R||160),tester:b.tester||'',hw:MECH()?MECH_BRAND+' '+MECH_MODEL:(b.hw||''),K:!MECH()&&m.k&&m.k.length===20?m.k:null,bench:b.id,kset:ks?ks.ksrc||'':'',cfg,ref:b.ref||'',approver:b.checker||'',type:MECH()?'แมคคานิค':'อิเล็กทรอนิกส์ (Hall)',F})});
   return out}
 function qrCard(A){const h=qrHost(),list=qrBuild(A),n=list.filter(o=>o.F.some(Boolean)).length;
   const sg=[['trial','🧪 รุ่นทดลอง'],['test','✅ ทดสอบจริง'],['prod','🏭 ผลิตจริง']];
@@ -1892,7 +1941,7 @@ function mrRender(){let o=document.getElementById('mr');if(!MR.open){if(o)o.remo
   o.innerHTML=`<div class="mr-in"><div class="mr-hd"><h2>📷 อ่านหน้าปัดมาตรแมคคานิค</h2><button class="mr-x" data-a="mrclose" aria-label="ปิด">✕</button></div>${stp}${body}</div>`;
   if(MR.step===2)mrDraw();if(MR.step===3&&!MR.busy){mrUpdVal();mrPtrThumb()}}
 document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a^="mr"]');if(!t)return;const a=t.dataset.a,v=+t.dataset.v;
-  if(a==='mropen'){mrOpen(null)}
+  if(a==='mropen'){mxOpen(null)}
   else if(a==='mrclose'){mrClose()}
   else if(a==='mrnew'){MR.step=1;MR.src=null;MR.cells=[];mrRender()}
   else if(a==='mrback'){MR.step=2;mrRender()}
@@ -1931,6 +1980,385 @@ document.addEventListener('keydown',e=>{if(!MR.open)return;if(e.key==='Escape')m
     if(b.w>4&&b.h>4){if(d.ptr)MR.pbox=b;else MR.box=b}mrDraw()});
   const up=()=>{if(MR.drag){const pp=MR.drag.ptr;MR.drag=null;if(pp){if(MR.pbox&&(MR.pbox.w<30||MR.pbox.h<30))mrPtrAuto()}else if(MR.box&&(MR.box.w<30||MR.box.h<20))mrFit();mrDraw()}};document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);
   addEventListener('resize',()=>{if(MR.open&&MR.step===2)mrDraw()})})();
+
+const MX_SEEDS=[{"d":0,"v":[0,0,0.05,0.46,0.73,0.91,1,0.91,0.68,0.23,0,0,0,0.23,0.79,1,1,1,1,1,1,0.95,0.34,0,0.13,0.88,1,1,0.96,0.77,0.75,0.88,1,1,0.84,0.04,0.56,1,1,0.71,0.13,0,0,0.07,0.66,1,1,0.38,0.91,1,1,0.27,0,0,0,0,0.21,1,1,0.5,1,1,0.96,0.11,0,0,0,0,0.13,0.98,1,0.56,0.94,1,0.95,0.09,0,0,0,0,0,0.86,1,0.67,0.85,1,0.88,0.02,0,0,0,0,0.02,0.88,1,0.52,1,1,0.89,0.04,0,0,0,0,0.14,1,1,0.58,0.94,1,0.91,0.05,0,0,0,0,0.14,1,1,0.67,0.83,1,0.86,0,0,0,0,0,0.14,1,1,0.69,0.77,1,0.86,0,0,0,0,0,0.04,0.89,1,0.83,0.67,1,0.93,0.07,0,0,0,0,0,0.86,1,0.85,0.63,1,1,0.16,0,0,0,0,0.13,0.98,1,0.94,0.42,1,1,0.45,0,0,0,0,0.14,0.98,1,0.67,0.04,0.82,1,0.95,0.48,0.16,0.13,0.25,0.73,1,0.96,0.27,0,0.21,0.89,1,1,1,1,1,1,0.98,0.45,0,0,0,0.14,0.59,0.88,1,1,0.95,0.68,0.29,0,0],"ar":0.55},{"d":2,"v":[0,0,0.2,0.46,0.68,0.83,0.94,0.84,0.55,0.13,0,0,0.02,0.45,0.98,1,1,1,1,1,1,0.89,0.21,0,0.44,1,1,1,1,1,1,1,1,1,0.88,0.17,0.9,1,0.98,0.59,0.23,0.06,0.02,0.41,0.96,1,1,0.58,0.5,0.73,0.45,0,0,0,0,0,0.55,1,1,0.73,0,0,0,0,0,0,0,0,0.59,1,1,0.75,0,0,0,0,0,0,0,0.46,0.98,1,0.98,0.27,0,0,0,0,0,0,0.25,0.96,1,1,0.61,0,0,0,0,0,0,0.13,0.83,1,1,0.86,0.11,0,0,0,0,0,0.21,0.88,1,1,0.86,0.18,0,0,0,0,0,0.11,0.8,1,1,0.96,0.25,0,0,0,0,0,0.02,0.7,1,1,1,0.57,0,0,0,0,0,0.02,0.61,1,1,1,0.56,0.04,0,0,0,0,0,0.5,1,1,1,0.67,0,0,0,0,0,0,0.15,0.91,1,1,1,0.4,0,0,0,0,0,0,0.56,1,1,1,1,0.98,0.81,0.75,0.75,0.86,0.84,0.52,0.81,1,1,1,1,1,1,1,1,1,1,0.98,0.69,0.88,0.95,1,1,1,0.9,0.88,0.88,0.82,0.75,0.56],"ar":0.53},{"d":6,"v":[0,0,0,0,0.04,0.65,1,0.75,0.02,0,0,0,0,0,0,0,0.5,1,1,0.93,0.08,0,0,0,0,0,0,0,0.82,1,1,0.73,0,0,0,0,0,0,0,0.08,0.93,1,0.94,0.29,0,0,0,0,0,0,0,0.28,1,1,0.5,0,0,0,0,0,0,0,0.06,0.92,1,1,0.21,0,0,0,0,0,0,0,0.44,1,1,0.96,0,0,0,0,0,0,0,0.14,0.88,1,1,1,0.56,0.25,0.02,0,0,0,0,0.64,1,1,1,1,1,1,0.81,0.48,0.05,0,0.23,0.98,1,1,1,1,1,1,1,1,0.77,0.08,0.65,1,1,1,0.77,0.38,0.4,0.79,1,1,1,0.46,0.96,1,1,0.65,0.05,0,0,0.05,0.5,1,1,0.79,1,1,1,0.33,0,0,0,0,0.08,1,1,0.98,1,1,1,0.35,0,0,0,0,0.06,1,1,0.98,0.79,1,1,0.75,0.09,0,0,0.11,0.69,1,1,0.77,0.4,1,1,1,0.91,0.67,0.65,0.88,1,1,1,0.52,0.04,0.66,1,1,1,1,1,1,1,0.98,0.5,0.02,0,0.02,0.29,0.71,0.89,1,1,0.95,0.75,0.27,0,0],"ar":0.52},{"d":3,"v":[0,0,0.14,0.55,0.79,0.94,0.94,0.8,0.52,0.09,0,0,0,0.27,0.89,1,1,1,1,1,1,0.82,0.13,0,0.17,0.91,1,1,1,0.96,0.96,1,1,1,0.79,0.04,0.63,1,1,0.92,0.32,0.07,0.09,0.54,0.98,1,1,0.48,0.94,1,0.95,0.34,0,0,0,0,0.55,1,1,0.81,0.08,0.16,0.13,0,0,0,0,0,0.43,1,1,0.88,0,0,0,0,0,0,0,0.05,0.73,1,1,0.67,0,0,0,0.05,0.22,0.33,0.43,0.76,1,1,0.95,0.22,0,0,0,0.64,1,1,1,1,1,1,0.39,0,0,0,0,0.68,1,1,1,1,1,1,0.27,0,0,0,0,0.19,0.56,0.72,0.78,0.9,1,1,0.83,0.15,0,0,0,0,0,0,0,0.16,0.93,1,1,0.71,0,0,0,0,0,0,0,0,0.63,1,1,0.98,0.27,0.71,0.64,0.16,0,0,0,0,0.57,1,1,1,0.48,1,1,0.81,0.22,0.02,0,0.22,0.83,1,1,0.74,0.17,0.93,1,1,1,0.88,0.83,0.98,1,1,0.91,0.15,0,0.39,0.96,1,1,1,1,1,1,0.89,0.29,0,0,0,0.27,0.77,0.96,1,1,0.91,0.63,0.13,0,0],"ar":0.53},{"d":0,"v":[0,0,0.02,0.4,0.68,0.9,1,0.96,0.81,0.44,0.05,0,0,0.25,0.81,1,1,1,1,1,1,1,0.64,0,0.17,0.88,1,1,0.91,0.75,0.67,0.88,1,1,0.98,0.33,0.67,1,1,0.75,0.11,0,0,0.05,0.67,1,1,0.85,0.96,1,1,0.31,0,0,0,0,0.19,1,1,1,1,1,1,0.23,0,0,0,0,0.19,1,1,1,1,1,1,0.17,0,0,0,0,0.27,1,1,1,1,1,1,0.04,0,0,0,0,0.25,1,1,1,1,1,1,0,0,0,0,0,0.31,1,1,1,1,1,1,0,0,0,0,0,0.17,1,1,1,1,1,1,0,0,0,0,0,0.17,1,1,1,1,1,1,0,0,0,0,0,0.17,1,1,0.94,1,1,1,0,0,0,0,0,0.17,1,1,0.88,1,1,1,0.1,0,0,0,0,0.21,1,1,0.96,0.79,1,1,0.54,0.05,0,0,0.07,0.67,1,1,0.69,0.29,0.96,1,1,0.8,0.56,0.56,0.86,1,1,0.93,0.23,0,0.45,0.98,1,1,1,1,1,1,0.94,0.34,0,0,0,0.23,0.67,0.88,1,1,0.88,0.63,0.19,0,0],"ar":0.53},{"d":2,"v":[0,0,0.27,0.65,0.92,1,1,0.88,0.71,0.27,0,0,0,0.52,0.98,1,1,1,1,1,1,1,0.46,0,0.4,1,1,1,0.96,0.75,0.73,1,1,1,0.98,0.21,0.81,1,1,0.81,0.17,0,0,0.59,1,1,1,0.59,0.63,0.81,0.67,0.1,0,0,0,0.15,1,1,1,0.67,0,0,0,0,0,0,0,0.27,1,1,1,0.67,0,0,0,0,0,0,0.06,0.75,1,1,1,0.33,0,0,0,0,0,0.02,0.7,1,1,1,0.7,0,0,0,0,0,0,0.5,1,1,1,0.85,0.04,0,0,0,0,0,0.29,0.98,1,1,0.94,0.17,0,0,0,0,0,0.24,0.94,1,1,0.98,0.31,0,0,0,0,0,0.13,0.88,1,1,0.98,0.35,0,0,0,0,0,0.04,0.83,1,1,1,0.58,0,0,0,0,0,0,0.63,1,1,1,0.77,0.06,0,0,0,0,0,0.37,1,1,1,1,0.61,0.11,0.11,0.11,0.11,0.09,0,0.85,1,1,1,1,1,1,1,1,1,0.98,0.6,1,1,1,1,1,1,1,1,1,1,1,0.96,0.75,1,1,1,1,1,1,1,0.94,0.88,0.81,0.48],"ar":0.55},{"d":8,"v":[0,0,0.3,0.68,0.84,0.98,1,0.91,0.7,0.21,0,0,0.02,0.5,0.98,1,1,1,1,1,1,0.96,0.5,0,0.36,1,1,1,0.98,0.84,0.89,1,1,1,0.96,0.2,0.77,1,1,0.91,0.3,0,0.05,0.52,0.98,1,1,0.57,0.98,1,1,0.49,0,0,0,0,0.68,1,1,0.71,0.95,1,1,0.5,0,0,0,0.02,0.73,1,1,0.61,0.64,1,1,0.93,0.5,0.29,0.3,0.68,1,1,1,0.38,0.3,0.98,1,1,1,1,1,1,1,1,0.71,0.04,0,0.7,1,1,1,1,1,1,1,0.95,0.13,0,0,0.57,1,1,1,1,1,1,1,1,0.46,0,0.27,0.98,1,1,1,1,1,1,1,1,0.95,0.2,0.59,1,1,1,0.5,0.16,0.2,0.63,1,1,1,0.59,0.8,1,1,0.8,0.04,0,0,0.04,0.79,1,1,0.88,0.84,1,1,0.56,0,0,0,0.03,0.81,1,1,0.94,0.66,1,1,0.95,0.48,0.16,0.14,0.55,1,1,1,0.71,0.39,1,1,1,1,1,1,1,1,1,0.95,0.25,0.04,0.68,1,1,1,1,1,1,1,0.95,0.34,0,0,0.02,0.43,0.84,0.93,1,0.95,0.84,0.61,0.21,0,0],"ar":0.56},{"d":5,"v":[0.27,0.61,0.73,0.79,0.88,0.91,0.95,0.88,0.91,0.92,0.88,0.25,0.89,1,1,1,1,1,1,1,1,1,1,0.43,0.86,1,1,1,1,1,1,0.9,0.81,0.64,0.51,0.14,0.86,1,1,0.82,0.22,0.25,0.14,0.02,0,0,0,0,0.88,1,1,0.68,0,0,0,0,0,0,0,0,0.92,1,1,0.95,0.1,0,0,0,0,0,0,0,0.89,1,1,1,0.8,0.75,0.75,0.75,0.57,0.11,0,0,0.86,1,1,1,1,1,1,1,1,0.89,0.3,0,0.86,1,1,1,1,0.91,0.77,0.92,1,1,0.95,0.21,0.73,1,1,1,0.67,0.05,0,0.27,0.93,1,1,0.64,0.6,1,0.99,0.57,0.06,0,0,0,0.6,1,1,0.84,0.04,0.2,0.2,0,0,0,0,0,0.57,1,1,0.86,0,0,0,0,0,0,0,0,0.57,1,1,0.92,0.18,0.68,0.81,0.34,0,0,0,0,0.59,1,1,0.98,0.39,1,1,0.82,0.14,0,0,0.09,0.86,1,1,0.73,0.06,0.57,0.75,0.83,0.42,0.1,0.56,0.9,1,1,0.92,0.25,0,0,0,0,0,0.55,1,1,1,0.95,0.29,0,0,0,0,0,0,0.3,0.98,0.91,0.63,0.23,0,0],"ar":0.58},{"d":0,"v":[0,0,0.07,0.52,0.8,0.98,1,1,0.79,0.45,0.02,0,0,0.07,0.75,1,1,1,1,1,1,1,0.64,0.04,0,0.55,1,1,0.8,0.52,0.5,0.54,0.89,1,1,0.52,0.04,0.89,1,0.77,0.05,0,0,0,0.21,0.95,1,0.94,0.21,1,1,0.48,0,0,0,0,0,0.77,1,1,0.44,1,1,0.43,0,0,0,0,0,0.77,1,1,0.63,1,1,0.18,0,0,0,0,0,0.86,1,0.9,0.67,1,1,0.14,0,0,0,0,0.11,0.96,1,0.75,0.73,1,1,0.14,0,0,0,0,0.14,1,1,0.67,0.83,1,1,0.14,0,0,0,0,0.14,1,1,0.67,0.83,1,0.95,0.09,0,0,0,0,0.27,1,1,0.67,0.94,1,0.86,0,0,0,0,0,0.29,1,1,0.58,1,1,0.86,0,0,0,0,0,0.29,1,1,0.5,1,1,0.93,0.07,0,0,0,0,0.36,1,1,0.5,0.75,1,1,0.5,0,0,0,0.07,0.73,1,1,0.31,0.25,0.96,1,0.98,0.75,0.54,0.56,0.82,1,1,0.71,0.02,0,0.38,0.91,1,1,1,1,1,1,0.86,0.13,0,0,0,0.14,0.59,0.91,1,0.96,0.79,0.54,0.11,0,0],"ar":0.54},{"d":0,"v":[0,0,0.04,0.44,0.79,0.88,0.96,0.81,0.69,0.27,0,0,0,0.13,0.79,1,1,1,1,1,1,0.98,0.54,0.02,0,0.69,1,1,0.94,0.63,0.52,0.73,0.96,1,1,0.5,0.02,0.92,1,1,0.29,0,0,0,0.35,1,1,0.96,0.33,1,1,0.92,0,0,0,0,0.13,1,1,1,0.77,1,1,0.69,0,0,0,0,0,1,1,1,0.77,1,1,0.67,0,0,0,0,0,1,1,1,0.67,1,1,0.65,0,0,0,0,0,1,1,1,0.81,1,1,0.5,0,0,0,0,0,1,1,0.94,0.75,1,1,0.5,0,0,0,0,0.04,1,1,0.83,0.83,1,1,0.5,0,0,0,0,0.04,1,1,0.83,0.92,1,1,0.42,0,0,0,0,0.17,1,1,0.75,0.98,1,1,0.42,0,0,0,0,0.17,1,1,0.67,0.81,1,1,0.58,0,0,0,0,0.38,1,1,0.58,0.48,1,1,0.94,0.38,0.02,0,0.1,0.83,1,1,0.42,0.06,0.92,1,1,1,0.77,0.65,0.9,1,1,0.92,0.13,0,0.25,0.92,1,1,1,1,1,1,0.88,0.21,0,0,0,0.13,0.54,0.83,1,0.98,0.83,0.52,0.1,0,0],"ar":0.56},{"d":3,"v":[0,0,0.04,0.53,0.88,0.88,0.69,0.63,0.55,0.22,0,0,0,0.12,0.8,1,0.63,0.14,0,0,0.04,0.35,0.04,0,0.02,0.76,1,1,0.9,0.53,0.18,0.02,0.73,1,0.73,0.39,0.27,1,1,0.96,0.16,0,0,0,0.49,1,1,0.88,0.1,0.71,0.8,0.41,0,0,0,0,0.14,1,1,1,0,0,0,0,0,0,0,0,0.39,1,1,0.96,0,0,0,0,0,0,0.02,0.43,0.94,1,1,0.67,0,0,0.02,0.57,0.86,0.86,0.96,1,1,1,0.82,0.12,0,0,0.24,1,1,1,1,1,1,1,0.27,0,0,0,0.08,0.86,1,1,1,1,1,1,0.53,0,0,0,0,0.04,0.24,0.33,0.57,0.94,1,1,0.9,0.06,0,0,0,0,0,0,0,0.27,0.98,1,1,0.37,0.47,0.71,0.59,0.14,0,0,0,0,0.86,1,1,0.51,1,1,1,0.78,0,0,0,0.06,0.92,1,1,0.43,0.86,1,1,1,0.59,0.35,0.35,0.71,1,1,0.94,0.22,0.45,1,1,1,1,1,1,1,1,1,0.41,0,0,0.41,0.96,1,1,1,1,1,1,0.78,0.08,0,0,0,0.33,0.73,0.86,0.96,0.98,0.73,0.33,0.02,0,0],"ar":0.58}];
+/* ===== MRV : ตัวมองภาพมาตรแมคคานิค (หาแถวตัวเลข / ตัดทีละหลัก / เข็มละเอียด+ขีดสเกล) ===== */
+const MRV=(()=>{
+  const isRed=(r,g,b)=>r>100&&r-Math.max(g,b)>50&&Math.max(g,b)<r*.74;
+  function work(src,maxS){const sc=Math.min(1,maxS/Math.max(src.width,src.height)),w=Math.max(8,Math.round(src.width*sc)),h=Math.max(8,Math.round(src.height*sc)),c=document.createElement('canvas');c.width=w;c.height=h;
+    const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(src,0,0,w,h);return{sc,w,h,d:x.getImageData(0,0,w,h).data}}
+  function comps(mask,w,h){const lab=new Int32Array(w*h),st=new Int32Array(w*h),cs=[];let L=0;
+    for(let p=0;p<w*h;p++){if(!mask[p]||lab[p])continue;L++;let sp=0,a=0,x0=w,x1=0,y0=h,y1=0,sx=0,sy=0;st[sp++]=p;lab[p]=L;
+      while(sp){const q=st[--sp],qx=q%w,qy=(q-qx)/w;a++;sx+=qx;sy+=qy;if(qx<x0)x0=qx;if(qx>x1)x1=qx;if(qy<y0)y0=qy;if(qy>y1)y1=qy;
+        for(let dy=-1;dy<=1;dy++){const ny=qy+dy;if(ny<0||ny>=h)continue;for(let dx=-1;dx<=1;dx++){const nx=qx+dx;if(nx<0||nx>=w)continue;const np=ny*w+nx;if(mask[np]&&!lab[np]){lab[np]=L;st[sp++]=np}}}}
+      cs.push({L,a,x0,x1,y0,y1,cx:sx/a,cy:sy/a,w:x1-x0+1,h:y1-y0+1})}
+    return{lab,cs}}
+  const med=a=>{const s=a.slice().sort((p,q)=>p-q);return s.length?s[s.length>>1]:0};
+  /* หาแถวตัวเลข: เลขแดง 2 หลักติดกันที่ขนาดเท่ากัน + เลขดำที่ระยะห่างเท่ากันทางซ้าย */
+  function findRow(W,n,red){const{w,h,d}=W,N=w*h,rm=new Uint8Array(N),dm=new Uint8Array(N);
+    for(let i=0,j=0;i<d.length;i+=4,j++){const r=d[i],g=d[i+1],b=d[i+2];if(isRed(r,g,b))rm[j]=1;else if((r+g+b)/3<105&&Math.max(r,g,b)<150)dm[j]=1}
+    const R=comps(rm,w,h),D=comps(dm,w,h);
+    const okd=c=>c.h>=h*.022&&c.h<=h*.17&&c.w>=c.h*.16&&c.w<=c.h*1.25&&c.a>=c.h*c.w*.1;
+    const rc=R.cs.filter(okd).sort((p,q)=>p.cx-q.cx),dc=D.cs.filter(okd);let best=null;
+    for(let i=0;i<rc.length;i++)for(let j=i+1;j<rc.length;j++){const A=rc[i],B=rc[j],hm=Math.max(A.h,B.h),dx=B.cx-A.cx;
+      if(B.h/A.h<.7||B.h/A.h>1.42||Math.abs(A.cy-B.cy)>hm*.3||dx<hm*.7||dx>hm*1.8)continue;
+      let reds=2,blk=0;const cy=(A.cy+B.cy)/2;
+      for(const C of rc){if(C===A||C===B)continue;const m=Math.round((C.cx-A.cx)/dx);if(m!==-1&&m!==2&&m!==-2&&m!==3)continue;if(Math.abs(C.cx-(A.cx+m*dx))<dx*.3&&Math.abs(C.cy-cy)<hm*.35)reds++}
+      for(let k=1;k<=7;k++){const ex=A.cx-k*dx,c=dc.find(C=>Math.abs(C.cx-ex)<dx*.3&&Math.abs(C.cy-cy)<hm*.35&&C.h>hm*.7&&C.h<hm*1.35);if(c)blk++;else if(k>1)break;else break}
+      const sc=reds*3+blk*4+(A.a+B.a)/(hm*hm)*.5;if(!best||sc>best.sc)best={sc,A,B,dx,cy,hm,reds,blk}}
+    if(!best)return null;
+    /* ประกอบจุดศูนย์กลางของเลขทุกหลักที่เจอ เพื่อฟิตเส้นตรง (เลื่อนตามความเอียง) */
+    const dx0=best.dx,A=best.A,pts=[];
+    const add=(C,kind)=>{const k=Math.round((C.cx-A.cx)/dx0);if(k<-8||k>4)return;if(Math.abs(C.cx-(A.cx+k*dx0))>dx0*.3||Math.abs(C.cy-best.cy)>best.hm*.4)return;if(C.h<best.hm*.65||C.h>best.hm*1.4)return;pts.push({k,x:C.cx,y:C.cy,h:C.h,kind})};
+    rc.forEach(C=>add(C,'r'));dc.forEach(C=>add(C,'k'));
+    const seen={};const P=pts.filter(p=>{const key=p.k+p.kind;if(seen[key])return false;seen[key]=1;return true});
+    function fit(arr,key){let n_=arr.length,sk=0,sx=0,skk=0,skx=0;arr.forEach(p=>{sk+=p.k;sx+=p[key];skk+=p.k*p.k;skx+=p.k*p[key]});const den=n_*skk-sk*sk;if(!den)return{a:sx/n_,b:0};const b=(n_*skx-sk*sx)/den;return{a:(sx-b*sk)/n_,b}}
+    let use=P.slice();for(let it=0;it<3;it++){const f=fit(use,'x');const nu=P.filter(p=>Math.abs(p.x-(f.a+f.b*p.k))<dx0*.18);if(nu.length>=3)use=nu;else break}
+    const fx=fit(use,'x'),fy=fit(use,'y'),ks=use.map(p=>p.k),kmin=Math.min(...ks);
+    const redKs=use.filter(p=>p.kind==='r').map(p=>p.k),k1=Math.min(...redKs); /* ลูกกลิ้งแดงตัวแรก */
+    const blackKs=use.filter(p=>p.kind==='k'&&p.k<k1).map(p=>p.k);let nb=0;for(let k=k1-1;;k--){if(blackKs.includes(k))nb++;else break}
+    const hd=med(use.map(p=>p.h));
+    return{p:Math.abs(fx.b),slope:fx.b?fy.b/fx.b:0,roll:Math.atan2(fy.b,fx.b)*180/Math.PI,xr1:fx.a+fx.b*k1,yr1:fy.a+fy.b*k1,Hd:hd,nBlack:nb,nRed:Math.max(...redKs)-k1+1,cnt:use.length,sc:best.sc,reds:R.cs,rmask:rm,rl:R.lab,W}}
+
+
+  function box1(m,w,h,r,mx){const t=new Uint8Array(w*h),o=new Uint8Array(w*h);
+    for(let y=0;y<h;y++){const row=y*w;for(let x=0;x<w;x++){let v=mx?0:1;for(let k=-r;k<=r;k++){const xx=x+k;if(xx<0||xx>=w){if(!mx)v=0;continue}const q=m[row+xx];if(mx){if(q){v=1;break}}else if(!q){v=0;break}}t[row+x]=v}}
+    for(let x=0;x<w;x++)for(let y=0;y<h;y++){let v=mx?0:1;for(let k=-r;k<=r;k++){const yy=y+k;if(yy<0||yy>=h){if(!mx)v=0;continue}const q=t[yy*w+x];if(mx){if(q){v=1;break}}else if(!q){v=0;break}}o[y*w+x]=v}return o}
+  const close=(m,w,h,r)=>box1(box1(m,w,h,r,1),w,h,r,0);
+  function otsu(a){const h=new Array(256).fill(0);for(let i=0;i<a.length;i++)h[a[i]]++;let t=a.length,s=0;for(let i=0;i<256;i++)s+=i*h[i];let sb=0,wb=0,best=-1,th=128;
+    for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=t-wb;if(!wf)break;sb+=i*h[i];const mb=sb/wb,mf=(s-sb)/wf,v=wb*wf*(mb-mf)*(mb-mf);if(v>best){best=v;th=i}}return th}
+  /* ตัด 1 หลักตรง ๆ (หมุนให้ตรงตามความเอียงของแถว) แล้วแยกตัวเลขออกจากพื้น/ลูกกลิ้งข้างเคียง */
+  function cellCrop(src,cx,cy,roll,p,Hd,sH){const s=sH/Hd,w=Math.round(p*.86*s),h=Math.round(1.6*Hd*s),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d',{willReadFrequently:true});
+    x.fillStyle='#888';x.fillRect(0,0,w,h);x.translate(w/2,h/2);x.rotate(-roll*Math.PI/180);x.scale(s,s);x.drawImage(src,-cx,-cy);return c}
+  function glyph(cv,Hd,sH,opt){opt=opt||{};const w=cv.width,h=cv.height,d=cv.getContext('2d').getImageData(0,0,w,h).data,N=w*h;
+    let nr=0;for(let i=0;i<d.length;i+=4)if(isRed(d[i],d[i+1],d[i+2]))nr++;const red=nr/N>.015;
+    const g=new Uint8Array(N);
+    if(red){for(let i=0,j=0;i<d.length;i+=4,j++){const r=d[i],q=(r-(d[i+1]+d[i+2])/2)/(r+8);g[j]=255-Math.max(0,Math.min(255,q*330))}}
+    else for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=Math.min(d[i],d[i+1],d[i+2]);
+    let th;
+    if(red){th=255-(opt.rt||.30)*330}
+    else{const sr=Array.from(g).sort((p,q)=>p-q),v2=sr[Math.floor(N*.03)],md=sr[Math.floor(N*.55)];th=Math.min(otsu(g),v2+(.42+(opt.tk||0)*.14)*(md-v2),150)}
+    let m=new Uint8Array(N);for(let i=0;i<N;i++)m[i]=g[i]<th?1:0;
+    if(opt.cl)m=close(m,w,h,opt.cl);
+    const C=comps(m,w,h),cx=w/2,cy=h/2,minH=sH*.28;let seed=null;
+    C.cs.forEach(c=>{if(c.h<minH||c.a<sH*sH*.012)return;const cen=1-Math.min(1,Math.abs(c.cx-cx)/(w*.5));const touch=((c.y0<=1&&c.y1>=h-2)?0:1)*((c.x0<=1||c.x1>=w-2)?.12:1)*((c.y0<=1||c.y1>=h-2)?.3:1);const sc=c.a*cen*cen*touch*(1-Math.min(.8,Math.abs(c.cy-cy)/h));if(!seed||sc>seed.sc)seed={sc,c}});
+    if(!seed)return{red,ok:0};
+    const S=seed.c,ex=S.w*.12,ey=S.h*.08,keep=C.cs.filter(c=>c===S||(c.a>=S.a*.04&&c.w<=S.w*1.1&&c.h<=S.h*1.05&&c.cx>=S.x0-ex&&c.cx<=S.x1+ex&&c.cy>=S.y0-ey&&c.cy<=S.y1+ey));
+    const set=new Set(keep.map(c=>c.L));let x0=w,x1=0,y0=h,y1=0;keep.forEach(c=>{x0=Math.min(x0,c.x0);x1=Math.max(x1,c.x1);y0=Math.min(y0,c.y0);y1=Math.max(y1,c.y1)});
+    const bw=x1-x0+1,bh=y1-y0+1,bm=new Uint8Array(bw*bh);for(let y=0;y<bh;y++)for(let x=0;x<bw;x++)bm[y*bw+x]=set.has(C.lab[(y0+y)*w+x0+x])?1:0;
+    return{ok:1,red,bm,bw,bh,x0,y0,cxg:(x0+x1)/2,cyg:(y0+y1)/2,offY:((y0+y1)/2-h/2)/sH,w,h,lab:C.lab,set}}
+  function glyphImg(G,pad){pad=pad||36;const sc=150/G.bh,w=Math.round(G.bw*sc)+pad*2,h=Math.round(G.bh*sc)+pad*2,t=document.createElement('canvas');t.width=G.bw;t.height=G.bh;const tx=t.getContext('2d'),im=tx.createImageData(G.bw,G.bh);
+    for(let i=0;i<G.bm.length;i++){const v=G.bm[i]?0:255;im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255}tx.putImageData(im,0,0);
+    const f=document.createElement('canvas');f.width=w;f.height=h;const fx=f.getContext('2d');fx.fillStyle='#fff';fx.fillRect(0,0,w,h);fx.imageSmoothingQuality='high';fx.drawImage(t,pad,pad,Math.round(G.bw*sc),Math.round(G.bh*sc));return f}
+  
+
+  /* โครงสร้างรู (วงปิด) ในตัวเลข: 0=1รู กลาง · 6=1รู ล่าง · 9=1รู บน · 8=2รู · อื่น ๆ ไม่มีรู */
+  function holes(bm,bw,bh){const N=bw*bh,lab=new Int32Array(N),st=new Int32Array(N),out=[];let L=0;
+    for(let p=0;p<N;p++){if(bm[p]||lab[p])continue;L++;let sp=0,a=0,sy=0,tb=0;st[sp++]=p;lab[p]=L;
+      while(sp){const q=st[--sp],qx=q%bw,qy=(q-qx)/bw;a++;sy+=qy;if(qx===0||qy===0||qx===bw-1||qy===bh-1)tb=1;
+        const nb=[[qx-1,qy],[qx+1,qy],[qx,qy-1],[qx,qy+1]];for(const[nx,ny]of nb){if(nx<0||ny<0||nx>=bw||ny>=bh)continue;const np=ny*bw+nx;if(!bm[np]&&!lab[np]){lab[np]=L;st[sp++]=np}}}
+      if(!tb&&a>=N*.012)out.push({a,y:sy/a/bh})}
+    return out}
+  const HEXP={0:[1,.5],1:[0],2:[0],3:[0],4:[0,.4],5:[0],6:[1,.68],7:[0],8:[2],9:[1,.32]};
+
+  /* ===== เข็มละเอียด: หาก้านเข็มสีแดง → จุดหมุน (วงกลมใหญ่สุดในตัวเข็ม) → ทิศปลายเข็ม ===== */
+  function pca(px,w){let n=px.length,mx=0,my=0;px.forEach(q=>{mx+=q%w;my+=Math.floor(q/w)});mx/=n;my/=n;let sxx=0,syy=0,sxy=0;px.forEach(q=>{const dx=q%w-mx,dy=Math.floor(q/w)-my;sxx+=dx*dx;syy+=dy*dy;sxy+=dx*dy});
+    const t=(sxx+syy)/2,u=Math.hypot((sxx-syy)/2,sxy),l1=t+u,l2=Math.max(1e-6,t-u);return{mx,my,el:Math.sqrt(l1/l2)}}
+  function fillHoles(m,w,h){const o=new Uint8Array(m),bg=new Uint8Array(w*h),st=[];const push=(x,y)=>{const p=y*w+x;if(!m[p]&&!bg[p]){bg[p]=1;st.push(p)}};
+    for(let x=0;x<w;x++){push(x,0);push(x,h-1)}for(let y=0;y<h;y++){push(0,y);push(w-1,y)}
+    while(st.length){const q=st.pop(),x=q%w,y=(q-x)/w;if(x>0)push(x-1,y);if(x<w-1)push(x+1,y);if(y>0)push(x,y-1);if(y<h-1)push(x,y+1)}
+    for(let i=0;i<w*h;i++)if(!m[i]&&!bg[i])o[i]=1;return o}
+  function dt(m,w,h){const INF=1e9,d=new Float32Array(w*h);for(let i=0;i<w*h;i++)d[i]=m[i]?INF:0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!d[i])continue;let v=d[i];if(x>0)v=Math.min(v,d[i-1]+1);if(y>0){v=Math.min(v,d[i-w]+1);if(x>0)v=Math.min(v,d[i-w-1]+1.414);if(x<w-1)v=Math.min(v,d[i-w+1]+1.414)}d[i]=v}
+    for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const i=y*w+x;if(!d[i])continue;let v=d[i];if(x<w-1)v=Math.min(v,d[i+1]+1);if(y<h-1){v=Math.min(v,d[i+w]+1);if(x<w-1)v=Math.min(v,d[i+w+1]+1.414);if(x>0)v=Math.min(v,d[i+w-1]+1.414)}d[i]=v}return d}
+  function findPointer(W,row){const{w,h,d}=W,N=w*h,rm=new Uint8Array(N);
+    for(let i=0,j=0;i<d.length;i+=4,j++){const r=d[i],g=d[i+1],b=d[i+2];if(r>90&&r-Math.max(g,b)>42&&Math.max(g,b)<r*.8)rm[j]=1}
+    const R=comps(rm,w,h),Hd=row.Hd,cands=[];
+    for(const c of R.cs){if(c.cy<row.yr1+Hd*1.4||c.a<Hd*Hd*.5||c.a>Hd*Hd*40)continue;
+      const bw=c.w+2,bh=c.h+2,m=new Uint8Array(bw*bh),px=[];for(let y=0;y<c.h;y++)for(let x=0;x<c.w;x++)if(R.lab[(c.y0+y)*w+c.x0+x]===c.L){m[(y+1)*bw+x+1]=1;px.push((y+1)*bw+x+1)}
+      const P=pca(px,bw);if(P.el<1.3)continue;cands.push({c,m,bw,bh,px,P})}
+    if(!cands.length)return null;cands.sort((p,q)=>q.px.length-p.px.length);const K=cands[0],mf=fillHoles(K.m,K.bw,K.bh),D=dt(mf,K.bw,K.bh);
+    let mx=0;for(let i=0;i<D.length;i++)if(D[i]>mx)mx=D[i];let sx=0,sy=0,sn=0;for(let i=0;i<D.length;i++)if(D[i]>=mx*.9){sx+=i%K.bw;sy+=Math.floor(i/K.bw);sn++}
+    const hx=sx/sn,hy=sy/sn;let far=0;const pts=[];for(let i=0;i<mf.length;i++)if(mf[i]){const x=i%K.bw,y=Math.floor(i/K.bw),dd=Math.hypot(x-hx,y-hy);pts.push([x,y,dd]);if(dd>far)far=dd}
+    let tx=0,ty=0,tn=0;pts.forEach(q=>{if(q[2]>far*.78){tx+=q[0];ty+=q[1];tn++}});tx/=tn;ty/=tn;
+    const ang=((Math.atan2(tx-hx,-(ty-hy))*180/Math.PI)%360+360)%360;
+    return{hx:K.c.x0-1+hx,hy:K.c.y0-1+hy,hubR:mx,L:Math.hypot(tx-hx,ty-hy),far,ang,tipx:K.c.x0-1+tx,tipy:K.c.y0-1+ty,area:K.px.length,el:K.P.el}}
+
+  /* ===== ขีดสเกลรอบหน้าปัด: ตัวอย่างความมืดเป็นวงกลมรอบจุดหมุน แล้วหายอดทีละขีด ===== */
+  function polar(W,cx,cy,r0,r1,NA,gray){const{w,h,d}=W,NR=Math.max(2,Math.round(r1-r0)+1),o=new Float32Array(NR*NA);
+    for(let ir=0;ir<NR;ir++){const r=r0+ir*(r1-r0)/(NR-1);for(let ia=0;ia<NA;ia++){const a=ia/NA*2*Math.PI,x=cx+r*Math.sin(a),y=cy-r*Math.cos(a);
+      let v=0;if(x>=0&&y>=0&&x<w-1&&y<h-1){const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0,i00=(y0*w+x0)*4;
+        const g=k=>{const R=d[i00+k],G=d[i00+k+1],B=d[i00+k+2];return isRed(R,G,B)?0:255-Math.min(R,G,B)};
+        const a00=g(0),a10=g(4),a01=g(w*4),a11=g(w*4+4);v=a00*(1-fx)*(1-fy)+a10*fx*(1-fy)+a01*(1-fx)*fy+a11*fx*fy}
+      o[ir*NA+ia]=v}}return{o,NR,NA,r0,r1}}
+  function tickScan(W,P){const NA=1440,L=P.L,r0=Math.max(P.hubR*1.5,L*.95),r1=L*2.9,pl=polar(W,P.hx,P.hy,r0,r1,NA),{o,NR}=pl;
+    /* พลังงานของจังหวะ 50 ขีดต่อรอบ ในแต่ละรัศมี */
+    const E=new Float32Array(NR),Ph=new Float32Array(NR);
+    for(let ir=0;ir<NR;ir++){let re=0,im=0,mean=0;for(let ia=0;ia<NA;ia++)mean+=o[ir*NA+ia];mean/=NA;for(let ia=0;ia<NA;ia++){const v=o[ir*NA+ia]-mean,a=2*Math.PI*50*ia/NA;re+=v*Math.cos(a);im-=v*Math.sin(a)}E[ir]=Math.hypot(re,im)/NA;Ph[ir]=Math.atan2(im,re)}
+    return{pl,E,Ph}}
+
+  /* อ่านค่าเข็มจากขีดสเกลจริง: หาขีดทั้ง 50 ขีด → ขีดยาว (เลข 0-9) → ขีด 0 อยู่ใกล้ด้านบนตามความเอียงของแถวตัวเลข */
+  function scaleRead(W,P,roll){const T=tickScan(W,P),{o,NR,NA,r0,r1}=T.pl,E=T.E;
+    const dr=(r1-r0)/(NR-1);let bi=0;const Es=new Float32Array(NR);for(let i=0;i<NR;i++){let s=0,c=0;for(let k=-3;k<=3;k++){const q=i+k;if(q>=0&&q<NR){s+=E[q];c++}}Es[i]=s/c}for(let i=0;i<NR;i++)if(Es[i]>Es[bi])bi=i;
+    /* แถบที่มีเฉพาะขีดสั้น: ขยับออกนอกจากรัศมีพลังงานสูงสุดเล็กน้อย (ขีดสั้นอยู่ด้านนอก) */
+    let ra=bi;
+    const prof=new Float32Array(NA);const rows=[Math.min(NR-1,ra+1),ra,Math.max(0,ra-1)];for(const q of rows)for(let ia=0;ia<NA;ia++)prof[ia]+=o[q*NA+ia]/rows.length;
+    const sm=new Float32Array(NA),K=3;for(let ia=0;ia<NA;ia++){let s=0;for(let k=-K;k<=K;k++)s+=prof[(ia+k+NA)%NA];sm[ia]=s/(2*K+1)}
+    let mn=1e9,mx=0;for(let i=0;i<NA;i++){mn=Math.min(mn,sm[i]);mx=Math.max(mx,sm[i])}
+    /* หายอดขีดโดยตรง (หลีกเลี่ยงการสมมติว่าเว้นระยะเท่ากัน เพราะภาพเอียงทำให้ไม่เท่ากัน) */
+    const sp=NA/50,thr=mn+(mx-mn)*.38,pk=[];
+    for(let i=0;i<NA;i++){const v=sm[i];if(v<thr)continue;let ok=true;for(let k=1;k<=Math.round(sp*.3);k++){if(sm[(i-k+NA)%NA]>v||sm[(i+k)%NA]>=v){ok=false;break}}if(ok)pk.push({i,v})}
+    /* ยอดกว้าง (หลายพิกเซลเท่ากัน) → เก็บอันกลาง */
+    let P2=[];pk.sort((a,b)=>a.i-b.i).forEach(q=>{const l=P2[P2.length-1];if(l&&q.i-l.i<sp*.35){if(q.v>l.v)P2[P2.length-1]=q}else P2.push(q)});
+    if(P2.length>1&&P2[0].i+NA-P2[P2.length-1].i<sp*.35){if(P2[0].v>P2[P2.length-1].v)P2.pop();else P2.shift()}
+    /* เติมขีดที่หายไปตามช่องว่าง / ตัดขีดที่ชิดกันเกินไป */
+    const refine=q=>{let s=0,sw=0;const t2=q.v-(q.v-mn)*.45;for(let k=-8;k<=8;k++){const i=q.i+k,v=sm[(i%NA+NA)%NA];if(v>t2){s+=i*(v-t2);sw+=v-t2}}return sw?s/sw:q.i};
+    let pos=P2.map(refine).sort((a,b)=>a-b);
+    for(let it=0;it<60&&pos.length!==50;it++){
+      const gaps=pos.map((p,k)=>({k,g:((pos[(k+1)%pos.length]-p)%NA+NA)%NA})),gm=med(gaps.map(g=>g.g));
+      if(pos.length<50){const w=gaps.reduce((a,b)=>b.g>a.g?b:a);if(w.g<gm*1.45)break;pos.splice(w.k+1,0,(pos[w.k]+w.g/2)%NA);pos.sort((a,b)=>a-b)}
+      else{const w=gaps.reduce((a,b)=>b.g<a.g?b:a);pos.splice((w.k+1)%pos.length,1)}}
+    const detN=P2.length;
+    const ticks=pos.map(p=>({a:(p%NA)*360/NA}));
+    if(ticks.length!==50)return{fail:'พบขีดสเกล '+ticks.length+' ขีด (ควรเป็น 50)',n:ticks.length,detN};
+    /* ความยาวขีด = จำนวนแถวรัศมีที่มืดต่อเนื่องจากแถบ ไปทางศูนย์กลาง */
+    const del=Math.round(sp*.42);
+    ticks.forEach(t=>{const ia=Math.round(t.a/360*NA)%NA;const cr=q=>{const c=o[q*NA+ia];return c-Math.max(o[q*NA+(ia-del+NA)%NA],o[q*NA+(ia+del)%NA])};
+      const base=Math.max(8,cr(ra)*.45);let len=0,miss=0;for(let q=ra;q>=0;q--){if(cr(q)>base){len++;miss=0}else{miss++;if(miss>3)break}}t.len=len});
+    let bestM=0,bs=-1;for(let m=0;m<5;m++){let s=0;for(let j=m;j<50;j+=5)s+=ticks[j].len;if(s>bs){bs=s;bestM=m}}
+    const majors=[];for(let j=bestM;j<50;j+=5)majors.push(j);
+    const mL=majors.map(j=>ticks[j].len),oL=ticks.filter((t,j)=>j%5!==bestM).map(t=>t.len),mMed=med(mL),oMed=med(oL);
+    const dd=(a,b)=>{let x=((a-b)%360+540)%360-180;return x};
+    let j0=majors[0],bd=1e9;majors.forEach(j=>{const x=Math.abs(dd(ticks[j].a,roll||0));if(x<bd){bd=x;j0=j}});
+    /* ตำแหน่งเข็ม → ขีดที่คร่อมอยู่ */
+    const ang=P.ang;if(!isFinite(ang))return{fail:'ไม่พบทิศเข็ม'};let ji=0,fr=0;for(let j=0;j<50;j++){const a=ticks[j].a,b=ticks[(j+1)%50].a,span=((b-a)%360+360)%360,off=((ang-a)%360+360)%360;if(off<span+1e-6&&span>0){ji=j;fr=off/span;break}}
+    const idx=(((ji-j0)%50)+50)%50,p=(idx+fr)*.2;
+    const sps=[];for(let j=0;j<50;j++)sps.push(((ticks[(j+1)%50].a-ticks[j].a)%360+360)%360);
+    return{p,idx,fr,j0,ticks,detN,bestM,mMed,oMed,rBand:r0+ra*dr,spMin:Math.min(...sps),spMax:Math.max(...sps),zeroOff:dd(ticks[j0].a,roll||0),T}}
+  /* ตัวจำแบบเทียบแม่แบบ (ไม่ต้องใช้อินเทอร์เน็ต) : เรนเดอร์เลข 0-9 จากหลายฟอนต์ แล้วเทียบรูปร่าง */
+  const GW=12,GH=18;
+  function norm(bm,bw,bh){const o=new Float32Array(GW*GH);for(let gy=0;gy<GH;gy++){const y0=gy*bh/GH,y1=(gy+1)*bh/GH;for(let gx=0;gx<GW;gx++){const x0=gx*bw/GW,x1=(gx+1)*bw/GW;let s=0,c=0;
+      for(let y=Math.floor(y0);y<Math.min(bh,Math.ceil(y1));y++)for(let x=Math.floor(x0);x<Math.min(bw,Math.ceil(x1));x++){s+=bm[y*bw+x];c++}o[gy*GW+gx]=c?s/c:0}}return o}
+  let TPL=null,SEEDS=[],LEARN=[];
+  function setSeeds(s){SEEDS=(s||[]).map(t=>({dg:t.d,v:Float32Array.from(t.v),ar:t.ar,seed:1}))}
+  function setLearn(s){LEARN=(s||[]).map(t=>({dg:t.d,v:Float32Array.from(t.v),ar:t.ar,seed:1}))}
+  function templates(){if(TPL)return TPL;TPL=[];const fonts=['Arial','Helvetica','DejaVu Sans','Liberation Sans','Roboto','Noto Sans','sans-serif'],ws=['400','600','700'];
+    for(const f of fonts)for(const wt of ws)for(let dg=0;dg<10;dg++){const c=document.createElement('canvas');c.width=120;c.height=160;const x=c.getContext('2d',{willReadFrequently:true});x.fillStyle='#fff';x.fillRect(0,0,120,160);x.fillStyle='#000';x.font=wt+' 110px "'+f+'",sans-serif';x.textAlign='center';x.textBaseline='alphabetic';x.fillText(String(dg),60,125);
+      const d=x.getImageData(0,0,120,160).data;let x0=120,x1=0,y0=160,y1=0;const m=new Uint8Array(120*160);for(let i=0;i<m.length;i++){if(d[i*4]<128){m[i]=1;const px=i%120,py=(i-px)/120;if(px<x0)x0=px;if(px>x1)x1=px;if(py<y0)y0=py;if(py>y1)y1=py}}
+      if(x1<=x0)continue;const bw=x1-x0+1,bh=y1-y0+1,bm=new Uint8Array(bw*bh);for(let y=0;y<bh;y++)for(let xx=0;xx<bw;xx++)bm[y*bw+xx]=m[(y0+y)*120+x0+xx];TPL.push({dg,v:norm(bm,bw,bh),ar:bw/bh,f,wt})}
+    return TPL}
+  function classify(G){const v=norm(G.bm,G.bw,G.bh),ar=G.bw/G.bh,best=Array(10).fill(1e9);
+    const all=templates().concat(SEEDS,LEARN);for(const t of all){let s=0;for(let i=0;i<v.length;i++){const q=v[i]-t.v[i];s+=q*q}s=s/v.length+((ar-t.ar)*.9)**2*.35;if(t.seed)s*=.8;if(s<best[t.dg])best[t.dg]=s}
+    const H=holes(G.bm,G.bw,G.bh);for(let d=0;d<10;d++){const e=HEXP[d];let pen=0;
+      if(d===4){if(H.length>1)pen=.06}else if(H.length!==e[0])pen=(e[0]===0&&H.length>0)?.16:.06*Math.abs(H.length-e[0]);
+      if(e[0]===1&&H.length===1)pen+=Math.abs(H[0].y-e[1])*.12;best[d]+=pen}
+    const ord=best.map((s,d)=>({d,s})).sort((a,b)=>a.s-b.s);return{d:ord[0].d,s:ord[0].s,s2:ord[1].s,ord,H,v,ar}}
+
+  /* ===== ภาพขยายหน้าปัดเล็ก + แถบสเกลที่คลี่เป็นเส้นตรง (ให้คนตรวจเทียบขีดได้) ===== */
+  function dialView(src,W,P,S,sz){sz=sz||520;const sc=W.sc,hx=P.hx/sc,hy=P.hy/sc,L=P.L/sc,rb=S?S.rBand/sc:L*2.05,R=rb*1.45,side=2*R;
+    const c=document.createElement('canvas');c.width=sz;c.height=sz;const x=c.getContext('2d'),k=sz/side,ox=hx-R,oy=hy-R;x.fillStyle='#14202b';x.fillRect(0,0,sz,sz);x.imageSmoothingQuality='high';x.drawImage(src,ox,oy,side,side,0,0,sz,sz);
+    const cx=(hx-ox)*k,cy=(hy-oy)*k,pt=(a,r)=>[cx+r*k*Math.sin(a*Math.PI/180),cy-r*k*Math.cos(a*Math.PI/180)];
+    if(S&&S.ticks){S.ticks.forEach((t,j)=>{const mj=((j-S.j0)%5+5)%5===0,a=t.a,p1=pt(a,rb*(mj?.88:.97)),p2=pt(a,rb*1.1);x.strokeStyle=mj?'#22d3ee':'rgba(34,211,238,.75)';x.lineWidth=mj?3:1.6;x.beginPath();x.moveTo(p1[0],p1[1]);x.lineTo(p2[0],p2[1]);x.stroke();
+        if(mj){const n=(((j-S.j0)/5)%10+10)%10,q=pt(a,rb*1.27);x.fillStyle='#0a2a43';x.strokeStyle='#22d3ee';x.lineWidth=2;x.beginPath();x.arc(q[0],q[1],sz*.034,0,7);x.fill();x.stroke();x.fillStyle='#fff';x.font='800 '+Math.round(sz*.04)+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(String(n),q[0],q[1]+1)}})}
+    const a=P.ang,p0=pt(a,L*.0),p1=pt(a,rb*1.12);x.strokeStyle='#4ade80';x.lineWidth=3.5;x.setLineDash([9,6]);x.beginPath();x.moveTo(cx,cy);x.lineTo(p1[0],p1[1]);x.stroke();x.setLineDash([]);
+    x.fillStyle='#4ade80';x.beginPath();x.arc(p1[0],p1[1],7,0,7);x.fill();x.strokeStyle='#fff';x.lineWidth=2;x.stroke();x.fillStyle='#fff';x.beginPath();x.arc(cx,cy,5,0,7);x.fill();
+    return c}
+  function ruler(src,W,P,S,pRaw,wpx,hpx){wpx=wpx||760;hpx=hpx||190;if(!S||!S.ticks)return null;const sc=W.sc,hx=P.hx/sc,hy=P.hy/sc,rb=S.rBand/sc,span=64,aC=P.ang,r0=rb*.74,r1=rb*1.16;
+    const c=document.createElement('canvas');c.width=wpx;c.height=hpx;const x=c.getContext('2d',{willReadFrequently:true});
+    const sw=document.createElement('canvas');sw.width=src.width;sw.height=src.height;const sx=src.getContext('2d').getImageData(0,0,src.width,src.height).data,SW=src.width,SH=src.height;
+    const im=x.createImageData(wpx,hpx);
+    for(let yy=0;yy<hpx;yy++){const r=r1-(r1-r0)*yy/(hpx-1);for(let xx=0;xx<wpx;xx++){const a=(aC-span/2+span*xx/(wpx-1))*Math.PI/180,X=hx+r*Math.sin(a),Y=hy-r*Math.cos(a),o=(yy*wpx+xx)*4;
+      if(X<0||Y<0||X>=SW-1||Y>=SH-1){im.data[o]=20;im.data[o+1]=32;im.data[o+2]=43;im.data[o+3]=255;continue}
+      const x0=Math.floor(X),y0=Math.floor(Y),fx=X-x0,fy=Y-y0,i0=(y0*SW+x0)*4;for(let ch=0;ch<3;ch++){im.data[o+ch]=sx[i0+ch]*(1-fx)*(1-fy)+sx[i0+4+ch]*fx*(1-fy)+sx[i0+SW*4+ch]*(1-fx)*fy+sx[i0+SW*4+4+ch]*fx*fy}im.data[o+3]=255}}
+    x.putImageData(im,0,0);
+    const X=a=>((((a-(aC-span/2))%360)+540)%360-180+span/2)/span*(wpx-1)+0;
+    S.ticks.forEach((t,j)=>{const xx=(((t.a-(aC-span/2))%360+360)%360);if(xx>span)return;const px=xx/span*(wpx-1),rel=((j-S.j0)%50+50)%50,mj=rel%5===0,v=rel*.2;
+      x.strokeStyle=mj?'rgba(34,211,238,.95)':'rgba(250,204,21,.9)';x.lineWidth=mj?2.5:1.5;x.beginPath();x.moveTo(px,0);x.lineTo(px,mj?hpx*.28:hpx*.16);x.stroke();
+      x.fillStyle='rgba(10,42,67,.82)';x.fillRect(px-17,hpx-24,34,20);x.fillStyle=mj?'#67e8f9':'#fde68a';x.font=(mj?'800 ':'700 ')+'13px ui-monospace,monospace';x.textAlign='center';x.textBaseline='middle';x.fillText(v.toFixed(1),px,hpx-14)});
+    const mx=span/2/span*(wpx-1);x.strokeStyle='#4ade80';x.lineWidth=3;x.beginPath();x.moveTo(mx,0);x.lineTo(mx,hpx-26);x.stroke();x.fillStyle='#4ade80';x.beginPath();x.moveTo(mx-9,0);x.lineTo(mx+9,0);x.lineTo(mx,13);x.closePath();x.fill();
+    return c}
+  /* เลขที่ “มีรู” จากตำแหน่งรู: 2 รู=8 · รูบน=9(หรือ 4) · รูกลาง=0 · รูล่าง=6 */
+  function holeDigit(q){const H=q.H;if(H.length>=2)return 8;const y=H[0].y;const pick=set=>q.ord.filter(e=>set.includes(e.d))[0].d;return y<.42?pick([9,4]):y<.6?0:6}
+  const V8=[{rt:.30},{tk:-1,rt:.40},{tk:1,rt:.22},{rt:.15,cl:1},{rt:.30,cl:1},{tk:1,rt:.36},{rt:.45},{rt:.12}];
+  function readCell(cv,Hd,sH){const votes={},sMin={},offs=[],nOk=[];let tot=0,any=0,vec=null,ar0=1,holeBest=null;
+    for(const o of V8){const G=glyph(cv,Hd,sH,o);if(!G.ok)continue;any++;const q=classify(G);if(!vec){vec=Array.from(q.v,x=>Math.round(x*100)/100);ar0=Math.round(q.ar*100)/100}q.ord.forEach(e=>{if(sMin[e.d]==null||e.s<sMin[e.d])sMin[e.d]=e.s});
+      const w=Math.pow(Math.max(0,1-q.s/.22),2);votes[q.d]=(votes[q.d]||0)+w;tot+=w;if(q.H.length>=1&&(!holeBest||q.s<holeBest.s))holeBest={d:holeDigit(q),s:q.s};offs.push({d:q.d,off:G.offY})}
+    const alts=Object.keys(sMin).map(d=>({d:+d,s:sMin[d]})).sort((a,b)=>a.s-b.s);
+    if(!any)return{d:'',conf:0,alts:[],off:null};
+    let win=alts[0].d,agree=1;if(tot>0){const best=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0];win=+best[0];agree=best[1]/tot}
+    /* ถ้าภาพไม่ชัด (พอดีแสงสะท้อนกลบวงปิด) แต่บางรอบเจอ “รู” ในเลข ให้เชื่อรูมากกว่า — มีรูแปลว่า 0/4/6/8/9 ไม่ใช่ 1/2/3/5/7 */
+    if(sMin[win]>=.15&&HEXP[win][0]===0&&holeBest&&holeBest.d!==win&&holeBest.s<.45){win=holeBest.d;agree=.3}
+    const conf=Math.max(0,Math.min(1,1-sMin[win]/.2))*(.35+.65*agree),offW=offs.filter(q=>q.d===win).map(q=>q.off);
+    return{d:String(win),conf,alts:alts.slice(0,3),off:offW.length?med(offW):null,s:sMin[win],agree,vec,ar:ar0}}
+  /* ===== วิเคราะห์ทั้งภาพ ===== */
+  function analyze(src,opt){opt=opt||{};let n=opt.n||7;const red=opt.red==null?3:opt.red,W=work(src,1300),sc=W.sc,out={n,red};
+    const row=findRow(W,n,red);if(!row)return{ok:0,fail:'ไม่พบแถวตัวเลขของมาตร — ถ่ายให้เห็นช่องตัวเลขชัดและไม่เอียงมาก'};
+    if(row.nBlack>n-red&&row.nBlack<=9-red)n=row.nBlack+red;out.n=n;
+    const p=row.p/sc,Hd=row.Hd/sc,xr1=row.xr1/sc,yr1=row.yr1/sc,cr=Math.cos(row.roll*Math.PI/180),sr=Math.sin(row.roll*Math.PI/180),sH=130;
+    out.geom={p,Hd,xr1,yr1,roll:row.roll,cx:[],cy:[]};const cells=[];
+    for(let i=0;i<n;i++){const k=i-(n-red),cx=xr1+k*p*cr,cy=yr1+k*p*sr;out.geom.cx.push(cx);out.geom.cy.push(cy);
+      const cv=cellCrop(src,cx,cy,row.roll,p,Hd,sH),c=readCell(cv,Hd,sH);c.red=i>=n-red;c.img=cv.toDataURL('image/jpeg',.88);cells.push(c)}
+    out.cells=cells;
+    const last=cells[n-1],refs=cells.slice(n-red,n-1).filter(c=>c.off!=null).map(c=>c.off);
+    out.lastOff=(last&&last.off!=null&&refs.length)?last.off-med(refs):null;
+    if(opt.ptr!==false){const P=findPointer(W,row);if(P){const S=scaleRead(W,P,row.roll),pt={hub:{x:P.hx/sc,y:P.hy/sc},L:P.L/sc,ang:P.ang,el:P.el};
+        if(S&&!S.fail){pt.ticks=true;pt.pRaw=S.p;pt.j0=S.j0;pt.zeroOff=S.zeroOff;pt.sp=[S.spMin,S.spMax];pt.ok=Math.abs(S.zeroOff)<14&&S.spMax<S.spMin*2.1&&S.detN>=46&&S.detN<=54;pt.detN=S.detN;
+          pt.dialImg=dialView(src,W,P,S).toDataURL('image/jpeg',.9);const rl=ruler(src,W,P,S,S.p);pt.rulerImg=rl?rl.toDataURL('image/jpeg',.9):null}
+        else{pt.ticks=false;pt.fail=S&&S.fail;pt.pRaw=((((P.ang-row.roll)%360)+360)%360)/36;pt.ok=false;pt.dialImg=dialView(src,W,P,null).toDataURL('image/jpeg',.9)}
+        out.ptr=pt}}
+    out.ok=1;return out}
+  return{work,comps,findRow,isRed,med,otsu,cellCrop,glyph,glyphImg,classify,templates,findPointer,polar,tickScan,scaleRead,analyze,dialView,ruler,setSeeds,setLearn,norm,V8}
+})();
+
+/* ===== หน้าปัดจำลองมาตรแมคคานิค (เข็มละเอียด ×0.0001 m³) เป็น SVG ===== */
+function mdialSvg(p,sz,cls){p=((+p||0)%10+10)%10;const T=[];for(let j=0;j<50;j++){const a=j*7.2*Math.PI/180,mj=j%5===0,r1=mj?33:38,r2=45;T.push(`<line x1="${(50+r1*Math.sin(a)).toFixed(1)}" y1="${(50-r1*Math.cos(a)).toFixed(1)}" x2="${(50+r2*Math.sin(a)).toFixed(1)}" y2="${(50-r2*Math.cos(a)).toFixed(1)}" stroke="#1b2530" stroke-width="${mj?1.5:.8}"/>`)}
+  const N=[];for(let k=0;k<10;k++){const a=k*36*Math.PI/180;N.push(`<text x="${(50+25*Math.sin(a)).toFixed(1)}" y="${(50-25*Math.cos(a)+2.4).toFixed(1)}" font-size="7" font-weight="700" text-anchor="middle" fill="#1b2530" font-family="Sarabun,sans-serif">${k}</text>`)}
+  return`<svg class="mdl ${cls||''}" viewBox="0 0 100 100" ${sz?`width="${sz}" height="${sz}"`:''} aria-hidden="true"><circle cx="50" cy="50" r="49" fill="#f6f8fa" stroke="#c4ced6" stroke-width="1.5"/>${T.join('')}${N.join('')}<g transform="rotate(${(p*36).toFixed(1)} 50 50)"><path d="M50 18 C 54 30 57 40 57 50 A7 7 0 1 1 43 50 C 43 40 46 30 50 18 Z" fill="#e11d2e" stroke="#9f1239" stroke-width=".6"/><circle cx="50" cy="50" r="2" fill="#fecaca"/></g></svg>`}
+
+/* ===== MX : อ่านมาตรแมคคานิคจากภาพ (อัตโนมัติ + ตรวจทีละหลักด้วยภาพซูม + เข็มเทียบขีดสเกล) ===== */
+const MX={open:false,step:'pick',busy:'',src:null,res:null,n:7,red:3,ptrOn:true,pmult:.0001,cells:[],p:null,pRaw:null,zs:0,carry:'auto',id:'',slot:null,hint:'',lastOff:null,fail:'',zm:null,assist:'',fname:''};
+try{MRV.setSeeds(MX_SEEDS)}catch(e){}
+try{MRV.setLearn(JSON.parse(localStorage.getItem('smcv4.mrt')||'[]'))}catch(e){}
+function mxOpen(src,opt){opt=opt||{};if(opt.lcd){mrOpen(src,opt);return}
+  Object.assign(MX,{open:true,step:'pick',busy:'',src:null,res:null,cells:[],p:null,pRaw:null,zs:0,fail:'',zm:null,assist:'',n:MR.n,red:MR.red,ptrOn:MR.ptrOn,pmult:MR.pmult,id:(opt.id&&/\d/.test(opt.id)&&String(opt.id).length>=4)?opt.id:'',slot:opt.slot!=null?opt.slot:null,hint:opt.reading?String(opt.reading):''});
+  try{MX.carry=localStorage.getItem('smcv4.mxc')||'auto'}catch(e){}
+  mxRender();if(src)mxLoad(src)}
+function mxClose(){MX.open=false;MX.zm=null;const o=document.getElementById('mx');if(o)o.remove();const z=document.getElementById('mxz');if(z)z.remove();if(!MR.open)document.body.classList.remove('mro')}
+function mxLoad(src){const img=new Image();img.onload=()=>{const mx=1800,sc=Math.min(1,mx/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);MX.src=c;
+    if(typeof src==='string'&&src.indexOf('blob:')===0)URL.revokeObjectURL(src);mxAnalyze()};img.onerror=()=>{toast('เปิดรูปไม่ได้ ลองถ่ายหรือเลือกรูปใหม่');MX.step='pick';mxRender()};img.src=src}
+async function mxAnalyze(){MX.step='busy';MX.busy='กำลังหาช่องตัวเลขและเข็มละเอียด…';mxRender();await new Promise(r=>setTimeout(r,50));
+  let o;try{o=MRV.analyze(MX.src,{n:MX.n,red:MX.red,ptr:MX.ptrOn})}catch(e){o={ok:0,fail:'วิเคราะห์ภาพไม่สำเร็จ: '+(e&&e.message||e)}}
+  MX.res=o;if(!o.ok){MX.fail=o.fail;MX.step='fail';mxRender();return}
+  MX.n=o.n;MX.cells=o.cells.map(c=>Object.assign({},c,{user:false}));MX.lastOff=o.lastOff;MX.p=null;MX.pRaw=null;MX.zs=0;
+  if(MX.ptrOn&&o.ptr){MX.pRaw=o.ptr.pRaw;MX.p=mxP()}
+  MX.step='res';mxRender();mxOcrAssist()}
+const mxP=()=>{if(MX.pRaw==null)return null;let v=Math.round((((MX.pRaw+MX.zs)%10)+10)%10*10)/10;return v>=10?0:v};
+/* รวมเลขลูกกลิ้ง + เข็ม: ถ้าเข็มเกินครึ่งรอบแต่ลูกกลิ้งหลักสุดท้ายโชว์เลขถัดไป (กำลังเลื่อน) ให้ถอยหลักสุดท้ายลง 1 */
+function mxCompose(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);if(!n)return null;const ds=C.map(c=>c.d);if(ds.some(x=>!/^\d$/.test(x)))return null;if(MX.ptrOn&&MX.p==null)return null;
+  const dig=ds.slice(),useP=MX.ptrOn&&MX.p!=null;let note=null;
+  if(useP){const dv=+dig[n-1],p=MX.p;let bor=false,why='';
+    if(MX.carry==='dec')bor=true;else if(MX.carry==='keep')bor=false;
+    else{if(p>=6)bor=true;else if(p<=4)bor=false;else bor=MX.lastOff!=null?MX.lastOff>.1:p>=5}
+    if(bor){dig[n-1]=String((dv+9)%10);note={dv,to:dig[n-1],p,auto:MX.carry==='auto',zero:dv===0}}
+    else if(MX.carry==='auto'&&p>=6)note=null}
+  const ip=dig.slice(0,n-red).join(''),fp=dig.slice(n-red).join(''),str=red?ip+'.'+fp:ip,val=parseFloat(str)+(useP?MX.p*MX.pmult:0);
+  return{dig,str,val,reading:(Math.round(val*1e5)/1e5).toFixed(5).replace(/0+$/,'').replace(/\.$/,'.0'),note,useP}}
+function mxStat(){const C=MX.cells;let bad=0,wn=0;C.forEach(c=>{if(c.user)return;if(c.conf<.3)bad++;else if(c.conf<.6)wn++});
+  const pt=MX.res&&MX.res.ptr,pok=!MX.ptrOn||(pt&&pt.ok&&MX.p!=null);return{bad,wn,pok,ok:bad+wn===0&&pok}}
+const mxWt=i=>{const n=MX.cells.length,red=MX.red,k=n-1-i;return i>=n-red?({0:'1 ลิตร',1:'10 ลิตร',2:'100 ลิตร'})[k]||('10^-'+(k+1)):'×'+Math.pow(10,k-red).toLocaleString('en-US')};
+function mxRegHtml(c){const n=c.dig.length,red=Math.min(MX.red,n);return`<div class="mxreg">${c.dig.map((d,i)=>`${i===n-red&&red?'<i class="mxdot">.</i>':''}<b class="${i>=n-red?'rd':'bk'}">${esc(d)}</b>`).join('')}<small>m³</small></div>`}
+function mxHero(){const c=mxCompose(),st=mxStat();
+  if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดด้านล่างก่อน':'ใส่ตัวเลขให้ครบทุกหลักด้านล่าง'}</div></div></div>`;
+  const L=c.val*1000;
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ</small>${mxRegHtml(c)}
+    <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
+    <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน — ตรวจดูภาพเทียบอีกครั้งแล้วกดยืนยัน':'⚠ มี '+(st.bad+st.wn+(st.pok?0:1))+' จุดที่ควรตรวจด้วยตา (กรอบสีส้ม)'}</div></div>
+    ${c.useP?`<div class="mxh-r">${mdialSvg(MX.p,118)}<small>เข็มละเอียด <b>${MX.p.toFixed(1)}</b></small></div>`:''}</div>`}
+function mxNote(){const c=mxCompose();if(!c||!c.useP)return'';const n=MX.cells.length,dv=MX.cells[n-1].d,p=MX.p;
+  const opt=(k,l)=>`<button class="${MX.carry===k?'on':''}" data-a="mxcarry" data-v="${k}">${l}</button>`;
+  let msg='';
+  if(c.note)msg=`<b>ลูกกลิ้งหลักสุดท้ายกำลังเลื่อน</b> — ภาพโชว์ “${esc(dv)}” แต่เข็มละเอียดอยู่ที่ <b>${p.toFixed(1)}</b> (เกินครึ่งรอบ) แปลว่าค่าจริงของหลักนี้ยังเป็น <b>${(+c.note.to+p/10).toFixed(2)}</b> (ยังไม่ถึง ${esc(dv)}) จึงใช้ <b>${esc(c.note.to)}</b>${c.note.zero?'<br><span class="mx-wn">⚠ หลักสุดท้ายถอยจาก 0 เป็น 9 — ตรวจลูกกลิ้งหลักก่อนหน้าด้วยว่าเลื่อนไปแล้วหรือยัง</span>':''}`;
+  else msg=`ลูกกลิ้งหลักสุดท้ายอ่านเป็น <b>${esc(dv)}</b> และเข็มอยู่ที่ <b>${p.toFixed(1)}</b> — สอดคล้องกัน`;
+  return`<div class="mxn"><div class="mxn-t">⚙ ตรวจความสอดคล้องลูกกลิ้ง ↔ เข็ม</div><p>${msg}</p><div class="mxn-s"><span>ตัดสินหลักสุดท้าย:</span>${opt('auto','อัตโนมัติ')}${opt('keep','ใช้ตามที่เห็น ('+esc(dv)+')')}${opt('dec','ลดลง 1 ('+((+dv+9)%10)+')')}</div></div>`}
+function mxTile(c,i){const red=i>=MX.cells.length-MX.red,st=c.user?'ok':c.conf>=.6?'ok':c.conf>=.3?'wn':'bad',pct=c.user?100:Math.round(c.conf*100);
+  return`<div class="mxt ${st} ${red?'rd':''}" data-ti="${i}"><button class="mxt-i" data-a="mxzc" data-v="${i}" aria-label="ซูมหลักที่ ${i+1}"><img src="${c.img}" alt=""><span>🔍</span></button>
+    <input class="mxt-n" data-mxd="${i}" maxlength="1" inputmode="numeric" autocomplete="off" value="${esc(c.d)}" aria-label="เลขหลักที่ ${i+1}">
+    <div class="mxt-b"><i style="width:${pct}%"></i></div><small>${c.user?'แก้เอง':c.ocr?'ยืนยันด้วย OCR':pct+'%'}</small></div>`}
+function mxBody(){
+  if(MX.step==='pick')return`<div class="mx-pick"><div class="mx-pk-ic">📷</div><h3>ถ่ายหน้าปัดมาตรแมคคานิค</h3>
+    <p>ถ่ายให้เห็น <b>ช่องตัวเลข</b> และ <b>หน้าปัดเข็มเล็ก</b> พร้อมกันในรูปเดียว — ระบบหาตำแหน่งเองและให้คุณซูมตรวจทีละหลัก</p>
+    <div class="mx-tips"><span>☀ หลีกเลี่ยงแสงสะท้อน</span><span>📐 ถือให้หน้าปัดตั้งตรง</span><span>🔎 เข้าใกล้พอให้ตัวเลขชัด</span></div>
+    <label class="btn p mr-b">📷 ถ่ายภาพ<input type="file" accept="image/*" capture="environment" hidden data-mxf></label> <label class="btn mr-b">🖼 เลือกรูปจากเครื่อง<input type="file" accept="image/*" hidden data-mxf></label>
+    <p class="mr-tip">ถ้าอ่านรูปไม่ได้ ปิดหน้านี้แล้วพิมพ์ค่าในช่อง “คีย์ / รับค่าหน้าปัด” ได้ตามปกติ</p></div>`;
+  if(MX.step==='busy')return`<div class="mr-busy"><div class="mr-sp"></div><b>${esc(MX.busy)}</b><small>ใช้เวลาไม่กี่วินาที</small></div>`;
+  if(MX.step==='fail')return`<div class="mx-fail"><div class="mx-pk-ic">🔍</div><h3>อ่านอัตโนมัติไม่สำเร็จ</h3><p>${esc(MX.fail)}</p><div class="mr-ctl" style="justify-content:center"><button class="btn p" data-a="mxnew">📷 ถ่าย/เลือกรูปใหม่</button><button class="btn" data-a="mxmanual">✎ ลากกรอบเอง</button></div></div>`;
+  const n=MX.cells.length,nb=n-MX.red,pt=MX.res&&MX.res.ptr,N=Math.max(S.batch.nm,S.meters.length);
+  const tiles=MX.cells.map((c,i)=>mxTile(c,i));
+  const sec1=`<section class="mxs"><div class="mxs-h"><span class="mxs-n">1</span><div><h4>ตัวเลขทีละหลัก <small>แตะรูปเพื่อซูม · พิมพ์แก้ได้ทันที</small></h4></div></div>
+    <div class="mxg-w"><div class="mxg"><div class="mxg-h bk">ลูกกลิ้งดำ · ลูกบาศก์เมตร (m³)</div><div class="mxg-t" style="--c:${nb}">${tiles.slice(0,nb).join('')}</div></div>
+    <div class="mxg"><div class="mxg-h rd">ลูกกลิ้งแดง · เศษ (ลิตร)</div><div class="mxg-t" style="--c:${MX.red}">${tiles.slice(nb).join('')}</div></div></div>
+    ${MX.assist?`<div class="mx-as" id="mxAs">⏳ ${esc(MX.assist)}</div>`:'<div class="mx-as" id="mxAs"></div>'}</section>`;
+  let sec2='';
+  if(MX.ptrOn){if(pt&&MX.p!=null)sec2=`<section class="mxs"><div class="mxs-h"><span class="mxs-n">2</span><div><h4>เข็มละเอียด <small>เทียบกับขีดสเกลบนหน้าปัดจริง</small></h4></div></div>
+      <div class="mxp"><button class="mxp-d" data-a="mxzd" aria-label="ซูมหน้าปัด"><img src="${pt.dialImg}" alt=""><span>🔍 ซูม</span></button>
+      <div class="mxp-r">${pt.rulerImg?`<button class="mxp-ru" data-a="mxzr"><img src="${pt.rulerImg}" alt=""></button><small class="mxp-cap">แถบสเกลที่คลี่เป็นเส้นตรง · เส้นเขียว = ตำแหน่งปลายเข็ม · ตัวเลข = ค่าบนหน้าปัด</small>`:'<div class="mx-wn">ไม่พบขีดสเกล — ใช้ปุ่มปรับค่าด้านล่างเอง</div>'}
+      <div class="mxp-v"><button data-a="mxp" data-v="-1">− 0.1</button><div><b id="mxPv">${MX.p.toFixed(1)}</b><small id="mxPn"></small></div><button data-a="mxp" data-v="1">+ 0.1</button></div>
+      <div class="mxp-m">${pt.ticks?`<span class="${pt.ok?'ok':'wn'}">${pt.ok?'✔':'⚠'} พบขีดสเกล ${pt.detN} ขีด · เลข 0 อยู่ตำแหน่งบนสุด</span>`:'<span class="wn">⚠ ประมาณจากมุมเข็ม (ไม่พบขีดสเกลครบ)</span>'}
+        <span class="mxp-z">เลข 0 ผิดตำแหน่ง? <button data-a="mxzs" data-v="-1">◀ หมุน 1 เลข</button><button data-a="mxzs" data-v="1">หมุน 1 เลข ▶</button></span></div></div></div></section>`;
+    else sec2=`<section class="mxs"><div class="mxs-h"><span class="mxs-n">2</span><div><h4>เข็มละเอียด</h4></div></div><div class="mxp-no">ไม่พบเข็มสีแดงในรูป — ถ่ายให้เห็นหน้าปัดเล็กด้วย หรือใส่ค่าเข็มเอง<div class="mxp-v"><button data-a="mxp" data-v="-1">− 0.1</button><div><b id="mxPv">${MX.p==null?'—':MX.p.toFixed(1)}</b></div><button data-a="mxp" data-v="1">+ 0.1</button></div></div></section>`}
+  const form=`<div class="mr-fl"><label>ตำแหน่ง<select id="mxSlot">${Array.from({length:N},(_,k)=>{const mm=S.meters[k]||{id:''};return`<option value="${k}" ${(MX.slot!=null?MX.slot===k:k===(nextSlot(Math.min(S.cur,Math.max(S.plan.length-1,0)),pointState(Math.min(S.cur,Math.max(S.plan.length-1,0))))))?'selected':''}>#${k+1} ${mm.id?esc(mm.id):'(ว่าง)'}</option>`}).join('')}</select></label>
+    <label>Meter ID / เลขซีเรียล (ไม่บังคับ)<input id="mxId" type="text" value="${esc(MX.id)}" placeholder="เว้นว่างได้ — ใช้ตำแหน่งแทน" autocomplete="off"></label></div>`;
+  const adv=`<details class="mx-adv"><summary>⚙ ตั้งค่าการอ่าน</summary><div class="mr-ctl"><div class="mr-stp"><span>จำนวนหลักทั้งหมด</span><button data-a="mxn" data-v="-1">−</button><b>${MX.n}</b><button data-a="mxn" data-v="1">+</button></div>
+    <div class="mr-stp"><span>เลขสีแดง</span><button data-a="mxr" data-v="-1">−</button><b>${MX.red}</b><button data-a="mxr" data-v="1">+</button></div>
+    <label class="mr-ck"><input type="checkbox" data-a="mxptr" ${MX.ptrOn?'checked':''}> อ่านเข็มละเอียดด้วย</label>
+    <label class="mr-stp"><span>1 ช่องเข็ม =</span><select data-a="mxmult"><option value="0.0001" ${MX.pmult===.0001?'selected':''}>0.0001 m³</option><option value="0.001" ${MX.pmult===.001?'selected':''}>0.001 m³</option><option value="0.00001" ${MX.pmult===.00001?'selected':''}>0.00001 m³</option></select></label></div></details>`;
+  return`<div id="mxHero">${mxHero()}</div>${MX.hint?`<div class="mx-hint">แอปอ่านเบื้องต้นได้: <b>${esc(MX.hint)}</b></div>`:''}${sec1}${sec2}<div id="mxNote">${mxNote()}</div>${form}${adv}
+    <div class="mr-ctl mx-act"><button class="btn" data-a="mxnew">📷 ถ่ายใหม่</button><button class="btn" data-a="mxfull">🔍 ดูรูปเต็ม</button><button class="btn" data-a="mxmanual">✎ ลากกรอบเอง</button><span class="sp"></span><button class="btn p mx-ok" id="mxOk" data-a="mxok">✔ ยืนยัน — ใช้ค่านี้ทดสอบ</button></div>`}
+function mxRender(){let o=document.getElementById('mx');if(!MX.open){if(o)o.remove();return}
+  if(!o){o=document.createElement('div');o.id='mx';document.body.appendChild(o)}document.body.classList.add('mro');
+  const st=[['pick','ถ่าย / เลือกรูป'],['busy','วิเคราะห์อัตโนมัติ'],['res','ตรวจ & ยืนยัน']],ix=MX.step==='pick'?0:MX.step==='busy'?1:2;
+  const stp=`<div class="mr-st">${st.map((s,k)=>`<span class="${ix===k?'on':ix>k?'dn':''}"><b>${ix>k?'✔':k+1}</b>${s[1]}</span>`).join('<i></i>')}</div>`;
+  const keep=o.querySelector('.mx-in'),sy=keep?keep.scrollTop:0;
+  o.innerHTML=`<div class="mx-in"><div class="mx-hd"><div class="mx-tt"><span class="mx-ic">🔬</span><div><h2>อ่านมาตรแมคคานิคจากภาพ</h2><small>ตรวจทีละหลัก · ซูมดูได้ · เข็มละเอียดเทียบขีดสเกลจริง</small></div></div><button class="mr-x" data-a="mxclose" aria-label="ปิด">✕</button></div>${stp}${mxBody()}</div>`;
+  if(MX.step==='res'){const nn=o.querySelector('.mx-in');if(nn&&sy)nn.scrollTop=sy;mxUpd()}}
+function mxUpd(){const h=document.getElementById('mxHero');if(h)h.innerHTML=mxHero();
+  const n=document.getElementById('mxNote');if(n)n.innerHTML=mxNote();const b=document.getElementById('mxOk');if(b)b.disabled=!mxCompose();
+  const pv=document.getElementById('mxPv');if(pv)pv.textContent=MX.p==null?'—':MX.p.toFixed(1);
+  const pn=document.getElementById('mxPn');if(pn&&MX.p!=null)pn.textContent='= +'+(MX.p*MX.pmult).toFixed(5)+' m³ ('+(MX.p/10).toFixed(2)+' ลิตร)'}
+function mxTiles(){document.querySelectorAll('.mxt').forEach(t=>{const i=+t.dataset.ti,c=MX.cells[i];if(!c)return;const st=c.user?'ok':c.conf>=.6?'ok':c.conf>=.3?'wn':'bad';t.className='mxt '+st+(t.classList.contains('rd')?' rd':'');const inp=t.querySelector('input');if(inp&&document.activeElement!==inp)inp.value=c.d;const bar=t.querySelector('.mxt-b i');if(bar)bar.style.width=(c.user?100:Math.round(c.conf*100))+'%';const sm=t.querySelector('small');if(sm)sm.textContent=c.user?'แก้เอง':c.ocr?'ยืนยันด้วย OCR':Math.round(c.conf*100)+'%'})}
+async function mxOcrAssist(){const todo=MX.cells.map((c,i)=>({c,i})).filter(o=>!o.c.user&&o.c.conf<.55);if(!todo.length||!navigator.onLine||!MX.res||!MX.res.geom)return;
+  const g=MX.res.geom,stamp=MX.src;MX.assist='ตรวจซ้ำหลักที่ไม่มั่นใจด้วย OCR…';const as=document.getElementById('mxAs');if(as)as.textContent='⏳ '+MX.assist;
+  let eng;try{eng=await mrEngine()}catch(e){MX.assist='';const a=document.getElementById('mxAs');if(a)a.textContent='';return}
+  for(const{c,i}of todo){if(MX.src!==stamp||!MX.open)return;const cv=MRV.cellCrop(MX.src,g.cx[i],g.cy[i],g.roll,g.p,g.Hd,130),votes={};
+    for(const o of MRV.V8){const G=MRV.glyph(cv,g.Hd,130,o);if(!G.ok)continue;try{const r=await eng.recognize(MRV.glyphImg(G)),t=String(r.data.text).replace(/\D/g,'');if(t.length===1&&r.data.confidence>55)votes[t]=(votes[t]||0)+1}catch(e){}}
+    const top=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0];if(top&&top[1]>=2&&!c.user){c.d=top[0];c.conf=Math.max(c.conf,.62);c.ocr=1}}
+  MX.assist='';const a=document.getElementById('mxAs');if(a)a.textContent='';mxTiles();mxUpd()}
+function mxLearn(){try{const L=JSON.parse(localStorage.getItem('smcv4.mrt')||'[]');MX.cells.forEach(c=>{if(!c.vec||!/^\d$/.test(c.d))return;if(!(c.user||c.conf>=.75))return;const same=L.filter(t=>t.d===+c.d);if(same.length>=4)L.splice(L.indexOf(same[0]),1);L.push({d:+c.d,v:c.vec,ar:c.ar})});
+    const keep=L.slice(-60);localStorage.setItem('smcv4.mrt',JSON.stringify(keep));MRV.setLearn(keep)}catch(e){}}
+/* ภาพซูม (lightbox) */
+function mxZ(){let z=document.getElementById('mxz');if(!MX.zm){if(z)z.remove();return}
+  if(!z){z=document.createElement('div');z.id='mxz';document.body.appendChild(z)}const m=MX.zm;let img='',ft='',tt=m.title;
+  if(m.kind==='cell'){const g=MX.res.geom,cv=MRV.cellCrop(MX.src,g.cx[m.i],g.cy[m.i],g.roll,g.p,g.Hd,360);img=cv.toDataURL('image/jpeg',.92);const c=MX.cells[m.i];
+    ft=`<div class="mxz-k">${[0,1,2,3,4,5,6,7,8,9].map(d=>`<button class="${c.d===String(d)?'on':''}" data-a="mxzk" data-v="${d}">${d}</button>`).join('')}</div><small>กดเลขที่เห็นในรูป — ค่าจะถูกใส่ให้ทันที${c.alts&&c.alts.length?' · ระบบสงสัย: '+c.alts.map(a=>a.d).join(', '):''}</small>`}
+  else if(m.kind==='dial'){img=MX.res.ptr.dialImg;ft='<small>เส้นประเขียว = แนวเข็ม · ขีดฟ้า = ขีดสเกลที่ระบบหาเจอ (วงกลมคือเลข 0–9)</small>'}
+  else if(m.kind==='ruler'){img=MX.res.ptr.rulerImg;ft='<small>ตัวเลขใต้ขีด = ค่าที่ขีดนั้น (ขีดละ 0.2) · เส้นเขียว = ปลายเข็ม</small>'}
+  else if(m.kind==='full'){img=mxFullUrl();ft='<small>กรอบฟ้า/แดง = ตำแหน่งลูกกลิ้งที่ตัด · ใช้ปุ่ม + − ซูม แล้วเลื่อนดู</small>'}
+  const adj=(m.kind==='dial'||m.kind==='ruler')&&MX.p!=null?`<div class="mxp-v" style="margin:8px 0"><button data-a="mxp" data-v="-1">− 0.1</button><div><b id="mxPz">${MX.p.toFixed(1)}</b></div><button data-a="mxp" data-v="1">+ 0.1</button></div>`:'';
+  z.innerHTML=`<div class="mxz-in"><div class="mxz-hd"><b>${esc(tt)}</b><span><button data-a="mxzz" data-v="-1">−</button><button data-a="mxzz" data-v="0">พอดี</button><button data-a="mxzz" data-v="1">＋</button><button data-a="mxzx">✕</button></span></div>
+    <div class="mxz-sc" id="mxzSc"><img id="mxzImg" src="${img}" style="width:${m.z*100}%" alt=""></div>${adj}<div class="mxz-ft">${ft}</div></div>`}
+function mxFullUrl(){const s=MX.src,k=Math.min(1,1800/Math.max(s.width,s.height)),c=document.createElement('canvas');c.width=Math.round(s.width*k);c.height=Math.round(s.height*k);const x=c.getContext('2d');x.drawImage(s,0,0,c.width,c.height);const g=MX.res.geom;
+  MX.cells.forEach((cl,i)=>{const w=g.p*.86*k,h=g.Hd*1.6*k;x.save();x.translate(g.cx[i]*k,g.cy[i]*k);x.rotate(g.roll*Math.PI/180);x.strokeStyle=cl.red?'#f87171':'#22d3ee';x.lineWidth=Math.max(2,3*k);x.strokeRect(-w/2,-h/2,w,h);x.restore()});
+  const pt=MX.res.ptr;if(pt){const hx=pt.hub.x*k,hy=pt.hub.y*k,a=pt.ang*Math.PI/180,R=pt.L*2.1*k;x.strokeStyle='#4ade80';x.lineWidth=Math.max(2,3*k);x.setLineDash([10,7]);x.beginPath();x.moveTo(hx,hy);x.lineTo(hx+R*Math.sin(a),hy-R*Math.cos(a));x.stroke();x.setLineDash([]);x.fillStyle='#fff';x.beginPath();x.arc(hx,hy,5,0,7);x.fill();
+    x.strokeStyle='#fbbf24';x.lineWidth=Math.max(2,3*k);x.beginPath();x.arc(hx,hy,pt.L*2.1*k,0,7);x.stroke()}
+  return c.toDataURL('image/jpeg',.9)}
+function mxManual(){const src=MX.src,id=MX.id,slot=MX.slot,hint=MX.hint;mxClose();mrOpen(null,{id,slot,reading:hint});if(!src)return;MR.src=src;MR.step=2;MR.act='drum';MR.pbox=null;MR.pdet=null;MR.pval=null;MR.pzero=0;MR.zeroSet=false;MR.zeroOk=false;mrFit();if(MR.ptrOn)mrPtrAuto();mrZoom(MR.autoOk);mrRender()}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-a^="mx"]');if(!t)return;const a=t.dataset.a,v=+t.dataset.v;
+  if(a==='mxclose'){mxClose()}
+  else if(a==='mxnew'){MX.step='pick';MX.src=null;MX.cells=[];mxRender()}
+  else if(a==='mxmanual'){mxManual()}
+  else if(a==='mxzc'){MX.zm={kind:'cell',i:v,z:1,title:'หลักที่ '+(v+1)+' · '+(v>=MX.cells.length-MX.red?'ลูกกลิ้งแดง':'ลูกกลิ้งดำ')};mxZ()}
+  else if(a==='mxzd'){MX.zm={kind:'dial',z:1,title:'หน้าปัดเข็มละเอียด'};mxZ()}
+  else if(a==='mxzr'){MX.zm={kind:'ruler',z:1,title:'แถบสเกลเข็มละเอียด'};mxZ()}
+  else if(a==='mxfull'){MX.zm={kind:'full',z:1,title:'รูปเต็ม + ตำแหน่งที่ตัด'};mxZ()}
+  else if(a==='mxzx'){MX.zm=null;mxZ()}
+  else if(a==='mxzz'){if(!MX.zm)return;MX.zm.z=v===0?1:Math.max(1,Math.min(6,MX.zm.z+v*(MX.zm.z>=2?1:.5)));const im=document.getElementById('mxzImg');if(im)im.style.width=MX.zm.z*100+'%'}
+  else if(a==='mxzk'){if(!MX.zm||MX.zm.kind!=='cell')return;const c=MX.cells[MX.zm.i];c.d=String(v);c.user=true;c.conf=1;MX.zm=null;mxZ();mxTiles();mxUpd()}
+  else if(a==='mxp'){const b0=MX.p==null?0:MX.p,np=Math.round((((b0+v/10)%10)+10)%10*10)/10;MX.pRaw=(((np-MX.zs)%10)+10)%10;MX.p=np>=10?0:np;mxUpd();const z=document.getElementById('mxPz');if(z)z.textContent=MX.p.toFixed(1)}
+  else if(a==='mxzs'){if(MX.pRaw==null)return;MX.zs+=v;MX.p=mxP();mxUpd()}
+  else if(a==='mxcarry'){MX.carry=t.dataset.v;try{localStorage.setItem('smcv4.mxc',MX.carry)}catch(x){}mxUpd()}
+  else if(a==='mxn'){MR.n=Math.max(4,Math.min(9,MR.n+v));if(MR.red>MR.n-1)MR.red=MR.n-1;mrSaveCfg();MX.n=MR.n;MX.red=MR.red;mxAnalyze()}
+  else if(a==='mxr'){MR.red=Math.max(0,Math.min(Math.min(5,MR.n-1),MR.red+v));mrSaveCfg();MX.red=MR.red;mxAnalyze()}
+  else if(a==='mxptr'){MR.ptrOn=t.checked;mrSaveCfg();MX.ptrOn=MR.ptrOn;mxAnalyze()}
+  else if(a==='mxok'){const c=mxCompose();if(!c){toast('ใส่ตัวเลขให้ครบทุกหลักก่อน');return}
+    const id=(document.getElementById('mxId')||{}).value||'',sl=document.getElementById('mxSlot'),slot=sl&&sl.value!==''?+sl.value:null;
+    if(rlBridge()&&!RL.solo&&!rlAuto()){mxClose();TAB='run';render();rlNeedPair();return}
+    const ok=mechIn({id:id.trim(),reading:c.reading,slot,by:'photo'},rlBridge()?'app':'web');if(ok!==false){mxLearn();mxClose();TAB='run';render();scrollTo(0,0)}}});
+document.addEventListener('change',e=>{const f=e.target;if(f&&f.dataset&&f.dataset.a==='mxmult'){MR.pmult=+f.value;mrSaveCfg();MX.pmult=MR.pmult;mxUpd();return}
+  if(f&&f.hasAttribute&&f.hasAttribute('data-mxf')&&f.files&&f.files[0]){MX.fname=f.files[0].name;mxLoad(URL.createObjectURL(f.files[0]));f.value=''}});
+document.addEventListener('input',e=>{const f=e.target;if(!f||!f.dataset||f.dataset.mxd==null)return;const i=+f.dataset.mxd,v=String(f.value).replace(/\D/g,'').slice(-1);f.value=v;const c=MX.cells[i];if(c){c.d=v;c.user=true;c.conf=v?1:0}mxTiles();mxUpd();
+  if(v){const nx=document.querySelector('[data-mxd="'+(i+1)+'"]');if(nx){nx.focus();nx.select()}}});
+document.addEventListener('keydown',e=>{if(!MX.open)return;if(e.key==='Escape'){if(MX.zm){MX.zm=null;mxZ()}else mxClose()}});
+
 
 /* ===== ลงทะเบียนมิเตอร์ใหม่ → ทะเบียนคุณภาพ (Google Sheet) ทันทีหลังเขียนสำเร็จ ===== */
 function qrRegister(e){const h=qrHost();if(!h||!S.pv||S.pv.autoReg===false)return null;
