@@ -713,7 +713,7 @@ function applyRead(r,src){
   if(had)role+=' (อ่านซ้ำตัวเดิม)';
   if(r.rev==null&&!r.mech)beep('warn');
   LAST={r,id:r.id,role,slot:S.meters.indexOf(m),pi,t:Date.now()};if(!(r.issues&&r.issues[0]&&/ขนาดมิเตอร์/.test(r.issues[0])))beep(c&&c.valid&&!c.pass?'bad':'ok');
-  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³'+(had?' — ⚠ ทับค่าเดิม ถ้าเป็นคนละตัวแต่ Meter ID ซ้ำกัน ระบบแยกไม่ได้ ต้องแก้ ID ไม่ให้ซ้ำ':'')+(r.rev==null&&!r.mech?' — ⚠ ไม่ได้อ่านจำนวนรอบ: ในแอป SMCV4 Reader กดปุ่มโหมดเป็น “แท่นเทส” แล้วแตะใหม่':''),(had||r.rev==null)?6000:2400);
+  toast('✔ ตำแหน่ง #'+(LAST.slot+1)+' · '+r.id+' · '+role+' · '+fx(r.vol/1e5,5)+' m³'+(window.LNOTE?' (จาก '+window.LNOTE+')':'')+(had?' — ⚠ ทับค่าเดิม ถ้าเป็นคนละตัวแต่ Meter ID ซ้ำกัน ระบบแยกไม่ได้ ต้องแก้ ID ไม่ให้ซ้ำ':'')+(r.rev==null&&!r.mech?' — ⚠ ไม่ได้อ่านจำนวนรอบ: ในแอป SMCV4 Reader กดปุ่มโหมดเป็น “แท่นเทส” แล้วแตะใหม่':''),(had||r.rev==null)?6000:2400);
   r.issues&&r.issues.length&&toast(r.id+': '+r.issues[0],3600);
   save();render();return true}
 function ingest(u,part,meta,src){const r=parseNfc(u,part,meta);if(RL.role==='send'&&RL.code&&src==='app'&&!RL.solo)return rlSend(r);return applyRead(r,src)}
@@ -877,7 +877,9 @@ function nextSlot(pi,st){const key=st.step==='start'?'s':'e',N=Math.max(S.batch.
   for(let i=0;i<N;i++){const m=S.meters[i];if(!m||!m.id)return i;const rd=((S.rd[pi]||{})[m.id])||{};if(!rd[key])return i}return null}
 function renameMeter(i,nid){const m=S.meters[i],old=m&&m.id;if(!old||old===nid)return;Object.keys(S.rd).forEach(pi=>{const o=S.rd[pi];if(o&&o[old]&&!o[nid]){o[nid]=o[old];delete o[old]}});m.id=nid}
 function mechIn(p,src){
-  const m3=parseReading(p.reading,mfracN());
+  let m3=parseReading(p.reading,mfracN()),lnote='';
+  {const rs=String(p.reading==null?'':p.reading).trim().replace(/\s+/g,'').replace(/,/g,'.'),ip=(rs.split('.')[0]||'').replace(/\D/g,'');
+   if(m3!=null&&!p.m3&&MECH()&&/^\d+\.\d+$/.test(rs)&&ip.length>=1&&ip.length<=3){m3=m3/1000;lnote=rs+' ลิตร → '+m3.toFixed(5)+' m³'}window.LNOTE=lnote}
   if(m3==null){toast('อ่านค่าหน้าปัดไม่ได้ — ใส่ตัวเลข เช่น 00123.456 หรือ 00123456',3400);beep('bad');return false}
   let id=String(p.id||'').trim().toUpperCase().replace(/\s+/g,''),i=(p.slot!=null&&p.slot!=='')?+p.slot:null;
   if(i!=null){while(S.meters.length<=i)S.meters.push({id:'',size:null,k:null});if(id&&S.meters[i].id&&S.meters[i].id!==id&&!S.meters.some(x=>x.id===id))renameMeter(i,id);SELSLOT=i}
@@ -892,7 +894,7 @@ function kbSave(){const pi=Math.min(S.cur,S.plan.length-1),st=pointState(pi);
   if(pe&&pe.value.trim()&&(!(pt>=0&&pt<10))){toast('เข็มละเอียดต้องอยู่ระหว่าง 0 – 9.9');pe.focus();return}
   let rv=val;if(pt>=0&&pt<10){const b=parseFloat(val.replace(',','.'));if(isNaN(b)){toast('ค่าที่อ่านไม่ถูกต้อง');return}rv=String(Number((b+pt*0.0001).toFixed(5)))}
   KEYSLOT=null;KBCLR=true;KBFOCUS='kbVal';
-  if(!mechIn({id,reading:rv,slot:i},'web')){KBCLR=false}else if(pe)pe.value=''}
+  if(!mechIn({id,reading:rv,slot:i,m3:true},'web')){KBCLR=false}else if(pe)pe.value=''}
 function keyBar(pi,st,N){if(!MECH())return'';
   if(st.step!=='start'&&st.step!=='end')return`<div class="card keybar"><h2><em>⌨</em>คีย์ / รับค่าหน้าปัดมาตรแมคคานิค</h2><p class="sub">${st.step==='run'?'กำลังปล่อยน้ำ — เมื่อกด ■ หยุดน้ำ จะเริ่มอ่านค่าสิ้นสุดได้':'จุดนี้ยืนยันแล้ว'}</p></div>`;
   const i=KEYSLOT!=null?KEYSLOT:nextSlot(pi,st),m=i!=null?S.meters[i]:null,key=st.step==='start'?'s':'e';
@@ -1962,7 +1964,7 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   else if(a==='mrok'){const val=mrReading();if(!val){toast('ใส่ตัวเลขให้ครบทุกหลักก่อน');return}
     const id=(document.getElementById('mrId')||{}).value||'',sl=document.getElementById('mrSlot'),slot=sl&&sl.value!==''?+sl.value:null;
     if(rlBridge()&&!RL.solo&&!rlAuto()){mrClose();TAB='run';render();rlNeedPair();return}
-    const ok=mechIn({id:id.trim(),reading:val,slot,by:'photo'},rlBridge()?'app':'web');if(ok!==false){mrClose();TAB='run';render();scrollTo(0,0)}}});
+    const ok=mechIn({id:id.trim(),reading:val,slot,by:'photo',m3:true},rlBridge()?'app':'web');if(ok!==false){mrClose();TAB='run';render();scrollTo(0,0)}}});
 document.addEventListener('change',e=>{const f=e.target;if(f&&f.dataset&&f.dataset.a==='mrmult'){MR.pmult=+f.value;mrSaveCfg();mrRender();return}
   if(f&&f.hasAttribute&&f.hasAttribute('data-mrf')&&f.files&&f.files[0]){MR.fname=f.files[0].name;mrLoad(URL.createObjectURL(f.files[0]));f.value=''}});
 document.addEventListener('input',e=>{const f=e.target;if(f&&f.dataset&&f.dataset.fwin){const v=String(f.value).replace(/[^0-9.]/g,'');if(f.dataset.fwin==='wr')S.wr.fwv=v;else S.pv.fwv=v;save();clearTimeout(window.__fwT);window.__fwT=setTimeout(()=>{const p=f.selectionStart;render();const g=document.querySelector('[data-fwin="'+f.dataset.fwin+'"]');if(g){g.focus();try{g.setSelectionRange(p,p)}catch(_){}}},500);return}if(!f||!f.dataset||f.dataset.mrd==null)return;const i=+f.dataset.mrd,v=String(f.value).replace(/\D/g,'').slice(-1);f.value=v;if(MR.cells[i]){MR.cells[i].d=v;MR.cells[i].conf=v?1:0}mrUpdVal();
@@ -2354,7 +2356,7 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   else if(a==='mxok'){const c=mxCompose();if(!c){toast('ใส่ตัวเลขให้ครบทุกหลักก่อน');return}
     const id=(document.getElementById('mxId')||{}).value||'',sl=document.getElementById('mxSlot'),slot=sl&&sl.value!==''?+sl.value:null;
     if(rlBridge()&&!RL.solo&&!rlAuto()){mxClose();TAB='run';render();rlNeedPair();return}
-    const ok=mechIn({id:id.trim(),reading:c.reading,slot,by:'photo'},rlBridge()?'app':'web');if(ok!==false){mxLearn();mxClose();TAB='run';render();scrollTo(0,0)}}});
+    const ok=mechIn({id:id.trim(),reading:c.reading,slot,by:'photo',m3:true},rlBridge()?'app':'web');if(ok!==false){mxLearn();mxClose();TAB='run';render();scrollTo(0,0)}}});
 document.addEventListener('change',e=>{const f=e.target;if(f&&f.dataset&&f.dataset.a==='mxmult'){MR.pmult=+f.value;mrSaveCfg();MX.pmult=MR.pmult;mxUpd();return}
   if(f&&f.hasAttribute&&f.hasAttribute('data-mxf')&&f.files&&f.files[0]){MX.fname=f.files[0].name;mxLoad(URL.createObjectURL(f.files[0]));f.value=''}});
 document.addEventListener('input',e=>{const f=e.target;if(!f||!f.dataset||f.dataset.mxd==null)return;const i=+f.dataset.mxd,v=String(f.value).replace(/\D/g,'').slice(-1);f.value=v;const c=MX.cells[i];if(c){c.d=v;c.user=true;c.conf=v?1:0}mxTiles();mxUpd();
