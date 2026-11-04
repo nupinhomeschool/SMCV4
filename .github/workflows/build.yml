@@ -261,7 +261,7 @@ jobs:
               companion object {
                   // แก้เป็น URL Web App ของคุณ
                   const val WEB_APP_URL = "https://your-webapp.example.com/"
-                  private const val VERSION = "v28"
+                  private const val VERSION = "v31"
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
@@ -801,7 +801,7 @@ jobs:
               }
 
               /** ช่วงที่อ่านในโหมด "อ่านเร็ว": Addr 68–83 (Command · Meter ID · ขนาด · เวลา · วันที่) และ 188–211 (ค่าล่าสุด 24 ไบต์) = 10 blocks */
-              private val QUICK_RANGES: List<IntArray> = listOf(intArrayOf(68, 16), intArrayOf(184, 28))
+              private val QUICK_RANGES: List<IntArray> = listOf(intArrayOf(68, 16), intArrayOf(180, 32))
 
               /** โหมดแท่นเทส: Addr 68–211 = Meter ID · ขนาด · K1–K20 · จำนวนรอบ (184–186) · ค่าล่าสุด = 36 blocks */
               private val BENCH_RANGES: List<IntArray> = listOf(intArrayOf(68, 144))
@@ -2408,7 +2408,7 @@ jobs:
 
               private fun hexBytes(h: String): ByteArray = ByteArray(h.length / 2) { i -> h.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
 
-              /** อนุญาตเฉพาะ 78–83 (เวลา) · 84–163 (K) · 166–170 (ช่วงบันทึก/ทิศทาง/UART/โหมดคำนวณ) และคำสั่ง 68–71 */
+              /** อนุญาตเฉพาะ 78–83 (เวลา) · 84–163 (K) · 166–170 (ช่วงบันทึก/ทิศทาง/UART/โหมดคำนวณ) · 180–183 (เวอร์ชันเฟิร์มแวร์) และคำสั่ง 68–71 */
               private fun validateJob(j: JSONObject): String? {
                   try {
                       if (j.optString("op", "") == "verify") {
@@ -2422,7 +2422,7 @@ jobs:
                           val hx = p.getString("h")
                           if (hx.isEmpty() || hx.length % 2 != 0 || !Regex("^[0-9A-Fa-f]+$").matches(hx)) return "ข้อมูลเขียนไม่ถูกต้องที่ตำแหน่ง $a"
                           val n = hx.length / 2
-                          val ok = (a >= 72 && a + n <= 77) || (a >= 78 && a + n <= 84) || (a >= 84 && a + n <= 164) || (a >= 164 && a + n <= 171)
+                          val ok = (a >= 72 && a + n <= 77) || (a >= 78 && a + n <= 84) || (a >= 84 && a + n <= 164) || (a >= 164 && a + n <= 171) || (a >= 180 && a + n <= 184)
                           if (!ok) return "ไม่อนุญาตให้เขียนตำแหน่ง $a (+$n ไบต์)"
                       }
                       val c = j.optString("cmd", "")
@@ -2497,6 +2497,7 @@ jobs:
                   val k = JSONArray()
                   for (i in 0 until 20) k.put(a.copyOfRange(84 - base + i * 4, 88 - base + i * 4).toHex())
                   o.put("k8", k)
+                  if (a.size >= 184 - base) o.put("fwv", a.copyOfRange(180 - base, 184 - base).toHex())
                   return o
               }
 
@@ -2515,7 +2516,7 @@ jobs:
                           val bs = info.blockSize
                           if (bs != 4) error("ขนาดบล็อกไม่ใช่ 4 ไบต์ ($bs)")
                           val b0 = 17
-                          val nb = 26                       // Addr 68–171
+                          val nb = 29                       // Addr 68–183 (รวม 180–183 = เวอร์ชันเฟิร์มแวร์)
                           val base = b0 * bs
                           val orig = readBlocks(v, b0, nb, bs, info.extended) ?: error("อ่านค่าเดิมจากมิเตอร์ไม่สำเร็จ")
                           val id = orig.copyOfRange(72 - base, 76 - base).toHex()
