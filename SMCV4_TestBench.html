@@ -362,6 +362,8 @@ body.mro{overflow:hidden}
 .sl .odo b,.dial .odo b,#mon .odo b,#mon .mmain .dial .odo b{font-size:var(--dg)}
 .mro-btn{background:linear-gradient(135deg,#0a2a43,#0b7ea4 70%,#14b8a6)!important;color:#fff!important;border:0!important;box-shadow:0 6px 16px rgba(11,126,164,.35)}
 
+.odc{display:flex;flex-direction:column;align-items:center;gap:4px}.odv{font:700 1rem/1.1 'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px;color:#0e2a3f;white-space:nowrap}.odv small{font:600 .72em/1 inherit;font-family:inherit;color:#5b7a8f;margin-left:1px}.odv b{font:inherit}.sl .odv{font-size:1.05rem}.dial .odv{font-size:.95rem}#mon .odv{font-size:clamp(.9rem,1.6vw,1.5rem)}
+
 /* ===== การ์ดลงทะเบียนเข้าทะเบียนคุณภาพ ===== */
 .qrg{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#eef9f6,#eef6fd);border:1px solid #cfe9e3;border-radius:14px;padding:12px 14px;margin-top:6px}.qrg b{color:#0a2a43}
 #mon .mab{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 6px;margin-top:4px;background:linear-gradient(rgba(7,26,42,0),rgba(7,26,42,.97) 28%)}
@@ -865,11 +867,11 @@ const mfracN=()=>S.batch.mfrac==null?3:+S.batch.mfrac;
 function parseReading(s,frac){s=String(s==null?'':s).trim().replace(/\s+/g,'').replace(/,/g,'.');if(!s)return null;
   if(/^\d+\.\d*$|^\.\d+$/.test(s))return parseFloat(s);
   if(/^\d+$/.test(s))return parseInt(s,10)/Math.pow(10,frac);return null}
-function odo(vol,cls=''){const f=mfracN(),ni=4;let ds=null;if(vol!=null)ds=String(Math.floor(vol/1e5*Math.pow(10,f)+1e-6)).padStart(ni+f,'0');
+function odo(vol,cls=''){const f=3,ni=4;let ds=null;if(vol!=null)ds=String(Math.floor(vol/1e5*Math.pow(10,f)+1e-6)).padStart(ni+f,'0');
   const cell=(c,red)=>`<b class="${red?'rd':'bk'}">${c}</b>`;
   const hh=ds==null?Array.from({length:ni+f},(_,i)=>cell('–',i>=ni)).join(''):[...ds].map((c,i)=>cell(c,i>=ds.length-f)).join('');
   const pd=(vol!=null&&f===3)?mdialSvg((vol%100)/10):'';
-  return`<div class="odo ${cls}" title="มาตรแมคคานิค · ลูกกลิ้งดำ = m³ · ลูกกลิ้งแดง = ลิตร · หน้าปัดเล็ก = เศษลิตร (เข็มละเอียด)"><span class="odw">${hh}</span>${pd}<i>m³</i></div>`}
+  const tv=vol==null?'–':(vol/1e5).toFixed(5);return`<div class="odc"><div class="odo ${cls}" title="มาตรแมคคานิค · ลูกกลิ้งดำ = m³ · ลูกกลิ้งแดง = ลิตร · หน้าปัดเล็ก = เศษลิตร (เข็มละเอียด)"><span class="odw">${hh}</span>${pd}</div><div class="odv"><b>${tv}</b> <small>m³</small></div></div>`}
 let KEYSLOT=null,KBFOCUS=null,KBCLR=false;
 function nextSlot(pi,st){const key=st.step==='start'?'s':'e',N=Math.max(S.batch.nm,S.meters.length);
   for(let i=0;i<N;i++){const m=S.meters[i];if(!m||!m.id)return i;const rd=((S.rd[pi]||{})[m.id])||{};if(!rd[key])return i}return null}
