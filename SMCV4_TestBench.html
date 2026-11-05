@@ -2329,6 +2329,14 @@ const MRV=(()=>{
   function analyze(src,opt){const o0=analyzeEnh(src,opt),q0=qual(o0);if(q0>=.55)return o0;
     let best=o0,bq=q0;for(const deg of [180,90,270]){let o;try{const r=rotCanvas(src,deg);o=analyzeEnh(r,opt);if(o&&o.ok){o.rot=deg;o.srcUsed=r}}catch(e){o=null}const q=qual(o);if(q>bq+.12){best=o;bq=q;if(q>=.6)break}}
     return best}
+  /* เศษเลขที่โผล่ด้านบนของลูกกลิ้งดำ = ส่วนปลายของ “เลขก่อนหน้า” บนลูกกลิ้งเดียวกัน (…8,9,0,1…)
+     ปลายเลข 7 และ 9 เอียงเป็นเส้นทแยง "/" ส่วน 1 และ 4 เป็นเส้นตรงตั้ง — ใช้ช่วยตัดสินเมื่อเลขเต็มตัวอ่านไม่ชัด */
+  function fragType(cv,sH,yTop){const w=cv.width,h=cv.height,d=cv.getContext('2d').getImageData(0,0,w,h).data,yb=Math.round(h/2+yTop*sH-.1*sH);if(yb<8)return{t:'none'};
+    const lum=new Float32Array(w*h);for(let j=0;j<w*h;j++)lum[j]=(d[j*4]+d[j*4+1]+d[j*4+2])/3;const sorted=Array.from(lum).sort((a,b)=>a-b),th=Math.min(110,sorted[sorted.length>>1]*.55);
+    let n=0,sx=0,sy=0,sxx=0,syy=0,sxy=0;const x0=Math.round(w*.18),x1=Math.round(w*.82);
+    for(let y=2;y<yb;y++)for(let x=x0;x<x1;x++){const j=y*w+x;if(lum[j]<th&&Math.max(d[j*4],d[j*4+1],d[j*4+2])<150){n++;sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y}}
+    if(n<40||n>700)return{t:'none',n};const mx=sx/n,my=sy/n,vx=sxx/n-mx*mx,vy=syy/n-my*my,cxy=sxy/n-mx*my;if(vy<4||vx>150)return{t:'none',n};const sl=cxy/vy;
+    return{t:sl<=-.2?'slant':Math.abs(sl)<.12?'vert':'other',sl,n}}
   function analyzeCore(src,opt){opt=opt||{};let n=opt.n||7;const red=opt.red==null?3:opt.red,W=work(src,1300),sc=W.sc,out={n,red};
     const row=findRow(W,n,red);if(!row)return{ok:0,fail:'ไม่พบแถวตัวเลขของมาตร — ถ่ายให้เห็นช่องตัวเลขชัดและไม่เอียงมาก'};
     if(row.nBlack>n-red&&row.nBlack<=9-red)n=row.nBlack+red;out.n=n;
@@ -2343,13 +2351,33 @@ const MRV=(()=>{
       if(c.conf<.4)for(const dv of[-.2,-.12,.12,.2]){const dx=-sr*dv*Hd,dy=cr*dv*Hd,cv2=cellCrop(src,cx+dx,cy+dy,row.roll,p,Hd,sH),c2=readCell(cv2,Hd,sH);
         if(c2.conf>c.conf+.15){c2.off=c2.off==null?null:c2.off+dv;if(c2.gt!=null){c2.gt+=dv;c2.gb+=dv}c=c2;cv=cv2;if(c.conf>=.6)break}}
       c.red=i>=n-red;c.img=cv.toDataURL('image/jpeg',.88);cells.push(c)}
+    /* ลูกกลิ้งดำอยู่นิ่ง: เลขต้องอยู่ช่วงความสูงเดียวกับเพื่อนบ้าน — หลักที่อ่านไม่มั่นใจหรือกรอบเลขล้นช่วง (ติดเงา/เศษเลขลูกกลิ้งข้างบน) → ปิดบังพื้นที่นอกช่วงแล้วอ่านซ้ำ */
+    {const ok=cells.slice(0,n-red).filter(c=>c.conf>=.7&&c.gt!=null&&!c.gct&&!c.gcb);
+     if(ok.length>=2){const rT=med(ok.map(c=>c.gt)),rB=med(ok.map(c=>c.gb));
+      for(let i=0;i<n-red;i++){const c=cells[i];if(!(c.conf<.6||(c.gt!=null&&(c.gt<rT-.14||c.gb>rB+.14))))continue;
+        const cx=out.geom.cx[i],cy=out.geom.cy[i];let best=c;
+        for(const dv of[0,-.1,.1]){const cv2=cellCrop(src,cx-sr*dv*Hd,cy+cr*dv*Hd,row.roll,p,Hd,sH),x2=cv2.getContext('2d'),h2=cv2.height,w2=cv2.width;
+          const y0=Math.max(0,Math.round(h2/2+(rT-.07-dv)*sH)),y1=Math.min(h2,Math.round(h2/2+(rB+.07-dv)*sH));x2.fillStyle='#dcdcdc';x2.fillRect(0,0,w2,y0);x2.fillRect(0,y1,w2,h2-y1);
+          const c2=readCell(cv2,Hd,sH);if(c2.conf>best.conf+.05){c2.mask=1;if(c2.gt!=null){c2.gt+=dv;c2.gb+=dv}c2.img=cv2.toDataURL('image/jpeg',.88);c2.red=false;best=c2}}
+        if(best!==c){best.red=false;cells[i]=best}}}}
+    /* ใช้เศษเลขด้านบนช่วยตัดสินเลขดำที่ไม่มั่นใจ: เลขก่อนหน้า 9/7 → เศษเอียง "/" (เลขนี้คือ 0 หรือ 8) · เลขก่อนหน้า 1/4 → เศษตั้งตรง (เลขนี้คือ 2 หรือ 5) */
+    {const okb=cells.slice(0,n-red).filter(c=>c.conf>=.7&&c.gt!=null&&!c.gct&&!c.gcb);
+     if(okb.length>=2){const rT=med(okb.map(c=>c.gt)),exp=d=>{const pv=(d+9)%10;return(pv===7||pv===9)?'slant':(pv===1||pv===4)?'vert':'other'};
+      for(let i=0;i<n-red;i++){const c=cells[i];if(c.conf>=.6||!c.allS||c.user)continue;let cv=null;try{cv=cellCrop(src,out.geom.cx[i],out.geom.cy[i],row.roll,p,Hd,sH)}catch(e){}if(!cv)continue;
+        const ft=fragType(cv,sH,rT);c.frag=ft.t;if(ft.t==='none'||ft.t==='other')continue;
+        const best=Math.min(...Object.values(c.allS));let bd=null;
+        for(const k of Object.keys(c.allS)){const d=+k,sc=c.allS[k];if(sc>best+.14)continue;const pen=exp(d)===ft.t?-.06:(exp(d)==='other'?0:.08);if(!bd||sc+pen<bd.v)bd={d,v:sc+pen}}
+        if(bd&&String(bd.d)!==c.d){c.fragFrom=c.d;c.d=String(bd.d);c.conf=Math.min(Math.max(c.conf,.35),.5)}}}}
+    /* ลูกกลิ้งดำซ้ายสุดที่ยังอ่านไม่มั่นใจ ทั้งที่เลขหลักขวามือเป็น 0 ทั้งหมด และ 0 เป็นตัวเลือกที่คะแนนใกล้เคียง → ใช้ 0 */
+    for(let i=0;i<n-red-1;i++){const c=cells[i];if(c.d==='0'||c.conf>=.5||!c.allS||c.allS[0]==null)continue;let rz=true;for(let j=i+1;j<n-red;j++){if(cells[j].d!=='0'||cells[j].conf<.3){rz=false;break}}
+      if(rz&&(c.allS[0]<=.26||(c.gt!=null&&c.gb-c.gt>1.3))){c.nbFrom=c.d;c.d='0';c.conf=Math.min(.5,Math.max(c.conf,.4));c.prior=1}}
     /* ลูกกลิ้งดำซ้ายสุดแทบทุกตัวเป็น 0 (ปริมาณน้ำยังน้อย): ถ้าอ่านไม่มั่นใจ แต่ 0 ติดอันดับต้น ๆ และหลักขวามือเป็น 0 ชัดเจน → ใช้ 0 (ยังคงเตือนให้ตรวจ) */
     for(let i=0;i<n-red-1;i++){const c=cells[i],nx=cells[i+1];if(c.d!=='0'&&c.conf<.5&&nx&&nx.d==='0'&&nx.conf>=.6&&(c.alts||[]).slice(0,3).some(a=>a.d===0)){c.d='0';c.conf=Math.min(.45,Math.max(c.conf,.32));c.prior=1}}
     out.cells=cells;
     /* ตำแหน่งจริงของเลขในแต่ละลูกกลิ้งแดง เทียบกับ “ลูกกลิ้งดำ” (ดำนิ่งอยู่ตรงกลางเสมอ ยกเว้นตอนกำลังทดจริง ๆ):
        ใช้ขอบของเลขที่ไม่ถูกตัด (ขอบบนหรือล่าง) เทียบกับขอบเลขดำ → shift>0 = เลขอยู่ต่ำกว่ากึ่งกลาง (ลูกกลิ้งยังไม่ถึงเลขนั้น)
        ใช้ได้แม้หลายลูกกลิ้งแดงกำลังหมุนพร้อมกัน (เคส 099→100) ที่การเทียบกับลูกกลิ้งแดงด้วยกันเองใช้ไม่ได้ */
-    {const bk=cells.slice(0,n-red).filter(c=>c.conf>=.5&&c.gt!=null&&!c.gct&&!c.gcb);
+    {let bk=cells.slice(0,n-red).filter(c=>c.conf>=.5&&c.gt!=null&&!c.gct&&!c.gcb);if(bk.length<2)bk=cells.slice(0,n-red).filter(c=>c.conf>=.25&&c.gt!=null&&!c.gct&&!c.gcb);if(bk.length<2)bk=cells.slice(0,n-red).filter(c=>c.gt!=null&&c.gb!=null&&c.gb-c.gt>.6&&c.gb-c.gt<1.2);
      if(bk.length>=2){const rT=med(bk.map(c=>c.gt)),rB=med(bk.map(c=>c.gb)),rH=rB-rT;out.refH=rH;
        cells.slice(n-red).forEach(c=>{c.shift=null;if(c.gt==null||c.d==='')return;const h=c.gb-c.gt;let sh=null;
          if(c.gct&&!c.gcb)sh=c.gb-rB;else if(c.gcb&&!c.gct)sh=c.gt-rT;else if(!c.gct&&!c.gcb){const cen=(c.gb+c.gt)/2,rc=(rB+rT)/2;sh=h<.85*rH?(cen>rc?c.gt-rT:c.gb-rB):cen-rc}
@@ -2439,6 +2467,12 @@ function mxCompose(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);if(!n)re
     else if(cs)d=`ลดจาก ${was} → ${now} (หลักล่างยังเป็น 9/ยังไม่ทดจริง จึงยังไม่ถึง “${was}”)`;
     else if(i<n-1&&+dig[i+1]===9)d='หลักล่างเป็น 9 → ตรวจแล้วเลขนี้ยังคงเดิม';
     else d='หลักล่างไม่ใช่ 9 → ไม่มีการทด คงเดิม';
+    {const X=+was,sh=C[i].shift,pv=(X+9)%10,nx=(X+1)%10;
+     if(sh!=null&&Math.abs(sh)>.14&&i>=n-red)d+=sh<0?` · ภาพ: “${X}” กำลังเลื่อนออก (เลขถัดมา ${nx} กำลังเข้า)`:` · ภาพ: “${X}” กำลังเลื่อนเข้า (เลขก่อนหน้า ${pv} กำลังออก)`;
+     const al=(C[i].alts||[]).filter(a=>a.d!==X&&a.s<(C[i].alts[0]?C[i].alts[0].s:0)+.1).slice(0,2).map(a=>a.d);
+     if(!C[i].user&&C[i].conf<.6&&al.length)d+=` · เลขที่ใกล้เคียง: ${al.join(', ')}`;
+     if(C[i].fragFrom)d+=` · เศษเลขด้านบนเป็นเส้น${C[i].frag==='slant'?'เอียง “/” (ปลายของ 9 หรือ 7)':'ตั้งตรง (ปลายของ 1 หรือ 4)'} → เลขก่อนหน้าสอดคล้องกับ “${now}” (แก้จาก ${C[i].fragFrom})`;
+     if(C[i].prior)d+=' · เดาเป็น 0 จากหลักข้างเคียง (ลูกกลิ้งซ้ายสุดมักเป็น 0)'}
     trace.push({k:i>=n-red?'rd':'bk',t:mxWt(i),v:String(now),d,chg:now!==was,conf:C[i].conf,user:C[i].user})}
   const needEye=casc.length>0||(useP&&mxMid());
   return{dig,str,val,reading:(Math.round(val*1e5)/1e5).toFixed(5).replace(/0+$/,'').replace(/\.$/,'.0'),note,useP,conflict,casc,trace,needEye}}
@@ -2454,7 +2488,7 @@ function mxUsedHtml(){const c=mxCompose();if(!c)return'<div class="mxu-e">ใส
 function mxHero(){const c=mxCompose(),st=mxStat();
   if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดก่อน':'ใส่ตัวเลขให้ครบทุกหลัก'}</div></div><button class="btn p mx-ok" id="mxOk" data-a="mxok" disabled>✔ ยืนยัน</button></div>`;
   const L=c.val*1000;
-  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้ · V38.29</small>
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้ · V38.31</small>
     <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
     <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน':'⚠ '+(st.bad+st.wn+(st.pok?0:1))+' จุดควรเทียบภาพ'}</div></div>
     <button class="btn p mx-ok" id="mxOk" data-a="mxok">✔ ยืนยัน</button></div>`}
