@@ -642,7 +642,7 @@ jobs:
                               }
                           }
                       }
-                      loadUrl(WEB_APP_URL)
+                      loadUrl(WEB_APP_URL + "?t=" + System.currentTimeMillis())   // กันแคช CDN/เบราว์เซอร์: ได้หน้าล่าสุดทุกครั้ง
                   }
                   loadBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal)
                   loadBar.max = 100
@@ -1110,7 +1110,7 @@ jobs:
                   pageLoaded = false
                   undelivered = pendingDump != null
                   webView.clearCache(true)
-                  webView.reload()
+                  webView.loadUrl(WEB_APP_URL + "?t=" + System.currentTimeMillis())
                   toast("กำลังโหลดหน้าเว็บใหม่...")
               }
 
@@ -2762,7 +2762,12 @@ jobs:
                               .addOnFailureListener { }
                               .addOnCompleteListener {
                                   val r = MechParse.parse(lines, codes, cfgInt("frac", 3))
-                                  runOnUiThread { showMechConfirm(uri, own, r) }
+                                  // ส่งรูปเต็มเข้า Test Bench ให้ตัวอ่านภาพ (ซูมทีละหลัก + เข็มละเอียด) อ่านเอง — ไม่ใช้ OCR ของแอปตัดสินค่า
+                                  // (OCR ในแอปใช้แค่ช่วยเดา Meter ID / ค่าเริ่มต้นเป็นคำใบ้)
+                                  runOnUiThread {
+                                      val idHint = if (r.id.length >= 4 && r.id.any { it.isDigit() }) r.id else ""
+                                      sendMechImage(uri, own, r.reading, idHint, prefs.getBoolean("lcdmode", false))
+                                  }
                               }
                       }
               }
