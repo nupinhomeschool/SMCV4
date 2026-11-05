@@ -2421,9 +2421,14 @@ const MRV=(()=>{
     if(bl&&bl.nBlack>=3&&(r0.Hd<bl.Hd*.8||r0.nBlack<Math.min(3,bl.nBlack))){r0.fromBlack=1;r0.hd0=r0.Hd;r0.roll0=r0.roll;Object.assign(r0,bl)}
     return r0}
 
-  function box1(m,w,h,r,mx){const t=new Uint8Array(w*h),o=new Uint8Array(w*h);
-    for(let y=0;y<h;y++){const row=y*w;for(let x=0;x<w;x++){let v=mx?0:1;for(let k=-r;k<=r;k++){const xx=x+k;if(xx<0||xx>=w){if(!mx)v=0;continue}const q=m[row+xx];if(mx){if(q){v=1;break}}else if(!q){v=0;break}}t[row+x]=v}}
-    for(let x=0;x<w;x++)for(let y=0;y<h;y++){let v=mx?0:1;for(let k=-r;k<=r;k++){const yy=y+k;if(yy<0||yy>=h){if(!mx)v=0;continue}const q=t[yy*w+x];if(mx){if(q){v=1;break}}else if(!q){v=0;break}}o[y*w+x]=v}return o}
+  function box1(m,w,h,r,mx){const t=new Uint8Array(w*h),o=new Uint8Array(w*h),full=2*r+1;
+    /* O(w·h) ด้วยผลรวมเลื่อน (sliding window) — ผลเท่าเดิมทุกพิกเซลกับฟังก์ชันเดิม แต่เร็วกว่ามาก */
+    for(let y=0;y<h;y++){const row=y*w;let c=0;for(let k=0;k<=r&&k<w;k++)if(m[row+k])c++;
+      for(let x=0;x<w;x++){t[row+x]=mx?(c>0?1:0):((x-r>=0&&x+r<w&&c===full)?1:0);const a=x+r+1,d=x-r;if(a<w&&m[row+a])c++;if(d>=0&&m[row+d])c--}}
+    const cnt=new Int32Array(w);for(let y=0;y<=r&&y<h;y++){const row=y*w;for(let x=0;x<w;x++)if(t[row+x])cnt[x]++}
+    for(let y=0;y<h;y++){const row=y*w,ok=!mx&&y-r>=0&&y+r<h;for(let x=0;x<w;x++)o[row+x]=mx?(cnt[x]>0?1:0):((ok&&cnt[x]===full)?1:0);
+      const a=y+r+1,d=y-r;if(a<h){const ra=a*w;for(let x=0;x<w;x++)if(t[ra+x])cnt[x]++}if(d>=0){const rd=d*w;for(let x=0;x<w;x++)if(t[rd+x])cnt[x]--}}
+    return o}
   const close=(m,w,h,r)=>box1(box1(m,w,h,r,1),w,h,r,0);
   function otsu(a){const h=new Array(256).fill(0);for(let i=0;i<a.length;i++)h[a[i]]++;let t=a.length,s=0;for(let i=0;i<256;i++)s+=i*h[i];let sb=0,wb=0,best=-1,th=128;
     for(let i=0;i<256;i++){wb+=h[i];if(!wb)continue;const wf=t-wb;if(!wf)break;sb+=i*h[i];const mb=sb/wb,mf=(s-sb)/wf,v=wb*wf*(mb-mf)*(mb-mf);if(v>best){best=v;th=i}}return th}
@@ -2437,7 +2442,7 @@ const MRV=(()=>{
     else for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=Math.min(d[i],d[i+1],d[i+2]);
     let th;
     if(red){th=255-(opt.rt||.30)*330}
-    else{const sr=Array.from(g).sort((p,q)=>p-q),v2=sr[Math.floor(N*.03)],md=sr[Math.floor(N*.55)];th=Math.min(otsu(g),v2+(.42+(opt.tk||0)*.14)*(md-v2),150)}
+    else{const hs=new Int32Array(256);for(let i=0;i<N;i++)hs[g[i]]++;const kth=k=>{let c=0;for(let v=0;v<256;v++){c+=hs[v];if(c>k)return v}return 255},v2=kth(Math.floor(N*.03)),md=kth(Math.floor(N*.55));th=Math.min(otsu(g),v2+(.42+(opt.tk||0)*.14)*(md-v2),150)}
     let m=new Uint8Array(N);for(let i=0;i<N;i++)m[i]=g[i]<th?1:0;
     if(opt.cl)m=close(m,w,h,opt.cl);
     const C=comps(m,w,h),cx=w/2,cy=h/2,minH=sH*.28;let seed=null;
