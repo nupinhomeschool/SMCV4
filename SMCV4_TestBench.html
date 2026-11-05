@@ -383,6 +383,41 @@ body.mro{overflow:hidden}
 .mx-tr li .v{font-weight:800;color:#c0182b}
 .mx-tr li em{grid-column:1/-1;font-style:normal;opacity:.75;font-size:.74rem}
 
+/* ===== หน้าตรวจ V38.28: ค่า+ยืนยันติดบน · เทียบภาพจริงกับตัวเลขตรงหลักกัน ===== */
+.mxh-sticky{position:sticky;top:0;z-index:6;margin:0 -2px 10px;padding:4px 0 2px;background:linear-gradient(#fff 70%,rgba(255,255,255,0))}
+.mxh-sticky .mxh{margin:0;padding:12px 14px;gap:10px;border-radius:18px}
+.mxh-sticky .mxh-v b{font-size:clamp(1.5rem,7vw,2.1rem)}
+.mxh-sticky .mx-ok{flex:0 0 auto;min-width:104px;padding:16px 14px;font-size:1.05rem;font-weight:800;border-radius:16px}
+.mxh-sticky .mxh-c{margin-top:4px;font-size:.78rem;padding:3px 9px;border-radius:999px;display:inline-block}
+.mxcmp{padding-bottom:6px}
+.mxrow-w{--n:7;--nb:4;position:relative}
+.mxrow{display:block;position:relative;width:100%;padding:0;border:2px solid #0a2a43;border-radius:12px;overflow:hidden;background:#222;line-height:0;cursor:zoom-in}
+.mxrow img{width:100%;height:auto;display:block}
+.mxrow-z{position:absolute;right:6px;bottom:6px;background:rgba(10,42,67,.75);color:#fff;font-size:.8rem;line-height:1;padding:4px 7px;border-radius:8px}
+.mxstrip,.mxused{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));margin-top:4px}
+.mxstrip .mxt{border-width:2px;border-radius:12px;padding:3px 2px;margin:0 2px}
+.mxstrip .mxt-n{width:100%;font-size:clamp(1.3rem,7vw,1.9rem);padding:0;text-align:center;border:0;background:transparent;font-weight:800}
+.mxstrip .mxt.rd .mxt-n{color:#c0182b}
+.mxstrip .mxt-b{height:4px;margin:2px 4px}.mxstrip small{font-size:.62rem;opacity:.7}
+.mxused{margin-top:6px;padding:6px 0;border-radius:12px;background:#0a2a43}
+.mxu{text-align:center;color:#fff;line-height:1.15;position:relative}
+.mxu b{font:800 clamp(1.3rem,7vw,1.9rem)/1.1 'JetBrains Mono',ui-monospace,monospace}.mxu.rd b{color:#ff8a8a}
+.mxu i{display:block;font-style:normal;font-size:.62rem;color:#fcd34d}
+.mxu.chg{background:rgba(251,191,36,.22);border-radius:8px}
+.mxu:nth-child(n+1){border-left:1px solid rgba(255,255,255,.12)}.mxu:first-child{border-left:0}
+.mxrow-w .mxu:nth-child(n){}
+.mxu-e{grid-column:1/-1;color:#fcd34d;text-align:center;font-size:.85rem}
+.mxdl{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:10px;align-items:center}
+.mxdl-i{position:relative;padding:0;border:2px solid #0a2a43;border-radius:14px;overflow:hidden;background:#fff;line-height:0}
+.mxdl-i img{width:100%;height:auto;display:block}.mxdl-i span{position:absolute;right:5px;bottom:5px;background:rgba(10,42,67,.75);color:#fff;font-size:.8rem;line-height:1;padding:4px 7px;border-radius:8px}
+.mxdl-r{min-width:0}
+.mxh-sticky .mxh{flex-wrap:nowrap}.mxh-sticky .mxh-l{flex:1 1 auto}
+.mxh-sticky .mx-ok{min-width:86px;padding:14px 10px}
+.mxdl .mxp-v{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px;align-items:center;padding:6px;margin:0}
+.mxdl .mxp-v button{padding:10px 7px;font-size:.82rem;min-width:0;width:auto}
+.mxdl .mxp-v b{font-size:1.9rem}.mxdl .mxp-v small{display:block;font-size:.62rem;line-height:1.2}
+@media(max-width:640px){.mxh-sticky .mxh{flex-direction:row;align-items:center}}
+
 /* ===== หมอกสี CoreDash: สุ่มพาเลตต์ทุกครั้งที่เปิด + ค่อยๆ เปลี่ยนสีเองแบบสุ่ม ===== */
 @property --f1{syntax:'<color>';inherits:true;initial-value:#35f2b0}
 @property --f2{syntax:'<color>';inherits:true;initial-value:#2bb6ff}
@@ -2364,7 +2399,7 @@ async function mxAnalyze(){MX.step='busy';MX.busy='กำลังหาช่�
   let o;try{o=MRV.analyze(MX.src,{n:MX.n,red:MX.red,ptr:MX.ptrOn})}catch(e){o={ok:0,fail:'วิเคราะห์ภาพไม่สำเร็จ: '+(e&&e.message||e)}}
   MX.res=o;if(!o.ok){MX.fail=o.fail;MX.step='fail';mxRender();return}
   if(o.srcUsed)MX.src=o.srcUsed;
-  MX.n=o.n;MX.cells=o.cells.map(c=>Object.assign({},c,{user:false}));MX.lastOff=o.lastOff;MX.p=null;MX.pRaw=null;MX.zs=0;
+  MX.n=o.n;MX.cells=o.cells.map(c=>Object.assign({},c,{user:false}));MX.lastOff=o.lastOff;MX.rowImg=null;MX.p=null;MX.pRaw=null;MX.zs=0;
   if(MX.ptrOn&&o.ptr){MX.pRaw=o.ptr.pRaw;MX.p=mxP()}
   MX.step='res';mxRender();mxOcrAssist()}
 const mxP=()=>{if(MX.pRaw==null)return null;let v=Math.round((((MX.pRaw+MX.zs)%10)+10)%10*10)/10;return v>=10?0:v};
@@ -2411,13 +2446,18 @@ function mxStat(){const C=MX.cells;let bad=0,wn=0;C.forEach(c=>{if(c.user)return
   const pt=MX.res&&MX.res.ptr,pok=!MX.ptrOn||(pt&&pt.ok&&MX.p!=null);let cf=null;try{const c=mxCompose();cf=c&&c.conflict}catch(e){}let ne=false;try{const c=mxCompose();ne=!!(c&&c.needEye)}catch(e){}return{bad,wn,pok,cf,ne,ok:bad+wn===0&&pok&&!cf}}
 const mxWt=i=>{const n=MX.cells.length,red=MX.red,k=n-1-i;return i>=n-red?({0:'1 ลิตร',1:'10 ลิตร',2:'100 ลิตร'})[k]||('10^-'+(k+1)):'×'+Math.pow(10,k-red).toLocaleString('en-US')};
 function mxRegHtml(c){const n=c.dig.length,red=Math.min(MX.red,n);return`<div class="mxreg">${c.dig.map((d,i)=>`${i===n-red&&red?'<i class="mxdot">.</i>':''}<b class="${i>=n-red?'rd':'bk'}">${esc(d)}</b>`).join('')}<small>m³</small></div>`}
+function mxRowImg(){try{const g=MX.res&&MX.res.geom,src=MX.src;if(!g||!src||!g.cx||!g.cx.length)return'';const n=g.cx.length,p=g.p,Hd=g.Hd;
+  const cxm=(g.cx[0]+g.cx[n-1])/2,cym=(g.cy[0]+g.cy[n-1])/2,Wd=n*p,Hh=Hd*2.1,s=Math.min(2,860/Wd),c=document.createElement('canvas');c.width=Math.round(Wd*s);c.height=Math.round(Hh*s);
+  const x=c.getContext('2d');x.fillStyle='#888';x.fillRect(0,0,c.width,c.height);x.translate(c.width/2,c.height/2);x.rotate(-g.roll*Math.PI/180);x.scale(s,s);x.drawImage(src,-cxm,-cym);return c.toDataURL('image/jpeg',.9)}catch(e){return''}}
+function mxUsedHtml(){const c=mxCompose();if(!c)return'<div class="mxu-e">ใส่ตัวเลขให้ครบทุกหลัก</div>';const n=c.dig.length;
+  return c.dig.map((d,i)=>{const ch=d!==MX.cells[i].d;return`<div class="mxu ${i>=n-MX.red?'rd':'bk'} ${ch?'chg':''}"><b>${esc(d)}</b>${ch?`<i>จาก ${esc(MX.cells[i].d)}</i>`:''}</div>`}).join('')}
 function mxHero(){const c=mxCompose(),st=mxStat();
-  if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดด้านล่างก่อน':'ใส่ตัวเลขให้ครบทุกหลักด้านล่าง'}</div></div></div>`;
+  if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดก่อน':'ใส่ตัวเลขให้ครบทุกหลัก'}</div></div><button class="btn p mx-ok" id="mxOk" data-a="mxok" disabled>✔ ยืนยัน</button></div>`;
   const L=c.val*1000;
-  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ · ตัวอ่านใหม่ V38.28</small>${mxRegHtml(c)}
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้ · V38.29</small>
     <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
-    <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน — ตรวจดูภาพเทียบอีกครั้งแล้วกดยืนยัน':'⚠ มี '+(st.bad+st.wn+(st.pok?0:1))+' จุดที่ควรตรวจด้วยตา (กรอบสีส้ม)'}</div></div>
-    ${c.useP?`<div class="mxh-r">${mdialSvg(MX.p,118)}<small>เข็มละเอียด <b>${MX.p.toFixed(1)}</b></small></div>`:''}</div>`}
+    <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน':'⚠ '+(st.bad+st.wn+(st.pok?0:1))+' จุดควรเทียบภาพ'}</div></div>
+    <button class="btn p mx-ok" id="mxOk" data-a="mxok">✔ ยืนยัน</button></div>`}
 function mxNote(){const c=mxCompose();if(!c||!c.useP)return'';const n=MX.cells.length,dv=MX.cells[n-1].d,p=MX.p;
   const opt=(k,l)=>`<button class="${MX.carry===k?'on':''}" data-a="mxcarry" data-v="${k}">${l}</button>`;
   let msg='';
@@ -2445,18 +2485,21 @@ function mxBody(){
   if(MX.step==='busy')return`<div class="mr-busy"><div class="mr-sp"></div><b>${esc(MX.busy)}</b><small>ใช้เวลาไม่กี่วินาที</small></div>`;
   if(MX.step==='fail')return`<div class="mx-fail"><div class="mx-pk-ic">🔍</div><h3>อ่านอัตโนมัติไม่สำเร็จ</h3><p>${esc(MX.fail)}</p><div class="mr-ctl" style="justify-content:center"><button class="btn p" data-a="mxnew">📷 ถ่าย/เลือกรูปใหม่</button><button class="btn" data-a="mxmanual">✎ ลากกรอบเอง</button></div></div>`;
   const n=MX.cells.length,nb=n-MX.red,pt=MX.res&&MX.res.ptr,N=Math.max(S.batch.nm,S.meters.length);
-  const tiles=MX.cells.map((c,i)=>mxTile(c,i));
-  const sec1=`<section class="mxs"><div class="mxs-h"><span class="mxs-n">1</span><div><h4>ตัวเลขทีละหลัก <small>แตะรูปเพื่อซูม · พิมพ์แก้ได้ทันที</small></h4></div></div>
-    <div class="mxg-w"><div class="mxg"><div class="mxg-h bk">ลูกกลิ้งดำ · ลูกบาศก์เมตร (m³)</div><div class="mxg-t" style="--c:${nb}">${tiles.slice(0,nb).join('')}</div></div>
-    <div class="mxg"><div class="mxg-h rd">ลูกกลิ้งแดง · เศษ (ลิตร)</div><div class="mxg-t" style="--c:${MX.red}">${tiles.slice(nb).join('')}</div></div></div>
+  if(!MX.rowImg)MX.rowImg=mxRowImg();
+  const cellBox=(c,i)=>{const st=c.user?'ok':c.conf>=.6?'ok':c.conf>=.3?'wn':'bad',pct=c.user?100:Math.round(c.conf*100);
+    return`<div class="mxt ${st} ${i>=nb?'rd':''}" data-ti="${i}"><input class="mxt-n" data-mxd="${i}" maxlength="1" inputmode="numeric" autocomplete="off" value="${esc(c.d)}" aria-label="เลขหลักที่ ${i+1}"><div class="mxt-b"><i style="width:${pct}%"></i></div><small>${c.user?'แก้เอง':pct+'%'}</small></div>`};
+  const sec1=`<section class="mxs mxcmp"><div class="mxs-h"><span class="mxs-n">1</span><div><h4>เทียบกับภาพจริง <small>บน = ภาพจริง · กลาง = ที่อ่านได้ (แตะแก้ได้) · ล่าง = ค่าที่ใช้</small></h4></div></div>
+    <div class="mxrow-w" style="--n:${n};--nb:${nb}">${MX.rowImg?`<button class="mxrow" data-a="mxfull" aria-label="ดูรูปเต็ม"><img src="${MX.rowImg}" alt="ภาพช่องตัวเลขจริง"><span class="mxrow-z">🔍</span></button>`:''}
+      <div class="mxstrip">${MX.cells.map((c,i)=>cellBox(c,i)).join('')}</div>
+      <div class="mxused" id="mxUsed">${mxUsedHtml()}</div></div>
     ${MX.assist?`<div class="mx-as" id="mxAs">⏳ ${esc(MX.assist)}</div>`:'<div class="mx-as" id="mxAs"></div>'}</section>`;
   let sec2='';
-  if(MX.ptrOn){if(pt&&MX.p!=null)sec2=`<section class="mxs"><div class="mxs-h"><span class="mxs-n">2</span><div><h4>เข็มละเอียด <small>เทียบกับขีดสเกลบนหน้าปัดจริง</small></h4></div></div>
-      <div class="mxp"><button class="mxp-d" data-a="mxzd" aria-label="ซูมหน้าปัด"><img src="${pt.dialImg}" alt=""><span>🔍 ซูม</span></button>
-      <div class="mxp-r">${pt.rulerImg?`<button class="mxp-ru" data-a="mxzr"><img src="${pt.rulerImg}" alt=""></button><small class="mxp-cap">แถบสเกลที่คลี่เป็นเส้นตรง · เส้นเขียว = ตำแหน่งปลายเข็ม · ตัวเลข = ค่าบนหน้าปัด</small>`:'<div class="mx-wn">ไม่พบขีดสเกล — ใช้ปุ่มปรับค่าด้านล่างเอง</div>'}
-      <div class="mxp-v"><button data-a="mxp" data-v="-1">− 0.1</button><div><b id="mxPv">${MX.p.toFixed(1)}</b><small id="mxPn"></small></div><button data-a="mxp" data-v="1">+ 0.1</button></div>
-      <div class="mxp-m">${pt.ticks?`<span class="${pt.ok?'ok':'wn'}">${pt.ok?'✔':'⚠'} พบขีดสเกล ${pt.detN} ขีด · เลข 0 อยู่ตำแหน่งบนสุด${pt.ok&&pt.detN<46?' · ยืนยันซ้ำด้วยรูปทรงเข็ม (ตรงกัน)':''}${pt.lv?' · เข็มสีซีด/สะท้อนแสง ตรวจดูภาพเทียบอีกครั้ง':''}</span>`:'<span class="wn">⚠ ประมาณจากมุมเข็ม (ไม่พบขีดสเกลครบ)</span>'}
-        <span class="mxp-z">เลข 0 ผิดตำแหน่ง? <button data-a="mxzs" data-v="-1">◀ หมุน 1 เลข</button><button data-a="mxzs" data-v="1">หมุน 1 เลข ▶</button></span></div></div></div></section>`;
+  if(MX.ptrOn){if(pt&&MX.p!=null)sec2=`<section class="mxs mxcmp"><div class="mxs-h"><span class="mxs-n">2</span><div><h4>เข็มละเอียด <small>เทียบกับหน้าปัดจริง</small></h4></div></div>
+      <div class="mxdl"><button class="mxdl-i" data-a="mxzd" aria-label="ซูมหน้าปัด"><img src="${pt.dialImg}" alt="หน้าปัดจริง"><span>🔍</span></button>
+        <div class="mxdl-r"><div class="mxp-v"><button data-a="mxp" data-v="-1">− 0.1</button><div><b id="mxPv">${MX.p.toFixed(1)}</b><small id="mxPn"></small></div><button data-a="mxp" data-v="1">+ 0.1</button></div>
+        <div class="mxp-m">${pt.ticks?`<span class="${pt.ok?'ok':'wn'}">${pt.ok?'✔ ตรงกับขีดสเกล '+pt.detN+' ขีด':'⚠ ตรวจเข็มเทียบภาพ'}${pt.lv?' · เข็มซีด/สะท้อนแสง':''}</span>`:'<span class="wn">⚠ ประมาณจากมุมเข็ม</span>'}</div></div></div>
+      <details class="mx-adv"><summary>ดูแถบสเกลที่คลี่เป็นเส้นตรง / เลข 0 ผิดตำแหน่ง</summary>${pt.rulerImg?`<button class="mxp-ru" data-a="mxzr"><img src="${pt.rulerImg}" alt=""></button><small class="mxp-cap">เส้นเขียว = ตำแหน่งปลายเข็ม</small>`:''}
+        <span class="mxp-z">เลข 0 ผิดตำแหน่ง? <button data-a="mxzs" data-v="-1">◀ หมุน 1 เลข</button><button data-a="mxzs" data-v="1">หมุน 1 เลข ▶</button></span></details></section>`;
     else sec2=`<section class="mxs"><div class="mxs-h"><span class="mxs-n">2</span><div><h4>เข็มละเอียด</h4></div></div><div class="mxp-no">ไม่พบเข็มสีแดงในรูป — ถ่ายให้เห็นหน้าปัดเล็กด้วย หรือใส่ค่าเข็มเอง<div class="mxp-v"><button data-a="mxp" data-v="-1">− 0.1</button><div><b id="mxPv">${MX.p==null?'—':MX.p.toFixed(1)}</b></div><button data-a="mxp" data-v="1">+ 0.1</button></div></div></section>`}
   const pi0=Math.min(S.cur,Math.max(S.plan.length-1,0)),st0=S.plan.length?pointState(pi0):{step:'start'},key0=st0.step==='start'?'s':'e',nxt0=S.plan.length?nextSlot(pi0,st0):0,selK=MX.slot!=null?MX.slot:nxt0;
   const slotDone=k=>{const mm=S.meters[k];if(!mm||!mm.id)return false;const rr=((S.rd[pi0]||{})[mm.id])||{};return !!rr[key0]};
@@ -2468,8 +2511,8 @@ function mxBody(){
     <div class="mr-stp"><span>เลขสีแดง</span><button data-a="mxr" data-v="-1">−</button><b>${MX.red}</b><button data-a="mxr" data-v="1">+</button></div>
     <label class="mr-ck"><input type="checkbox" data-a="mxptr" ${MX.ptrOn?'checked':''}> อ่านเข็มละเอียดด้วย</label>
     <label class="mr-stp"><span>1 ช่องเข็ม =</span><select data-a="mxmult"><option value="0.0001" ${MX.pmult===.0001?'selected':''}>0.0001 m³</option><option value="0.001" ${MX.pmult===.001?'selected':''}>0.001 m³</option><option value="0.00001" ${MX.pmult===.00001?'selected':''}>0.00001 m³</option></select></label></div></details>`;
-  return`<div id="mxHero">${mxHero()}</div>${MX.hint?`<div class="mx-hint">แอปอ่านเบื้องต้นได้: <b>${esc(MX.hint)}</b></div>`:''}${sec1}${sec2}<div id="mxNote">${mxNote()}</div>${form}${adv}
-    <div class="mr-ctl mx-act"><button class="btn" data-a="mxnew">📷 ถ่ายใหม่</button><button class="btn" data-a="mxfull">🔍 ดูรูปเต็ม</button><button class="btn" data-a="mxmanual">✎ ลากกรอบเอง</button><span class="sp"></span><button class="btn p mx-ok" id="mxOk" data-a="mxok">✔ ยืนยัน — ใช้ค่านี้ทดสอบ</button></div>`}
+  return`<div id="mxHero" class="mxh-sticky">${mxHero()}</div>${sec1}${sec2}<div id="mxNote">${mxNote()}</div>${form}${adv}
+    <div class="mr-ctl mx-act"><button class="btn" data-a="mxnew">📷 ถ่ายใหม่</button><button class="btn" data-a="mxfull">🔍 ดูรูปเต็ม</button><button class="btn" data-a="mxmanual">✎ ลากกรอบเอง</button><span class="sp"></span></div>`}
 function mxRender(){let o=document.getElementById('mx');if(!MX.open){if(o)o.remove();return}
   if(!o){o=document.createElement('div');o.id='mx';document.body.appendChild(o)}document.body.classList.add('mro');
   const st=[['pick','ถ่าย / เลือกรูป'],['busy','วิเคราะห์อัตโนมัติ'],['res','ตรวจ & ยืนยัน']],ix=MX.step==='pick'?0:MX.step==='busy'?1:2;
@@ -2477,7 +2520,7 @@ function mxRender(){let o=document.getElementById('mx');if(!MX.open){if(o)o.remo
   const keep=o.querySelector('.mx-in'),sy=keep?keep.scrollTop:0;
   o.innerHTML=`<div class="mx-in"><div class="mx-hd"><div class="mx-tt"><span class="mx-ic">🔬</span><div><h2>อ่านมาตรแมคคานิคจากภาพ</h2><small>ตรวจทีละหลัก · ซูมดูได้ · เข็มละเอียดเทียบขีดสเกลจริง</small></div></div><button class="mr-x" data-a="mxclose" aria-label="ปิด">✕</button></div>${stp}${mxBody()}</div>`;
   if(MX.step==='res'){const nn=o.querySelector('.mx-in');if(nn&&sy)nn.scrollTop=sy;mxUpd()}}
-function mxUpd(){const h=document.getElementById('mxHero');if(h)h.innerHTML=mxHero();
+function mxUpd(){const h=document.getElementById('mxHero');if(h)h.innerHTML=mxHero();const us=document.getElementById('mxUsed');if(us)us.innerHTML=mxUsedHtml();
   const n=document.getElementById('mxNote');if(n)n.innerHTML=mxNote();const b=document.getElementById('mxOk');if(b)b.disabled=!mxCompose();
   const pv=document.getElementById('mxPv');if(pv)pv.textContent=MX.p==null?'—':MX.p.toFixed(1);
   const pn=document.getElementById('mxPn');if(pn&&MX.p!=null)pn.textContent='= +'+(MX.p*MX.pmult).toFixed(5)+' m³ ('+(MX.p/10).toFixed(2)+' ลิตร)'}
