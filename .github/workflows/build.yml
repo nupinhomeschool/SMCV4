@@ -2754,6 +2754,8 @@ jobs:
                   pendingMech = j
                   pushMech(j)
                   advanceMechSlot()
+                  // เด้งเข้าหน้า Web App (หน้าประมวลผลภาพ) ทันที ไม่ต้องกดปุ่ม Web App เอง
+                  if (pageLoaded) readerScreen.visibility = View.GONE
               }
 
               private fun refreshSlotLabel() {
@@ -2783,43 +2785,8 @@ jobs:
 
               /** อ่านข้อความและบาร์โค้ด/QR จากรูปเดียวกันด้วย ML Kit (โมเดลอยู่ในแอป) */
               private fun analyzeImage(uri: Uri, own: Boolean) {
-                  toast("กำลังอ่านตัวเลขจากภาพ...")
-                  val img = try { InputImage.fromFilePath(this, uri) } catch (e: Exception) { toast("เปิดภาพไม่ได้: ${e.message}"); return }
-                  val lines = ArrayList<String>()
-                  val codes = ArrayList<String>()
-                  val rec = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-                  val scanner = BarcodeScanning.getClient()
-                  rec.process(img)
-                      .addOnSuccessListener { t ->
-                          class Ln(val t: String, val cy: Int, val h: Int, val left: Int)
-                          val items = ArrayList<Ln>()
-                          t.textBlocks.forEach { b -> b.lines.forEach { l ->
-                              lines.add(l.text)
-                              val bb = l.boundingBox
-                              if (bb != null) items.add(Ln(l.text, bb.centerY(), bb.height(), bb.left))
-                          } }
-                          val rows = ArrayList<MutableList<Ln>>()
-                          items.sortedBy { it.cy }.forEach { ln ->
-                              val row = rows.firstOrNull { r -> Math.abs(r[0].cy - ln.cy) < 0.6 * Math.max(r[0].h, ln.h) }
-                              if (row != null) row.add(ln) else rows.add(mutableListOf(ln))
-                          }
-                          rows.forEach { row -> if (row.size > 1) lines.add(row.sortedBy { it.left }.joinToString(" ") { it.t }) }
-                      }
-                      .addOnFailureListener { }
-                      .addOnCompleteListener {
-                          scanner.process(img)
-                              .addOnSuccessListener { list -> list.forEach { b -> b.rawValue?.let { v -> codes.add(v) } } }
-                              .addOnFailureListener { }
-                              .addOnCompleteListener {
-                                  val r = MechParse.parse(lines, codes, cfgInt("frac", 3))
-                                  // ส่งรูปเต็มเข้า Test Bench ให้ตัวอ่านภาพ (ซูมทีละหลัก + เข็มละเอียด) อ่านเอง — ไม่ใช้ OCR ของแอปตัดสินค่า
-                                  // (OCR ในแอปใช้แค่ช่วยเดา Meter ID / ค่าเริ่มต้นเป็นคำใบ้)
-                                  runOnUiThread {
-                                      val idHint = if (r.id.length >= 4 && r.id.any { it.isDigit() }) r.id else ""
-                                      sendMechImage(uri, own, r.reading, idHint, prefs.getBoolean("lcdmode", false))
-                                  }
-                              }
-                      }
+                  // V38.34: ส่งรูปเข้า Test Bench ทันที (ไม่รอ OCR ในแอป — ตัวอ่านภาพในเว็บอ่านครบทั้งตัวเลขและเข็มอยู่แล้ว)
+                  sendMechImage(uri, own, "", "", prefs.getBoolean("lcdmode", false))
               }
 
               private fun previewBitmap(uri: Uri): Bitmap? {
