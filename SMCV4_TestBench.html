@@ -2357,7 +2357,7 @@ const MRV=(()=>{
       for(let i=0;i<n-red;i++){const c=cells[i];if(!(c.conf<.6||(c.gt!=null&&(c.gt<rT-.14||c.gb>rB+.14))))continue;
         const cx=out.geom.cx[i],cy=out.geom.cy[i];let best=c;
         for(const dv of[0,-.1,.1]){const cv2=cellCrop(src,cx-sr*dv*Hd,cy+cr*dv*Hd,row.roll,p,Hd,sH),x2=cv2.getContext('2d'),h2=cv2.height,w2=cv2.width;
-          const y0=Math.max(0,Math.round(h2/2+(rT-.07-dv)*sH)),y1=Math.min(h2,Math.round(h2/2+(rB+.07-dv)*sH));x2.fillStyle='#dcdcdc';x2.fillRect(0,0,w2,y0);x2.fillRect(0,y1,w2,h2-y1);
+          const y0=Math.max(0,Math.round(h2/2+(rT-.07-dv)*sH)),y1=Math.min(h2,Math.round(h2/2+(rB+.07-dv)*sH));x2.setTransform(1,0,0,1,0,0);x2.fillStyle='#dcdcdc';x2.fillRect(0,0,w2,y0);x2.fillRect(0,y1,w2,h2-y1);
           const c2=readCell(cv2,Hd,sH);if(c2.conf>best.conf+.05){c2.mask=1;if(c2.gt!=null){c2.gt+=dv;c2.gb+=dv}c2.img=cv2.toDataURL('image/jpeg',.88);c2.red=false;best=c2}}
         if(best!==c){best.red=false;cells[i]=best}}}}
     /* ใช้เศษเลขด้านบนช่วยตัดสินเลขดำที่ไม่มั่นใจ: เลขก่อนหน้า 9/7 → เศษเอียง "/" (เลขนี้คือ 0 หรือ 8) · เลขก่อนหน้า 1/4 → เศษตั้งตรง (เลขนี้คือ 2 หรือ 5) */
@@ -2488,7 +2488,7 @@ function mxUsedHtml(){const c=mxCompose();if(!c)return'<div class="mxu-e">ใส
 function mxHero(){const c=mxCompose(),st=mxStat();
   if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดก่อน':'ใส่ตัวเลขให้ครบทุกหลัก'}</div></div><button class="btn p mx-ok" id="mxOk" data-a="mxok" disabled>✔ ยืนยัน</button></div>`;
   const L=c.val*1000;
-  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้ · V38.31</small>
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้ · V38.32</small>
     <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
     <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน':'⚠ '+(st.bad+st.wn+(st.pok?0:1))+' จุดควรเทียบภาพ'}</div></div>
     <button class="btn p mx-ok" id="mxOk" data-a="mxok">✔ ยืนยัน</button></div>`}
