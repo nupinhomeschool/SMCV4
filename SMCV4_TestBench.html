@@ -489,6 +489,11 @@ body.vlrun #mx,body.vlrun #mxz{visibility:hidden!important}
 table.vlmx{border-collapse:collapse;margin-top:8px;font-size:.78rem}table.vlmx th,table.vlmx td{padding:3px 9px;text-align:center;border:1px solid var(--line)}table.vlmx td.g{background:var(--okb);color:var(--ok);font-weight:700}table.vlmx td.r{background:var(--badb);color:var(--bad);font-weight:700}table.vlmx th.l{text-align:left}
 @media(max-width:760px){.vlln .vlch{grid-template-columns:1fr}}
 
+#vlCamO{position:fixed;inset:0;z-index:99;background:#000;display:flex;align-items:center;justify-content:center}#vlCamO .cs{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#vlCamO video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}#vlCamO .cg{position:absolute;left:8%;right:8%;top:38%;height:20%;border:3px solid #5eead4;border-radius:14px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+#vlCamO .cb{position:absolute;left:0;right:0;bottom:22px;display:flex;justify-content:space-around;align-items:center;gap:10px;padding:0 16px}#vlCamO .shut{width:74px;height:74px;border-radius:50%;border:5px solid #fff;background:#ef4444;box-shadow:0 0 0 4px rgba(255,255,255,.35);cursor:pointer}
+#vlCamO p{position:absolute;left:0;right:0;top:14px;margin:0;text-align:center;color:#fff;font-size:.9rem;text-shadow:0 1px 4px #000;padding:0 12px}
+
 /* ===== การ์ดลงทะเบียนเข้าทะเบียนคุณภาพ ===== */
 .qrg{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#eef9f6,#eef6fd);border:1px solid #cfe9e3;border-radius:14px;padding:12px 14px;margin-top:6px}.qrg b{color:#0a2a43}
 #mon .mab{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 6px;margin-top:4px;background:linear-gradient(rgba(7,26,42,0),rgba(7,26,42,.97) 28%)}
@@ -852,7 +857,7 @@ window.load=benchLoad;
 window.benchFeed=function(p){if(p&&p.hex)appGo(ingest(hexToBytes(p.hex),p.partial&&p.ranges?p.ranges:null,p.verify?{verify:true,verified:!!p.verified,attempts:p.attempts,same:p.same}:null,'app'))};
 /* รับค่าจากแอป → พาเข้าหน้า “ทดสอบ” ทันที (เดิมค้างอยู่หน้าเดิม ผู้ใช้ไม่เห็นว่าค่าเข้าแล้ว) */
 function appGo(ok){try{if(!IS_MON&&TAB!=='wr'&&TAB!=='pv'&&TAB!=='run'){TAB='run';render();scrollTo(0,0)}}catch(e){}return ok}
-window.benchMech=function(p){if(!p)return;if(p.img){mxOpen(p.img,{reading:p.reading,id:p.id,slot:p.slot,lcd:!!p.lcd});if(!IS_MON&&TAB!=='run'){TAB='run';render()}return true}
+window.benchMech=function(p){if(!p)return;if(window.__vlCap&&p.img&&TAB==='vl'&&Date.now()-window.__vlCap<180000){window.__vlCap=0;vlAddData(p.img);return true}if(p.img){mxOpen(p.img,{reading:p.reading,id:p.id,slot:p.slot,lcd:!!p.lcd});if(!IS_MON&&TAB!=='run'){TAB='run';render()}return true}
   const ok=mechIn(p,'app');if(!IS_MON){TAB='run';render();scrollTo(0,0)}return ok};
 addEventListener('message',e=>{const d=e.data;if(d&&d.type==='nfc-dump'&&d.hex)window.benchFeed(d);if(d&&d.type==='mech-read')window.benchMech(d)});
 
@@ -1706,8 +1711,8 @@ const vlClose=()=>{const o=document.getElementById('vlD');if(o){try{if(document.
 const vlWait=ms=>new Promise(r=>setTimeout(r,ms));
 async function vlGet(it){if(it.src)return it.src;try{const r=await fetch('validation/'+it.file,{cache:'no-cache'});if(!r.ok)throw 0;const b=await r.blob();return await new Promise(res=>{const f=new FileReader();f.onload=()=>res(f.result);f.readAsDataURL(b)})}catch(e){return null}}
 async function vlLive(it){const url=await vlGet(it);if(!url)return{err:'nofile'};document.body.classList.add('vlrun');
-  try{mxOpen(url,{slot:null,id:'VL'});await vlWait(350);const t0=Date.now();while(Date.now()-t0<90000&&MX.step!=='res'&&MX.step!=='fail')await vlWait(150);
-    if(MX.step!=='res')return{err:'fail'};const c=mxCompose(),s=mxStat();if(!c||c.reading==null)return{err:'fail'};
+  try{mxOpen(url,{slot:null,id:'VL'});await vlWait(350);const t0=Date.now();while(Date.now()-t0<30000&&MX.step!=='res'&&MX.step!=='fail')await vlWait(150);
+    if(MX.step!=='res')return{err:'fail'};const c=mxCompose(),s=mxStat();if(!c||c.reading==null)return{err:'fail'};if(s.bad>=2||MX.cells.reduce((a,x)=>a+x.conf,0)/MX.cells.length<.5)return{err:'unreliable'};
     const cf=MX.cells.map(x=>[x.d,+x.conf.toFixed(2)]),mc=cf.reduce((a,x)=>a+x[1],0)/cf.length,conf=Math.max(5,Math.min(99,mc*100-8*s.wn-(s.ne?15:0)-(s.ok?0:4)));
     return{read:Number(c.reading).toFixed(5),conf:Math.round(conf*10)/10,minc:Math.round(Math.min(...cf.map(x=>x[1]))*100),warn:!s.ok||s.wn>0||!!s.ne,cells:cf,p:MX.p,trace:(c.trace||[]).map(t=>({t:t.t,v:t.v,d:t.d||''})),row:mxRowImg(),src:url}}
   catch(e){return{err:'fail'}}finally{try{mxClose()}catch(e){}document.body.classList.remove('vlrun')}}
@@ -1719,10 +1724,11 @@ async function vlLiveAll(){if(VLS.busy)return;const L=VLD.items;VLS.busy=1;VLS.p
   for(let i=0;i<L.length;i++){const r=await vlLive(L[i]);if(r.err==='nofile'){nf++;if(i===0){toast('ไม่พบโฟลเดอร์ validation/ — วางไว้ข้าง index.html แล้วเปิดผ่านเว็บ',5200);break}}else if(!r.err)VLS.live[L[i].id]={read:r.read,conf:r.conf,ts:Date.now()};VLS.prog=(i+1)/L.length*100;if(TAB==='vl')render()}
   VLS.busy=0;render();const T=vlStats();if(T.nl)toast('อ่านสดเสร็จ — ตรงกับที่บันทึก '+T.lm+'/'+T.nl+' รูป',4200)}
 async function vlThumb(url){return await new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,300/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.66))};im.onerror=()=>res(url);im.src=url})}
-async function vlAddFiles(fs){let last=null;for(const f of fs){VLS.rd=f.name;if(TAB==='vl')render();const url=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});toast('⚡ กำลังอ่าน '+f.name+' …',1800);const r=await vlLive({src:url,file:f.name});
-  if(r.err){toast('⚠ อ่านรูป '+f.name+' ไม่สำเร็จ — ลองถ่ายให้เห็นแถบตัวเลขชัดและตรงขึ้น',4200);VLS.rd=null;if(TAB==='vl')render();continue}
+async function vlAddFiles(fs){const A=[];for(const f of fs){const url=await new Promise(r=>{const x=new FileReader();x.onload=()=>r(x.result);x.readAsDataURL(f)});A.push({url,name:f.name})}return vlAddUrls(A)}
+async function vlAddUrls(fs){let last=null;for(const f of fs){const url=f.url;VLS.rd=f.name;if(TAB==='vl')render();await vlWait(60);const r=await vlLive({src:url,file:f.name});
+  if(r.err){toast('⚠ อ่านรูปนี้ไม่ได้อย่างน่าเชื่อถือ — ต้องเป็นรูปถ่ายหน้าปัดมาตรจริง เห็นแถบตัวเลขชัด ตรง ไม่สะท้อนแสง (ไม่ใช่ภาพหน้าจอแอป)',5600);VLS.rd=null;if(TAB==='vl')render();continue}
   const id='U'+(++VLS.mineN)+'-'+f.name.replace(/\.[^.]+$/,'').slice(0,10);VLS.mine.push({id,file:f.name,cat:'mine',note:'รูปที่คุณเพิ่มเอง — ใส่ค่าจริงเพื่อตรวจความถูกต้อง',truth:null,read:r.read,conf:r.conf,minc:r.minc,warn:r.warn,cells:r.cells,p:r.p,trace:r.trace,row:r.row,th:await vlThumb(url),src:url});last=id}
-  VLS.rd=null;VLS.f='mine';render();if(last){vlDetail(last);toast('✔ อ่านเสร็จ — กรอกค่าจริงเพื่อตรวจความถูกต้อง',3600)}}
+  VLS.rd=null;if(last){VLS.f='mine';render();vlDetail(last);toast('✔ อ่านเสร็จ — กรอกค่าจริงเพื่อตรวจความถูกต้อง',3600)}else if(TAB==='vl')render()}
 /* ---- รายงาน PDF / Excel ---- */
 function vlPaper(){const L=vlAll(),T=vlStats(),b=S.batch,hasL=T.nl>0,ok=T.nc&&T.ok===T.nc;
   const rows=L.map(it=>{const st=vlSt(it),e=vlErr(it),lv=VLS.live[it.id];return`<tr><td><img src="${it.th}" alt=""></td><td class="l"><b>${esc(it.id)}</b></td><td class="l">${esc(vlCat(it))}</td><td>${it.truth!=null?vlL(it.truth)+(it.rc?' ◆':''):'—'}</td><td><b>${vlL(it.read)}</b></td><td>${e==null?'—':(e*.01).toFixed(2)}</td><td>${vlCf(it).toFixed(0)}%</td>${hasL?`<td>${lv?vlL(lv.read)+(Math.abs(vlU(lv.read)-vlU(it.read))<=VL_TOL?' ✔':' ⚠'):'—'}</td>`:''}<td><span class="vlpill ${st}">${VL_STT[st]}</span></td></tr>`}).join('');
@@ -1760,7 +1766,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-vl]');if(!
   const [a,k]=[v.split(':')[0],v.slice(v.indexOf(':')+1)];
   if(a==='f'){VLS.f=k;render()}else if(a==='open')vlDetail(k);else if(a==='close')vlClose();else if(a==='pdf')printVl();
   else if(a==='xlsx')wbVl().then(()=>toast('บันทึก Excel แล้ว'),er=>toast('⚠ '+er.message,4200));
-  else if(a==='live')vlLiveOne(k);else if(a==='liveall')vlLiveAll();else if(a==='add')document.getElementById('vlFile').click();else if(a==='cam')document.getElementById('vlCam').click();
+  else if(a==='live')vlLiveOne(k);else if(a==='liveall')vlLiveAll();else if(a==='add')document.getElementById('vlFile').click();else if(a==='cam')vlShoot();
   else if(a==='demo'){if(Object.keys(S.rd).some(i=>Object.keys(S.rd[i]||{}).length)&&!S.batch.demo){modal(`<h2>สร้างตัวอย่างจำลอง?</h2><p class="sub">Batch ปัจจุบันมีข้อมูลการทดสอบอยู่ — การสร้างตัวอย่างจะ <b>แทนที่</b>ข้อมูลนี้ (ควรบันทึก Excel/Proj.json ไว้ก่อน)</p><div class="rbt"><button class="btn bad" data-vl="demo!">แทนที่ด้วยตัวอย่างจำลอง</button><button class="btn" data-vl="mclose">ยกเลิก</button></div>`)}else demoMech()}
   else if(a==='round')vlSaveRound();else if(a==="mclose")closeModal();else if(a==="demo!"){closeModal();demoMech()}});
 document.addEventListener('change',e=>{const t=e.target;if((t.id==='vlFile'||t.id==='vlCam')&&t.files.length){vlAddFiles(Array.from(t.files));t.value=''}
@@ -1770,6 +1776,20 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')vlClose()});
 document.addEventListener('dragover',e=>{const d=e.target.closest&&e.target.closest('#vlDrop');if(d){e.preventDefault();d.classList.add('dz')}});
 document.addEventListener('dragleave',e=>{const d=document.getElementById('vlDrop');if(d&&!d.contains(e.relatedTarget))d.classList.remove('dz')});
 document.addEventListener('drop',e=>{const d=e.target.closest&&e.target.closest('#vlDrop');if(!d)return;e.preventDefault();d.classList.remove('dz');const f=Array.from(e.dataTransfer.files).filter(x=>/^image\//.test(x.type));if(f.length)vlAddFiles(f)});
+
+/* ---- ถ่ายภาพ: แอป (NfcBridge.takePhoto) → กล้องในหน้าเว็บ (getUserMedia) → ช่องเลือกรูปของเครื่อง ---- */
+function vlAddData(url){vlAddUrls([{url,name:'ถ่ายจากกล้อง'}])}
+async function vlShoot(){const B=window.NfcBridge||(window.parent&&window.parent.NfcBridge);
+  try{if(B&&typeof B.takePhoto==='function'){window.__vlCap=Date.now();B.takePhoto();toast('เปิดกล้องของแอป…',2000);return}}catch(e){}
+  if(window.isSecureContext&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){try{await vlCamOpen();return}catch(e){}}
+  document.getElementById('vlCam').click()}
+async function vlCamOpen(){const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
+  const o=document.createElement('div');o.id='vlCamO';o.innerHTML='<div class="cs"><video playsinline muted autoplay></video><div class="cg"></div><div class="cb"><button class="btn" data-vlc="file">🖼 เลือกรูปแทน</button><button class="shut" data-vlc="snap" aria-label="ถ่าย"></button><button class="btn" data-vlc="x">✕ ปิด</button></div><p>วางแถบตัวเลขของมาตรให้อยู่ในกรอบ · ถือให้นิ่ง ไม่เอียง ไม่สะท้อนแสง</p></div>';
+  document.body.appendChild(o);const v=o.querySelector('video');v.srcObject=st;o._st=st;try{await v.play()}catch(e){}}
+function vlCamClose(){const o=document.getElementById('vlCamO');if(!o)return;try{o._st.getTracks().forEach(t=>t.stop())}catch(e){}o.remove()}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-vlc]');if(!t)return;const k=t.dataset.vlc,o=document.getElementById('vlCamO');
+  if(k==='x')vlCamClose();else if(k==='file'){vlCamClose();document.getElementById('vlCam').click()}
+  else if(k==='snap'){const v=o.querySelector('video');if(!v.videoWidth)return;const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);vlCamClose();vlAddData(c.toDataURL('image/jpeg',.92))}});
 
 /* ---------- Monitor ---------- */
 /* ---------- ส่งค่าจากมือถือ: หน้าจอฝั่งมือถือ (โหมดส่ง) ---------- */
@@ -2592,7 +2612,7 @@ const MRV=(()=>{
     x.putImageData(im,0,0);return c}
   const ENH=[[0,1],[1,1],[1,1.8],[1,3]];
   function analyzeEnh(src,opt){let first=null,best=null;
-    for(let v=0;v<ENH.length;v++){const s2=v?enhance(src,ENH[v][0],ENH[v][1]):src;let o;try{o=analyzeCore(s2,opt)}catch(e){o={ok:0,fail:'วิเคราะห์ภาพไม่สำเร็จ: '+(e&&e.message||e)}}
+    for(let v=0;v<ENH.length;v++){if(v&&opt&&opt.dl&&performance.now()>opt.dl)break;const s2=v?enhance(src,ENH[v][0],ENH[v][1]):src;let o;try{o=analyzeCore(s2,opt)}catch(e){o={ok:0,fail:'วิเคราะห์ภาพไม่สำเร็จ: '+(e&&e.message||e)}}
       if(!first)first=o;
       /* ถ้าแถวตัวเลขอ่านได้แต่หาเข็มไม่เจอ (ภาพมืด/สีซีด) ให้ลองเสริมภาพแล้วใช้เฉพาะรอบที่ได้เข็มที่ผ่านการตรวจ */
       if(o.ok&&opt.ptr!==false&&!(o.ptr&&o.ptr.ok)){o.enh=v;if(!best)best=o;if(v<ENH.length-1)continue;return best}
@@ -2601,8 +2621,8 @@ const MRV=(()=>{
   /* ถ่ายกลับหัว/ตะแคงมา: ถ้ารอบแรกอ่านได้ไม่มั่นใจ ลองหมุนภาพ 180°, 90°, 270° แล้วเลือกรอบที่อ่านตัวเลขได้มั่นใจที่สุด */
   function rotCanvas(src,deg){if(!deg)return src;const sw=deg===180,w=sw?src.width:src.height,h=sw?src.height:src.width,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.translate(w/2,h/2);x.rotate(deg*Math.PI/180);x.drawImage(src,-src.width/2,-src.height/2);return c}
   const qual=o=>{if(!o||!o.ok||!o.cells)return -1;const cs=o.cells;let q=0;cs.forEach(c=>q+=c.conf||0);q/=cs.length;if(o.ptr&&o.ptr.ok)q+=.25;return q};
-  function analyze(src,opt){const o0=analyzeEnh(src,opt),q0=qual(o0);if(q0>=.55)return o0;
-    let best=o0,bq=q0;for(const deg of [180,90,270]){let o;try{const r=rotCanvas(src,deg);o=analyzeEnh(r,opt);if(o&&o.ok){o.rot=deg;o.srcUsed=r}}catch(e){o=null}const q=qual(o);if(q>bq+.12){best=o;bq=q;if(q>=.6)break}}
+  function analyze(src,opt){opt=Object.assign({},opt);if(!opt.dl)opt.dl=performance.now()+(opt.budget||7000);const o0=analyzeEnh(src,opt),q0=qual(o0);if(q0>=.55)return o0;
+    let best=o0,bq=q0;for(const deg of [180,90,270]){if(performance.now()>opt.dl)break;let o;try{const r=rotCanvas(src,deg);o=analyzeEnh(r,opt);if(o&&o.ok){o.rot=deg;o.srcUsed=r}}catch(e){o=null}const q=qual(o);if(q>bq+.12){best=o;bq=q;if(q>=.6)break}}
     return best}
   /* เศษเลขที่โผล่ด้านบนของลูกกลิ้งดำ = ส่วนปลายของ “เลขก่อนหน้า” บนลูกกลิ้งเดียวกัน (…8,9,0,1…)
      ปลายเลข 7 และ 9 เอียงเป็นเส้นทแยง "/" ส่วน 1 และ 4 เป็นเส้นตรงตั้ง — ใช้ช่วยตัดสินเมื่อเลขเต็มตัวอ่านไม่ชัด */
