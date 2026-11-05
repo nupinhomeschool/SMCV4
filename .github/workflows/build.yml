@@ -335,6 +335,12 @@ jobs:
 
               /** หน้าเว็บเรียกกลับมารายงานผล / ขอบันทึกไฟล์ที่ดาวน์โหลด */
               inner class Bridge {
+                  /** Test Bench (แท็บพิสูจน์มาตร) สั่งเปิดกล้องของแอป — ผลภาพกลับมาที่หน้าเว็บผ่าน benchMech */
+                  @JavascriptInterface
+                  fun takePhoto() {
+                      runOnUiThread { this@MainActivity.openCamera() }
+                  }
+
                   @JavascriptInterface
                   fun report(msg: String) {
                       runOnUiThread {
