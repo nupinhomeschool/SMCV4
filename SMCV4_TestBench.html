@@ -374,6 +374,15 @@ body.mro{overflow:hidden}
 
 .mx-risk{background:#fff7e6;border:1.5px solid #f59e0b;border-radius:12px;padding:9px 12px;margin-bottom:8px;font-size:.84rem;line-height:1.65;color:#7c3a00}.mx-risk b{color:#b45309}
 
+.mx-tr{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(10,40,70,.06);border:1px solid rgba(10,40,70,.12)}
+.mx-tr-t{font-weight:700;font-size:.82rem;margin-bottom:6px}
+.mx-tr ol{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.mx-tr li{display:grid;grid-template-columns:auto auto 1fr;gap:4px 8px;align-items:baseline;font-size:.8rem;padding:4px 6px;border-radius:8px}
+.mx-tr li.chg{background:rgba(255,170,0,.16)}
+.mx-tr li b{font-weight:700}
+.mx-tr li .v{font-weight:800;color:#c0182b}
+.mx-tr li em{grid-column:1/-1;font-style:normal;opacity:.75;font-size:.74rem}
+
 /* ===== หมอกสี CoreDash: สุ่มพาเลตต์ทุกครั้งที่เปิด + ค่อยๆ เปลี่ยนสีเองแบบสุ่ม ===== */
 @property --f1{syntax:'<color>';inherits:true;initial-value:#35f2b0}
 @property --f2{syntax:'<color>';inherits:true;initial-value:#2bb6ff}
@@ -2363,7 +2372,7 @@ const mxP=()=>{if(MX.pRaw==null)return null;let v=Math.round((((MX.pRaw+MX.zs)%1
 /* หลายลูกกลิ้งแดงกำลังหมุนพร้อมกัน (กำลังทด เช่น 099→100 ซึ่งเกิดได้เฉพาะตอนหลักหน่วยอยู่ช่วง 9↔0): เทียบกับลูกกลิ้งแดงด้วยกันไม่ได้ ต้องเทียบกับลูกกลิ้งดำ (cells[].shift) */
 function mxMid(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);const v=C.slice(n-red,n-1).filter(c=>c.shift!=null).map(c=>Math.abs(c.shift)).sort((a,b)=>a-b);return v.length>=1&&v[v.length>>1]>.14&&C[n-1]&&C[n-1].shift!=null&&/^[09]$/.test(C[n-1].d)}
 function mxLo(){const C=MX.cells,n=C.length;return mxMid()?C[n-1].shift:MX.lastOff}
-function mxRel(i){if(mxMid()&&MX.cells[i]&&MX.cells[i].shift!=null){let r=MX.cells[i].shift;const ls=MX.cells[MX.cells.length-1].shift;
+function mxRel(i){if(mxMid()&&MX.cells[i]&&MX.cells[i].shift!=null){let r=MX.cells[i].shift;let ls=0;for(let k=i+1;k<MX.cells.length;k++){const q=MX.cells[k].shift;if(q!=null&&Math.abs(q)>.3){ls=q;break}}
     /* เลขที่ถูกตัดครึ่งจนบอกไม่ได้ว่าเป็นแถวบน/ล่าง → ใช้ฝั่งเดียวกับหลักหน่วย (ทั้งโซ่หมุนพร้อมกัน เห็นเลขแถวเดียวกันของทุกหลัก) */
     if(Math.abs(r)<.3&&Math.abs(ls)>.3)r=Math.sign(ls)*.3;return r}const C=MX.cells,o=C[i]&&C[i].off;if(o==null)return null;const r=C.filter((c,j)=>j!==i&&c.off!=null).map(c=>c.off).sort((x,y)=>x-y);if(r.length<2)return null;return o-r[r.length>>1]}
 function mxCompose(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);if(!n)return null;const ds=C.map(c=>c.d);if(ds.some(x=>!/^\d$/.test(x)))return null;if(MX.ptrOn&&MX.p==null)return null;
@@ -2381,19 +2390,31 @@ function mxCompose(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);if(!n)re
     if(bor){dig[n-1]=String((dv+9)%10);note={dv,to:dig[n-1],p,auto:MX.carry==='auto',zero:dv===0,why}}
     else if(MX.carry==='auto'&&p>=6)note=null;
     /* ไล่ตรวจหลักที่สูงกว่า: ถ้าหลักล่างอยู่ช่วง 9.7→0 หลักบนจะกำลังเลื่อน อาจเห็นเลขถัดไปโผล่ก่อน */
-    if(MX.carry==='auto'){const wrapB=bor&&dv===0;let R=((+dig[n-1]===9)&&p>=7)||wrapB;
+    if(MX.carry==='auto'){const wrapB=bor&&dv===0,rollL=(()=>{const x=mxMid()?C[n-1].shift:MX.lastOff;return x!=null&&Math.abs(x)>.15})();let R=((+dig[n-1]===9)&&(p>=7||rollL))||wrapB;
       for(let j=n-2;j>=0&&R;j--){if(C[j].user){R=false;break}const r=mxRel(j);
-        if(r!=null&&r>(wrapB?-.1:.14)){const o=dig[j];dig[j]=String((+o+9)%10);casc.push({i:j,from:o,to:dig[j]});R=+dig[j]===9}else R=false}}}
+        const rl=j===n-2?null:mxRel(j+1),thr=wrapB?-.1:(p>=7?.14:.1);
+        if(r!=null&&r>thr){const o=dig[j];dig[j]=String((+o+9)%10);casc.push({i:j,from:o,to:dig[j]});R=+dig[j]===9}else R=(+dig[j]===9&&(wrapB||rollL))}}}
   const ip=dig.slice(0,n-red).join(''),fp=dig.slice(n-red).join(''),str=red?ip+'.'+fp:ip,val=parseFloat(str)+(useP?MX.p*MX.pmult:0);
-  return{dig,str,val,reading:(Math.round(val*1e5)/1e5).toFixed(5).replace(/0+$/,'').replace(/\.$/,'.0'),note,useP,conflict,casc}}
+  /* ลำดับการคิด: ไล่จากค่าน้อยสุด (เข็ม Pivot) → หน่วย → สิบ → ร้อย → … → ลูกบาศก์เมตร แล้วค่อยรวมค่า */
+  const trace=[];
+  if(useP){const p=MX.p;trace.push({k:'ptr',t:'เข็ม Pivot (ขีด 0.02 ลิตร · เลข 0.1 ลิตร)',v:p.toFixed(1)+' → เศษลิตร 0.'+String(Math.round(p*10)).padStart(2,'0'),d:'ใช้เป็นฐานของทุกหลัก'})}
+  for(let i=n-1;i>=0;i--){const was=ds[i],now=dig[i],k=n-1-i,lowerBorrowed=i<n-1&&dig[i+1]!==ds[i+1]||false,cs=casc.find(x=>x.i===i),isLast=i===n-1;
+    let d='';
+    if(isLast&&useP)d=now!==was?`ลดจาก ${was} → ${now} (ลูกกลิ้งยังไม่ถึง “${was}” ตามเข็ม ${MX.p.toFixed(1)})`:`ตรงกับเข็ม (ไม่ต้องลด)`;
+    else if(cs)d=`ลดจาก ${was} → ${now} (หลักล่างยังเป็น 9/ยังไม่ทดจริง จึงยังไม่ถึง “${was}”)`;
+    else if(i<n-1&&+dig[i+1]===9)d='หลักล่างเป็น 9 → ตรวจแล้วเลขนี้ยังคงเดิม';
+    else d='หลักล่างไม่ใช่ 9 → ไม่มีการทด คงเดิม';
+    trace.push({k:i>=n-red?'rd':'bk',t:mxWt(i),v:String(now),d,chg:now!==was,conf:C[i].conf,user:C[i].user})}
+  const needEye=casc.length>0||(useP&&mxMid());
+  return{dig,str,val,reading:(Math.round(val*1e5)/1e5).toFixed(5).replace(/0+$/,'').replace(/\.$/,'.0'),note,useP,conflict,casc,trace,needEye}}
 function mxStat(){const C=MX.cells;let bad=0,wn=0;C.forEach(c=>{if(c.user)return;if(c.conf<.3)bad++;else if(c.conf<.6)wn++});
-  const pt=MX.res&&MX.res.ptr,pok=!MX.ptrOn||(pt&&pt.ok&&MX.p!=null);let cf=null;try{const c=mxCompose();cf=c&&c.conflict}catch(e){}return{bad,wn,pok,cf,ok:bad+wn===0&&pok&&!cf}}
+  const pt=MX.res&&MX.res.ptr,pok=!MX.ptrOn||(pt&&pt.ok&&MX.p!=null);let cf=null;try{const c=mxCompose();cf=c&&c.conflict}catch(e){}let ne=false;try{const c=mxCompose();ne=!!(c&&c.needEye)}catch(e){}return{bad,wn,pok,cf,ne,ok:bad+wn===0&&pok&&!cf}}
 const mxWt=i=>{const n=MX.cells.length,red=MX.red,k=n-1-i;return i>=n-red?({0:'1 ลิตร',1:'10 ลิตร',2:'100 ลิตร'})[k]||('10^-'+(k+1)):'×'+Math.pow(10,k-red).toLocaleString('en-US')};
 function mxRegHtml(c){const n=c.dig.length,red=Math.min(MX.red,n);return`<div class="mxreg">${c.dig.map((d,i)=>`${i===n-red&&red?'<i class="mxdot">.</i>':''}<b class="${i>=n-red?'rd':'bk'}">${esc(d)}</b>`).join('')}<small>m³</small></div>`}
 function mxHero(){const c=mxCompose(),st=mxStat();
   if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดด้านล่างก่อน':'ใส่ตัวเลขให้ครบทุกหลักด้านล่าง'}</div></div></div>`;
   const L=c.val*1000;
-  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ · ตัวอ่านใหม่ V38.25</small>${mxRegHtml(c)}
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ · ตัวอ่านใหม่ V38.28</small>${mxRegHtml(c)}
     <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
     <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน — ตรวจดูภาพเทียบอีกครั้งแล้วกดยืนยัน':'⚠ มี '+(st.bad+st.wn+(st.pok?0:1))+' จุดที่ควรตรวจด้วยตา (กรอบสีส้ม)'}</div></div>
     ${c.useP?`<div class="mxh-r">${mdialSvg(MX.p,118)}<small>เข็มละเอียด <b>${MX.p.toFixed(1)}</b></small></div>`:''}</div>`}
@@ -2408,7 +2429,9 @@ function mxNote(){const c=mxCompose();if(!c||!c.useP)return'';const n=MX.cells.l
   if(mxMid())msg+='<br>⚙ ลูกกลิ้งแดงหลายหลักกำลังหมุนพร้อมกัน (กำลังทด เช่น 099→100) — ระบบดูตำแหน่งเลขของทุกลูกกลิ้งเทียบกับลูกกลิ้งดำ แล้วทดจากหลักล่างขึ้นบน';
   if(c.casc&&c.casc.length)msg+='<br>หลักที่สูงกว่าก็กำลังเลื่อนตาม: '+c.casc.map(x=>'หลักที่ '+(x.i+1)+' “'+esc(x.from)+'”→'+esc(x.to)).join(', ');
   if(c.conflict)msg+='<br><span class="mx-wn">⚠ '+esc(c.conflict)+'</span>';
-  return`<div class="mxn"><div class="mxn-t">⚙ ตรวจความสอดคล้องลูกกลิ้ง ↔ เข็ม</div><p>${msg}</p><div class="mxn-s"><span>ตัดสินหลักสุดท้าย:</span>${opt('auto','อัตโนมัติ')}${opt('keep','ใช้ตามที่เห็น ('+esc(dv)+')')}${opt('dec','ลดลง 1 ('+((+dv+9)%10)+')')}</div></div>`}
+  const tr=(c.trace||[]).map(x=>`<li class="${x.chg?'chg':''}"><b>${esc(x.t)}</b><span class="v">${esc(x.v)}</span><em>${esc(x.d)}</em></li>`).join('');
+  const trh=tr?`<div class="mx-tr"><div class="mx-tr-t">ลำดับการคิด (จากน้อยไปมาก)</div><ol>${tr}</ol>${c.needEye?'<div class="mx-wn">ℹ มีการทดข้ามหลัก — ระบบคำนวณให้แล้ว (ดูลำดับการคิดด้านบนถ้าต้องการเทียบ)</div>':''}</div>`:'';
+  return`<div class="mxn"><div class="mxn-t">⚙ ตรวจความสอดคล้องลูกกลิ้ง ↔ เข็ม</div><p>${msg}</p>${trh}<div class="mxn-s"><span>ตัดสินหลักสุดท้าย:</span>${opt('auto','อัตโนมัติ')}${opt('keep','ใช้ตามที่เห็น ('+esc(dv)+')')}${opt('dec','ลดลง 1 ('+((+dv+9)%10)+')')}</div></div>`}
 function mxTile(c,i){const red=i>=MX.cells.length-MX.red,st=c.user?'ok':c.conf>=.6?'ok':c.conf>=.3?'wn':'bad',pct=c.user?100:Math.round(c.conf*100);
   return`<div class="mxt ${st} ${red?'rd':''}" data-ti="${i}"><button class="mxt-i" data-a="mxzc" data-v="${i}" aria-label="ซูมหลักที่ ${i+1}"><img src="${c.img}" alt=""><span>🔍</span></button>
     <input class="mxt-n" data-mxd="${i}" maxlength="1" inputmode="numeric" autocomplete="off" value="${esc(c.d)}" aria-label="เลขหลักที่ ${i+1}">
@@ -2459,7 +2482,7 @@ function mxUpd(){const h=document.getElementById('mxHero');if(h)h.innerHTML=mxHe
   const pv=document.getElementById('mxPv');if(pv)pv.textContent=MX.p==null?'—':MX.p.toFixed(1);
   const pn=document.getElementById('mxPn');if(pn&&MX.p!=null)pn.textContent='= +'+(MX.p*MX.pmult).toFixed(5)+' m³ ('+(MX.p/10).toFixed(2)+' ลิตร)'}
 function mxTiles(){document.querySelectorAll('.mxt').forEach(t=>{const i=+t.dataset.ti,c=MX.cells[i];if(!c)return;const st=c.user?'ok':c.conf>=.6?'ok':c.conf>=.3?'wn':'bad';t.className='mxt '+st+(t.classList.contains('rd')?' rd':'');const inp=t.querySelector('input');if(inp&&document.activeElement!==inp)inp.value=c.d;const bar=t.querySelector('.mxt-b i');if(bar)bar.style.width=(c.user?100:Math.round(c.conf*100))+'%';const sm=t.querySelector('small');if(sm)sm.textContent=c.user?'แก้เอง':c.ocr?'ยืนยันด้วย OCR':Math.round(c.conf*100)+'%'})}
-async function mxOcrAssist(){const todo=MX.cells.map((c,i)=>({c,i})).filter(o=>!o.c.user&&o.c.conf<.55);if(!todo.length||!navigator.onLine||!MX.res||!MX.res.geom)return;
+async function mxOcrAssist(){return;/* ปิด: วิเคราะห์ในตัวอ่านทั้งหมด ไม่รอ OCR ภายนอกมาแก้ค่าทีหลัง */const todo=MX.cells.map((c,i)=>({c,i})).filter(o=>!o.c.user&&o.c.conf<.55);if(!todo.length||!navigator.onLine||!MX.res||!MX.res.geom)return;
   const g=MX.res.geom,stamp=MX.src;MX.assist='ตรวจซ้ำหลักที่ไม่มั่นใจด้วย OCR…';const as=document.getElementById('mxAs');if(as)as.textContent='⏳ '+MX.assist;
   let eng;try{eng=await mrEngine()}catch(e){MX.assist='';const a=document.getElementById('mxAs');if(a)a.textContent='';return}
   for(const{c,i}of todo){if(MX.src!==stamp||!MX.open)return;const cv=MRV.cellCrop(MX.src,g.cx[i],g.cy[i],g.roll,g.p,g.Hd,130),votes={};
