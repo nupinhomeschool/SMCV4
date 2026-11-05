@@ -301,6 +301,9 @@ jobs:
               private var camUri: Uri? = null
               private var webCamUri: Uri? = null
               private var pendingMech: String? = null
+              /** ตำแหน่งบนแท่น (1,2,3,...) ที่จะส่งรูปเข้าไป — 0 = อัตโนมัติ (ตัวถัดไปที่ยังว่าง) */
+              private var mechSlot = 0
+              private lateinit var tvSlot: TextView
               @Volatile private var writeJob: JSONObject? = null
               @Volatile private var writing = false
               private lateinit var writeBox: View
@@ -523,11 +526,33 @@ jobs:
                   btnProv.textSize = 16f
                   val btnCam = pill("📷  ถ่ายหน้าปัดมิเตอร์", true) { openCamera() }
                   val btnPick = pill("🖼 เลือกรูป", false) { openGallery() }
-                  camRow = LinearLayout(this).apply {
+                  val camBtns = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       addView(btnCam, LinearLayout.LayoutParams(0, WRAP_CONTENT, 2f).apply { marginEnd = dp(8) })
                       addView(btnPick, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
                   }
+                  // ---- ตำแหน่งบนแท่น: มาตรกลไกไม่มี ID จึงต้องบอกลำดับว่ารูปนี้คือตัวที่เท่าไร (ย้อนกลับไปส่งตัวที่อ่านไม่ชัดได้) ----
+                  mechSlot = prefs.getInt("mslot", 0)
+                  tvSlot = label("", 13f, Color.WHITE, true)
+                  val btnSlotM = pill("−", false) { stepMechSlot(-1) }
+                  val btnSlotP = pill("+", false) { stepMechSlot(1) }
+                  val btnSlotA = pill("อัตโนมัติ", false) { mechSlot = 0; prefs.edit().putInt("mslot", 0).apply(); refreshSlotLabel() }
+                  val slotRow = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      gravity = Gravity.CENTER_VERTICAL
+                      background = rounded(Color.argb(40, 255, 255, 255), 14, Color.argb(90, 255, 255, 255), 1)
+                      setPadding(dp(12), dp(8), dp(8), dp(8))
+                      addView(tvSlot, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                      addView(btnSlotM, LinearLayout.LayoutParams(dp(54), WRAP_CONTENT).apply { marginEnd = dp(6) })
+                      addView(btnSlotP, LinearLayout.LayoutParams(dp(54), WRAP_CONTENT).apply { marginEnd = dp(6) })
+                      addView(btnSlotA, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+                  }
+                  camRow = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      addView(camBtns, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+                      addView(slotRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+                  }
+                  refreshSlotLabel()
                   btnMode = pill("", false) { toggleMode() }
                   refreshModeLabel()
 
@@ -2714,12 +2739,31 @@ jobs:
                   val data = encodeForWeb(uri)
                   discardImage(uri, own)
                   if (data == null) { toast("เตรียมรูปส่งไม่สำเร็จ — ลองถ่ายใหม่"); return }
-                  val j = JSONObject().put("img", data).put("reading", reading).put("id", id).put("by", "cam").put("lcd", lcd).toString()
-                  valMeter.text = if (id.isEmpty()) "(ตำแหน่งถัดไป)" else id
+                  val jo = JSONObject().put("img", data).put("reading", reading).put("id", id).put("by", "cam").put("lcd", lcd)
+                  if (mechSlot > 0) jo.put("slot", mechSlot - 1)
+                  val j = jo.toString()
+                  valMeter.text = if (id.isNotEmpty()) id else if (mechSlot > 0) "ตำแหน่ง #$mechSlot" else "(ตำแหน่งถัดไป)"
                   valSize.text = "ตรวจรูปใน Test Bench"
                   valTime.text = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
                   pendingMech = j
                   pushMech(j)
+                  advanceMechSlot()
+              }
+
+              private fun refreshSlotLabel() {
+                  tvSlot.text = if (mechSlot == 0) "ตำแหน่งบนแท่น: อัตโนมัติ (ตัวถัดไปที่ยังว่าง)"
+                  else "ตำแหน่งบนแท่น: #$mechSlot  (ส่งแล้วขยับไปตัวถัดไปเอง)"
+              }
+
+              private fun stepMechSlot(d: Int) {
+                  mechSlot = if (mechSlot == 0) 1 else (mechSlot + d).coerceIn(1, 60)
+                  prefs.edit().putInt("mslot", mechSlot).apply()
+                  refreshSlotLabel()
+              }
+
+              /** ส่งแล้วขยับไปตำแหน่งถัดไป (เฉพาะโหมดระบุตำแหน่งเอง) — ถ้าต้องกลับไปแก้ตัวที่อ่านไม่ชัด กด − เลือกเลขนั้นแล้วส่งใหม่ */
+              private fun advanceMechSlot() {
+                  if (mechSlot > 0) { mechSlot = (mechSlot + 1).coerceAtMost(60); prefs.edit().putInt("mslot", mechSlot).apply(); refreshSlotLabel() }
               }
 
               private fun openGallery() {
@@ -2884,12 +2928,15 @@ jobs:
               }
 
               private fun sendMech(id: String, reading: String) {
-                  val j = JSONObject().put("id", id).put("reading", reading).put("by", "cam").toString()
+                  val jo = JSONObject().put("id", id).put("reading", reading).put("by", "cam")
+                  if (mechSlot > 0) jo.put("slot", mechSlot - 1)
+                  val j = jo.toString()
                   pendingMech = j
-                  valMeter.text = if (id.isEmpty()) "(ตำแหน่งถัดไป)" else id
+                  valMeter.text = if (id.isNotEmpty()) id else if (mechSlot > 0) "ตำแหน่ง #$mechSlot" else "(ตำแหน่งถัดไป)"
                   valSize.text = "หน้าปัด $reading m³"
                   valTime.text = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
                   pushMech(j)
+                  advanceMechSlot()
               }
 
               private fun pushMech(json: String) {
