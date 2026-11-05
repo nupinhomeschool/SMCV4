@@ -2291,7 +2291,7 @@ function mxRegHtml(c){const n=c.dig.length,red=Math.min(MX.red,n);return`<div cl
 function mxHero(){const c=mxCompose(),st=mxStat();
   if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดด้านล่างก่อน':'ใส่ตัวเลขให้ครบทุกหลักด้านล่าง'}</div></div></div>`;
   const L=c.val*1000;
-  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ</small>${mxRegHtml(c)}
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ · ตัวอ่านใหม่ V38.21</small>${mxRegHtml(c)}
     <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
     <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน — ตรวจดูภาพเทียบอีกครั้งแล้วกดยืนยัน':'⚠ มี '+(st.bad+st.wn+(st.pok?0:1))+' จุดที่ควรตรวจด้วยตา (กรอบสีส้ม)'}</div></div>
     ${c.useP?`<div class="mxh-r">${mdialSvg(MX.p,118)}<small>เข็มละเอียด <b>${MX.p.toFixed(1)}</b></small></div>`:''}</div>`}
