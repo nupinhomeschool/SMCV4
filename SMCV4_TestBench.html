@@ -428,6 +428,21 @@ body.mro{overflow:hidden}
 .colw::after{background:radial-gradient(ellipse at 50% 60%,var(--f4),transparent 68%),radial-gradient(ellipse at 18% 50%,var(--f2),transparent 56%),radial-gradient(ellipse at 84% 56%,var(--f1),transparent 54%);filter:blur(10px) saturate(1.2);opacity:.6;animation:fogd 12s ease-in-out infinite alternate-reverse}
 @media(prefers-reduced-motion:reduce){.colw::before,.colw::after{animation:none}}
 
+/* ===== Datas Table ===== */
+.paper .dth{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 16px;background:#0d1b26;color:#e8f1f7;border-radius:10px;padding:10px 14px;margin:10px 0}
+.paper .dth small{display:block;color:#8fb3c9;font-size:.72rem}.paper .dth b{font-size:1rem;color:#fff}
+.paper table.dtt{width:100%;border-collapse:collapse;font-size:.8rem}
+.paper table.dtt th{background:#0d1b26;color:#fff;padding:5px 6px;border:1px solid #2b4152;text-align:center;font-weight:600}
+.paper table.dtt th small{font-weight:400;color:#9fc0d4}
+.paper table.dtt td{padding:4px 6px;border:1px solid #d3dee6;text-align:right;color:#0d2b3e}
+.paper table.dtt td.l,.paper table.dtt th.l{text-align:left}
+.paper table.dtt tbody tr:nth-child(even) td{background:#f5f9fc}
+.paper table.dtt tbody tr.ng td{background:#fff1f1}
+.paper table.dtt td.bd{color:#b42318;font-weight:700}
+.paper table.dtt td.c{text-align:center}
+@media(max-width:700px){.paper .dth{grid-template-columns:repeat(2,1fr)}}
+@media print{.paper table.dtt{font-size:.68rem}.paper table.dtt tr{break-inside:avoid}.paper table.dtt thead{display:table-header-group}}
+
 /* ===== การ์ดลงทะเบียนเข้าทะเบียนคุณภาพ ===== */
 .qrg{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#eef9f6,#eef6fd);border:1px solid #cfe9e3;border-radius:14px;padding:12px 14px;margin-top:6px}.qrg b{color:#0a2a43}
 #mon .mab{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 6px;margin-top:4px;background:linear-gradient(rgba(7,26,42,0),rgba(7,26,42,.97) 28%)}
@@ -875,6 +890,7 @@ function vSetup(A){const b=S.batch;
    <div class="fr">${fld('Batch ID','batch.id')}${fld('วันที่-เวลาเริ่มทดสอบ','batch.date','datetime-local')}</div>
    <div class="fr">${fld('ผู้ทดสอบ (Operator)','batch.tester','text','placeholder="ชื่อ-สกุล"')}${fld('ผู้ตรวจสอบ / อนุมัติ','batch.checker','text','placeholder="ชื่อ-สกุล"')}</div>
    <div class="fr">${fld('หน่วยงาน / ชื่อรายงาน','batch.org')}${fld('แท่นทดสอบ (Bench ID)','batch.bench','text','placeholder="เช่น TB-01"')}</div>
+   <div class="fr">${fld('เลขที่ / Lot (หัวรายงาน Datas Table)','batch.lot','text','placeholder="เช่น 26091612O_Db"')}${fld('รอบที่','batch.round','number','min="1" step="1"')}</div>
    ${fld('รุ่นฮาร์ดแวร์ / หมายเหตุรุ่น','batch.hw','text','placeholder="เช่น SMCV4 rev.C"')}
    <div class="fld"><label>หมายเหตุ</label><textarea rows="2" data-f="batch.note">${esc(b.note)}</textarea></div></div>
   <div class="card"><h2><em>🔧</em>มิเตอร์ที่ทดสอบ</h2><p class="sub">ขนาดอ่านจาก NFC (Addr 76) ได้อัตโนมัติ — เลือกเองได้ถ้ายังไม่อ่าน</p>
@@ -1459,7 +1475,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.datase
 /* ---------- ⑤ รายงาน ---------- */
 
 /* ---------- รายละเอียดการอ่านรายจุดทดสอบ (พรีวิว · PDF · Excel) ---------- */
-const RO=()=>(S.repOpt=S.repOpt||{det:1,chart:1,k:1,bat:1,cfg:1,qc:1});
+const RO=()=>{const o=S.repOpt=S.repOpt||{det:1,chart:1,k:1,bat:1,cfg:1,qc:1};if(o.dt===undefined)o.dt=1;return o};
 const hhmm=t=>{if(!t)return'';const d=new Date(t);return p2(d.getHours())+':'+p2(d.getMinutes())};
 function detRows(){const regs=S.meters.filter(m=>m.id),out=[];
   S.plan.forEach((p,i)=>{if(p.off)return;const rows=[];regs.forEach(m=>{const r=(S.rd[i]||{})[m.id];if(!r||!r.s||!r.e)return;const c=calc(i,m.id);rows.push({m,r,c})});
@@ -1473,13 +1489,14 @@ function ptsDetailHtml(A,edit){const D=detRows();if(!D.length)return'<p class="h
 function detAoa(){const a=[['จุดทดสอบ','อัตราไหล (L/h)','ปริมาตรอ้างอิง (L)','แก้จากแผน (L)','เกณฑ์ ±%','Meter ID','ขนาด (mm)','ปริมาตรเริ่มต้น (m³)','ปริมาตรสิ้นสุด (m³)','น้ำที่ใช้ (L)','รอบเริ่มต้น','รอบสิ้นสุด','Δ รอบ','K ที่มิเตอร์ใช้ (µL/รอบ)','K ที่ต้องใช้ (µL/รอบ)','% error','ผล','แบตเริ่มต้น (V)','แบตสิ้นสุด (V)','เวลาเริ่ม','เวลาสิ้นสุด']];
   detRows().forEach(d=>d.rows.forEach(({m,r,c})=>{const ok=c&&c.valid;a.push([d.p.l,d.p.f,c?+c.vref.toFixed(3):d.vref,d.edited?d.p.v:'',d.p.lim,m.id,m.size||'',r.s.vol==null?'':r.s.vol/1e5,r.e.vol==null?'':r.e.vol/1e5,c?+c.dVol.toFixed(3):'',r.s.rev==null?'':r.s.rev,r.e.rev==null?'':r.e.rev,c&&c.dRev!=null?c.dRev:'',c&&c.kObs!=null?+c.kObs.toFixed(2):'',c&&c.kNeed!=null?+c.kNeed.toFixed(2):'',ok?+c.err.toFixed(3):'',ok?(c.pass?'PASS':'FAIL'):'',r.s.bat==null?'':r.s.bat,r.e.bat==null?'':r.e.bat,d.st.t0?fdt(d.st.t0):'',d.st.t1?fdt(d.st.t1):''])}));return a}
 
-function reportHtml(A,edit){const b=S.batch,v=VD[A.verdict],pts=S.plan,Q=qs(b.q3,b.R);
+function reportHtml(A,edit){if(window.__dtOnly)return datasPaper();const b=S.batch,v=VD[A.verdict],pts=S.plan,Q=qs(b.q3,b.R);
   const ser=A.mids.map(id=>({id,pass:A.M[id].verdict!=='fail',pts:A.M[id].cells.map((c,i)=>c&&c.valid?{e:c.err,ok:c.pass,f:pts[i].f}:null)}));
   const ig=[['Batch ID',b.id],['วันที่ทดสอบ',fdt(b.date)],['ผู้ทดสอบ',b.tester||'—'],['ผู้ตรวจสอบ',b.checker||'—'],['รุ่น / ขนาด',MODEL(b.model)+' '+b.size+' mm'],['คลาส / Q3',`R${b.R} · Q3 ${fx(b.q3)} L/h`],['Q1 / Q2 / Q4',`${flowT(rs3(Q.q1))} / ${flowT(rs3(Q.q2))} / ${flowT(rs3(Q.q4))} L/h`],['เกณฑ์ผ่าน',`±${b.limLow}% (ต่ำ) · ±${b.limHigh}% (สูง)`],['แท่นทดสอบ',b.bench||'—'],['อุปกรณ์อ้างอิง',(b.ref||'—')+(b.refDue?' · หมดอายุ '+b.refDue:'')],['อุณหภูมิ / แรงดัน',(b.tmpC||'—')+' °C · '+(b.bar||'—')+' bar'],['จำนวนมิเตอร์ / จุด',`${A.nm} ตัว · ${pts.length} จุด`]];
   return`<div class="paper"><div class="hd"><svg width="54" height="54" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="none" stroke="#0b7ea4" stroke-width="3"/><path d="M32 12c8 10 13 16 13 23a13 13 0 0 1-26 0c0-7 5-13 13-23z" fill="#14b8a6"/><path d="M24 36l5 5 11-12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
    <div style="flex:1"><h1>รายงานผลการทดสอบมิเตอร์น้ำ SMCV4</h1><small>${esc(b.org)} · Test Bench Report · พิมพ์เมื่อ ${fdt(Date.now())}</small></div><div style="text-align:right"><span class="verdict ${v[0]}">${v[1]}</span></div></div>
    <div class="ig">${ig.map(x=>`<div><small>${x[0]}</small><b>${esc(x[1])}</b></div>`).join('')}</div>
    <div class="kg"><div class="kpi"><small>มิเตอร์ผ่านครบ</small><b>${A.full}/${A.nm}</b><em>${fx(A.pct,1)}%</em></div><div class="kpi" style="--c:var(--ok)"><small>จุดทดสอบที่ผ่าน</small><b>${A.cellsPass}/${A.cellsAll}</b><em>${A.cellsAll?fx(A.cellsPass/A.cellsAll*100,1):0}%</em></div><div class="kpi" style="--c:#f59e0b"><small>error เฉลี่ย</small><b>${sg(A.mean)}%</b><em>ค่ากลางทั้ง Batch</em></div><div class="kpi" style="--c:var(--bad)"><small>error สูงสุด</small><b>${sg(A.worst)}%</b><em>ห่างศูนย์มากสุด</em></div></div>
+   ${RO().dt?dtSection():''}
    <h3>ผล % error รายมิเตอร์</h3>${matrix(A)}
    ${RO().det?'<h3>รายละเอียดการอ่านรายจุดทดสอบ <small style="font-weight:400;color:var(--mut)">ปริมาตร · จำนวนรอบ · K · % error</small></h3>'+ptsDetailHtml(A,edit):''}
    ${RO().chart?`<h3>กราฟ % error เทียบอัตราการไหล</h3>${pts.length?chartSvg({series:ser,w:900,h:300}):''}`:''}
@@ -1491,10 +1508,58 @@ function reportHtml(A,edit){const b=S.batch,v=VD[A.verdict],pts=S.plan,Q=qs(b.q3
 function qcList(A){const out=[];A.mids.forEach(id=>A.M[id].cells.forEach((c,i)=>{if(c&&c.flags.length)out.push(`<tr><td class="l mono">${esc(id)}</td><td>${esc(S.plan[i].l)} · ${flowT(S.plan[i].f)} L/h</td><td class="l">${c.flags.map(esc).join(' · ')}</td></tr>`)}));
   const bad=A.P.filter((p,i)=>{const fa=p.fa;return fa&&Math.abs(fa-S.plan[i].f)/S.plan[i].f*100>S.batch.flowTol}).map(p=>`<tr><td class="l">—</td><td>${esc(S.plan[p.i].l)}</td><td class="l">อัตราไหลจริง ${fx(p.fa,1)} L/h เบี่ยงจากที่ตั้ง ${flowT(S.plan[p.i].f)} เกิน ±${S.batch.flowTol}%</td></tr>`);
   const rows=[...out,...bad];return rows.length?`<div class="tw"><table><thead><tr><th class="l">มิเตอร์</th><th>จุด</th><th class="l">ข้อสังเกต</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`:'<p class="pill ok">✔ ไม่พบข้อสังเกตด้านคุณภาพข้อมูล</p>'}
-function vRep(A){const o=RO(),tg=(k,t)=>`<button class="rtg ${o[k]?'on':''}" data-a="rotg" data-v="${k}"><i>${o[k]?'✓':''}</i>${t}</button>`,nD=detRows().reduce((n,d)=>n+d.rows.length,0);
-  return`<div class="rtb noprint"><div class="rt1"><div><b>🖨 ตัวอย่างรายงาน</b><small>A4 แนวนอน · ${nD} แถวข้อมูลการอ่าน · แก้ปริมาตรอ้างอิงในตารางได้ทันที</small></div><div class="rbt"><button class="btn p" data-a="pdf">🖨 พิมพ์ / บันทึก PDF</button><button class="btn" data-a="xlsx">⬇ Excel</button><button class="btn nb" data-a="newbatch">🆕 Batch ใหม่</button></div></div>
-   <div class="rt2"><span>เลือกหัวข้อที่จะแสดง/พิมพ์:</span>${tg('det','ตารางปริมาตร·รอบ·K')}${tg('chart','กราฟ')}${tg('k','ค่า K1–K20')}${tg('bat','แบตเตอรี่')}${tg('cfg','ค่าตั้งมิเตอร์')}${tg('qc','ตรวจคุณภาพ')}</div></div>
-  <div class="sheetw">${reportHtml(A,true)}</div>`}
+function vRep(A){const full=S.repMode==='full',o=RO(),tg=(k,t)=>`<button class="rtg ${o[k]?'on':''}" data-a="rotg" data-v="${k}"><i>${o[k]?'✓':''}</i>${t}</button>`,nD=detRows().reduce((n,d)=>n+d.rows.length,0),D=full?null:dtData();
+  const md=(v,t,on)=>`<button class="rtg ${on?'on':''}" data-a="repmode" data-v="${v}"><i>${on?'✓':''}</i>${t}</button>`;
+  return`<div class="rtb noprint"><div class="rt1"><div><b>🖨 ตัวอย่างรายงาน</b><small>${full?`A4 แนวนอน · ${nD} แถวข้อมูลการอ่าน · แก้ปริมาตรอ้างอิงในตารางได้ทันที`:`A4 แนวนอน · ${D.rows.length} ตำแหน่ง · PASS ${D.np} · NG ${D.ng} · แสดงตามหน้าจอเบนช์ (Datas Table)`}</small></div><div class="rbt"><button class="btn p" data-a="${full?'pdf':'pdfx'}">🖨 พิมพ์ / บันทึก PDF</button><button class="btn" data-a="${full?'xlsx':'xdt'}">⬇ Excel</button><button class="btn nb" data-a="newbatch">🆕 Batch ใหม่</button></div></div>
+   <div class="rt2"><span>รูปแบบรายงาน:</span>${md('dt','Datas Table (ตามหน้าจอเบนช์)',!full)}${md('full','รายงานเต็ม (กราฟ · K · แบต)',full)}</div>
+   ${full?`<div class="rt2"><span>เลือกหัวข้อที่จะแสดง/พิมพ์:</span>${tg('dt','Datas Table')}${tg('det','ตารางปริมาตร·รอบ·K')}${tg('chart','กราฟ')}${tg('k','ค่า K1–K20')}${tg('bat','แบตเตอรี่')}${tg('cfg','ค่าตั้งมิเตอร์')}${tg('qc','ตรวจคุณภาพ')}</div>`:''}</div>
+  <div class="sheetw">${full?reportHtml(A,true):datasPaper()}</div>`}
+
+/* ===== Datas Table (รูปแบบเดียวกับหน้าจอเบนช์) · พรีวิว · PDF · Excel — V38.33 ===== */
+const dtCols=()=>S.plan.map((p,i)=>({p,i})).filter(x=>!x.p.off).sort((a,b)=>b.p.f-a.p.f);
+const dtRd=v=>v==null?'':String(v%100000);
+const dtF=(n,d)=>n==null||!isFinite(n)?'':(Math.abs(n)<5e-10?0:+n.toFixed(d));
+function dtHead(){const b=S.batch,ts=[];Object.keys(S.pt||{}).forEach(i=>{const x=S.pt[i]||{};if(x.t0)ts.push([x.t0,x.t1||x.t0])});
+  const t0=ts.length?Math.min(...ts.map(x=>x[0])):null,t1=ts.length?Math.max(...ts.map(x=>x[1])):null,d=new Date(t0||Date.parse(b.date)||Date.now());
+  const tm=t=>{if(!t)return'';const x=new Date(t);return p2(x.getHours())+':'+p2(x.getMinutes())+':'+p2(x.getSeconds())};
+  return{date:p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+p2(d.getFullYear()%100),type:(MECH()?MECH_MODEL:(b.model==='MJ'?'MJ':'SJ'))+b.size+'_R'+b.R,tester:b.tester||'',t0:tm(t0),t1:tm(t1),bench:b.bench||'',lot:b.lot||b.id||'',round:b.round||''}}
+function dtData(){const cols=dtCols(),regs=S.meters.filter(m=>m.id),H=dtHead();
+  const rows=regs.map((m,n)=>{let qp=null;
+    const cs=cols.map(({p,i})=>{const r=(S.rd[i]||{})[m.id],c=calc(i,m.id);if(r&&r.s&&qp==null&&r.s.vol!=null)qp=r.s.vol;
+      if(!c||!c.valid)return{p,rd:r&&r.e&&r.e.vol!=null?r.e.vol:null,df:null,pc:null,ok:null};
+      return{p,rd:r.e.vol,df:c.dVol-c.vref,pc:c.err,ok:c.pass}});
+    const have=cs.filter(x=>x.ok!=null);let res='';
+    if(cs.length&&have.length===cs.length)res=cs.every(x=>x.ok)?'PASS':'NG';else if(have.some(x=>!x.ok))res='NG';
+    return{id:m.id,n:n+1,qp,cs,res}});
+  const np=rows.filter(r=>r.res==='PASS').length,ng=rows.filter(r=>r.res==='NG').length;
+  return{H,cols,rows,np,ng,pct:(np+ng)?np/(np+ng)*100:0}}
+function dtTable(D){
+  const hd=`<tr><th rowspan="2" class="l">Pos_ID</th><th rowspan="2">QP</th>${D.cols.map(c=>`<th colspan="3">${esc(c.p.l)} · ${flowT(c.p.f)} L/h<br><small>อ้างอิง ${fx(c.p.v,c.p.v<10?1:0)} L · ±${c.p.lim}%</small></th>`).join('')}<th rowspan="2">Result</th></tr><tr>${D.cols.map(c=>`<th>${esc(c.p.l)}:</th><th>df${esc(c.p.l)}</th><th>%${esc(c.p.l)}</th>`).join('')}</tr>`;
+  const bd=D.rows.map(r=>`<tr class="${r.res==='NG'?'ng':''}"><td class="l mono"><b>${esc(r.id)}</b></td><td class="mono">${dtRd(r.qp)}</td>${r.cs.map(c=>{const k=c.ok===false?'bd':'';return`<td class="mono">${dtRd(c.rd)}</td><td class="mono ${k}">${c.df==null?'':dtF(c.df,2)}</td><td class="mono ${k}">${c.pc==null?'':dtF(c.pc,2)}</td>`}).join('')}<td class="c"><span class="pill ${r.res==='PASS'?'ok':r.res==='NG'?'bad':''}">${r.res||'—'}</span></td></tr>`).join('');
+  return`<div class="tw"><table class="dtt"><thead>${hd}</thead><tbody>${bd||'<tr><td colspan="99" class="hint">ยังไม่มีข้อมูลการอ่าน — ใส่ ID มิเตอร์และค่าเริ่มต้น/สิ้นสุดในแท็บ ③ ทดสอบ</td></tr>'}</tbody></table></div>`}
+function dtHeadHtml(H){const f=(a,b)=>`<div><small>${a}</small><b>${esc(b)||'—'}</b></div>`;
+  return`<div class="dth">${f('วันที่',H.date)}${f('ชนิดมาตร',H.type)}${f('ผู้ทดสอบ',H.tester)}${f('เริ่มเวลา',H.t0)}${f('แท่น',H.bench)}${f('เลขที่',H.lot)}${f('รอบที่',H.round)}${f('สิ้นสุดเวลา',H.t1)}</div>`}
+function dtNg(D){const l=[];D.rows.forEach(r=>{if(r.res!=='NG')return;const w=r.cs.filter(c=>c.ok===false).map(c=>`${esc(c.p.l)} ${sg(c.pc)}% (เกิน ±${c.p.lim}%)`);l.push(`<tr><td class="l mono"><b>${esc(r.id)}</b></td><td class="l">${w.join(' · ')||'ข้อมูลไม่ครบ'}</td></tr>`)});
+  return l.length?`<h3>ตำแหน่งที่ไม่ผ่าน (NG) — ต้องตรวจซ้ำ/ปรับ</h3><div class="tw"><table class="dtt"><thead><tr><th class="l">Pos_ID</th><th class="l">จุดที่เกินเกณฑ์</th></tr></thead><tbody>${l.join('')}</tbody></table></div>`:''}
+function dtSection(){const D=dtData();return`<h3>Datas Table <small style="font-weight:400;color:var(--mut)">ค่าอ่านปลายทาง · df (L) · % error · Result</small></h3>${dtHeadHtml(D.H)}${dtTable(D)}`}
+function datasPaper(){const D=dtData(),b=S.batch,tot=D.np+D.ng;
+  return`<div class="paper"><div class="hd"><svg width="54" height="54" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="none" stroke="#0b7ea4" stroke-width="3"/><path d="M32 12c8 10 13 16 13 23a13 13 0 0 1-26 0c0-7 5-13 13-23z" fill="#14b8a6"/><path d="M24 36l5 5 11-12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div style="flex:1"><h1>Datas Table · ผลทดสอบมิเตอร์น้ำ</h1><small>${esc(b.org)} · พิมพ์เมื่อ ${fdt(Date.now())}</small></div><div style="text-align:right"><span class="verdict ${tot&&D.ng===0?'pass':'fail'}">${tot?(D.ng===0?'ผ่านทั้งหมด':'พบ NG '+D.ng+' ตำแหน่ง'):'รอข้อมูล'}</span></div></div>
+  ${dtHeadHtml(D.H)}
+  <div class="kg"><div class="kpi"><small>ตำแหน่งที่ทดสอบ</small><b>${tot}/${D.rows.length}</b><em>มีผลตัดสินแล้ว</em></div><div class="kpi" style="--c:var(--ok)"><small>PASS</small><b>${D.np}</b><em>ผ่านทุกจุด</em></div><div class="kpi" style="--c:var(--bad)"><small>NG</small><b>${D.ng}</b><em>เกินเกณฑ์อย่างน้อย 1 จุด</em></div><div class="kpi" style="--c:#f59e0b"><small>อัตราผ่าน</small><b>${fx(D.pct,1)}%</b><em>PASS ÷ (PASS+NG)</em></div></div>
+  ${dtTable(D)}
+  <p class="hint" style="margin:6px 0 0">ค่าอ่าน = ปริมาตรสะสมท้ายแต่ละจุด (หน่วย 0.01 L · 5 หลักท้าย) · QP = ค่าเริ่มก่อนจุดแรก · df = ปริมาตรที่วัดได้ − ปริมาตรอ้างอิง (L) · % = df ÷ อ้างอิง × 100 · PASS เมื่อทุกจุดอยู่ในเกณฑ์</p>
+  ${dtNg(D)}
+  ${b.note?`<h3>หมายเหตุ</h3><p>${esc(b.note)}</p>`:''}
+  <div class="sg"><div>ผู้ทดสอบ<br><b>${esc(b.tester||'')}</b></div><div>ผู้ตรวจสอบ<br><b>${esc(b.checker||'')}</b></div><div>ผู้อนุมัติ</div></div></div>`}
+function dtAoa(){const D=dtData(),H=D.H,a=[['Datas Table'],[],['วันที่',H.date,'ชนิดมาตร',H.type,'ผู้ทดสอบ',H.tester,'เริ่มเวลา',H.t0],['แท่น',H.bench,'เลขที่',H.lot,'รอบที่',H.round,'สิ้นสุดเวลา',H.t1],[]];
+  const h=['Pos_ID','QP'];D.cols.forEach(c=>h.push(c.p.l+':','df'+c.p.l,'%'+c.p.l));h.push('Result');a.push(h);
+  a.push(['อ้างอิง (L) / เกณฑ์ ±%','',...D.cols.flatMap(c=>[c.p.v,'',c.p.lim]),'']);
+  D.rows.forEach(r=>{const x=[r.id,r.qp==null?'':r.qp%100000];r.cs.forEach(c=>x.push(c.rd==null?'':c.rd%100000,c.df==null?'':dtF(c.df,2),c.pc==null?'':dtF(c.pc,2)));x.push(r.res);a.push(x)});
+  a.push([],['สรุป','ทั้งหมด',D.rows.length,'PASS',D.np,'NG',D.ng,'อัตราผ่าน %',+D.pct.toFixed(1)]);return a}
+function dtSheet(X){const w=X.utils.aoa_to_sheet(dtAoa());w['!cols']=[{wch:22},{wch:9},...dtCols().flatMap(()=>[{wch:9},{wch:8},{wch:8}]),{wch:9}];return w}
+async function wbDatas(){const X=await needXL(),wb=X.utils.book_new();X.utils.book_append_sheet(wb,dtSheet(X),'Datas Table');return X.writeFile(wb,fnBase()+'_DatasTable.xlsx')}
+function printDatas(){window.__dtOnly=1;try{printReport()}finally{window.__dtOnly=0}}
 
 /* ---------- Monitor ---------- */
 /* ---------- ส่งค่าจากมือถือ: หน้าจอฝั่งมือถือ (โหมดส่ง) ---------- */
@@ -1700,7 +1765,7 @@ const fnPt=p=>String(p.l).replace(/\s*%\s*/g,'p').replace(/[^\w.-]+/g,'');
 async function wbReport(){const X=await needXL(),A=agg(),b=S.batch,wb=X.utils.book_new(),v=VD[A.verdict];
   const sum=[['SMCV4 Test Bench — สรุปผล'],[],['Batch ID',b.id],['วันที่ทดสอบ',fdt(b.date)],['ผู้ทดสอบ',b.tester],['ผู้ตรวจสอบ',b.checker],['แท่นทดสอบ',b.bench],['รุ่น / ขนาด',MODEL(b.model)+' '+b.size+' mm'],['คลาส R / Q3',`R${b.R} / ${b.q3} L/h`],['เกณฑ์ผ่าน',`±${b.limLow}% (ต่ำ) / ±${b.limHigh}% (สูง)`],['อุปกรณ์อ้างอิง',b.ref],['หมดอายุสอบเทียบ',b.refDue],['อุณหภูมิน้ำ (°C)',b.tmpC],['แรงดัน (bar)',b.bar],[],
     ['ผลสรุป Batch',v[1]],['มิเตอร์ผ่านครบ',`${A.full}/${A.nm} (${A.pct.toFixed(1)}%)`],['จุดทดสอบที่ผ่าน',`${A.cellsPass}/${A.cellsAll}`],['error เฉลี่ย (%)',A.mean==null?'':+A.mean.toFixed(3)],['error สูงสุด (%)',A.worst==null?'':+A.worst.toFixed(3)],['หมายเหตุ',b.note]];
-  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(sum),'สรุป');
+  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(sum),'สรุป');X.utils.book_append_sheet(wb,dtSheet(X),'Datas Table');
   const OP=S.plan.filter(p=>!p.off);const mx=[['มิเตอร์',...OP.map(p=>flowT(p.f)+' L/h ('+p.l+')'),'ผ่าน','สรุป']];mx.push(['เกณฑ์ ±%',...OP.map(p=>p.lim),'','']);
   A.mids.forEach(id=>{const m=A.M[id];mx.push([id,...m.cells.filter((c,i)=>!S.plan[i].off).map(c=>c&&c.valid?+c.err.toFixed(3):''),m.pass+'/'+A.np,m.verdict==='pass'?'PASS':m.verdict==='fail'?'FAIL':'รอ'])});
   mx.push(['เฉลี่ย %',...A.P.filter(p=>!S.plan[p.i].off).map(p=>p.mean==null?'':+p.mean.toFixed(3))]);const w2=X.utils.aoa_to_sheet(mx);w2['!cols']=[{wch:14},...OP.map(()=>({wch:14})),{wch:9},{wch:9}];X.utils.book_append_sheet(wb,w2,'ผล_%error');
@@ -1771,11 +1836,11 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t
   else if(a==='mclose')closeModal();
   else if(a==='demo'){demo()}
   else if(a==='kcopy'){const A=agg(),f=fillK?kFill(A.kRec):A.kRec.map(r=>r.prop),txt=f.map((k,i)=>`K${i+1}\t${k||''}\t${k8(k)}`).join('\n');(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('คัดลอกค่า K แล้ว'),()=>modal('<h3>ค่า K</h3><pre class="mono">'+esc(txt)+'</pre><button class="btn" data-a="mclose">ปิด</button>'))}
-  else if(a==='xlsx')modal(`<h3>⬇ ส่งออก Excel</h3><div style="display:grid;gap:10px"><button class="btn p" data-a="xrep">📘 สมุดงานรายงานรวม (สรุป · ผล · K · ทุกอัตราไหล)</button><button class="btn" data-a="xbat">🔗 ไฟล์ Batch สำหรับ Web App (1 ไฟล์ต่อ 1 อัตราการไหล)</button><button class="btn" data-a="mclose">ปิด</button></div><p class="hint" style="margin-top:10px">ไฟล์ Batch ใช้รูปแบบเดียวกับที่ Web App นำเข้า (ปฏิบัติงาน → นำเข้าผลทดสอบ) จึงต่อกับ Studio K ได้ทันที</p>`);
+  else if(a==='xlsx')modal(`<h3>⬇ ส่งออก Excel</h3><div style="display:grid;gap:10px"><button class="btn p" data-a="xdt">📄 Datas Table (ตามหน้าจอเบนช์)</button><button class="btn" data-a="xrep">📘 สมุดงานรายงานรวม (สรุป · ผล · K · ทุกอัตราไหล)</button><button class="btn" data-a="xbat">🔗 ไฟล์ Batch สำหรับ Web App (1 ไฟล์ต่อ 1 อัตราการไหล)</button><button class="btn" data-a="mclose">ปิด</button></div><p class="hint" style="margin-top:10px">ไฟล์ Batch ใช้รูปแบบเดียวกับที่ Web App นำเข้า (ปฏิบัติงาน → นำเข้าผลทดสอบ) จึงต่อกับ Studio K ได้ทันที</p>`);
   else if(a==='xrep'){closeModal();wbReport().then(()=>{markExp();toast('บันทึกไฟล์ Excel แล้ว')},e=>toast('⚠ '+e.message,4200))}
   else if(a==='xbat'){closeModal();batchFiles().catch(e=>toast('⚠ '+e.message,4200))}
   else if(a==='pdf'){markExp();printReport()}
-  else if(a==='rotg'){const o=RO();o[v]=o[v]?0:1;save();render()}
+  else if(a==='repmode'){S.repMode=v==='full'?'full':'dt';save();render()}else if(a==='pdfx'){markExp();printDatas()}else if(a==='xdt'){closeModal();wbDatas().then(()=>{markExp();toast('บันทึก Excel Datas Table แล้ว')},e=>toast('⚠ '+e.message,4200))}else if(a==='rotg'){const o=RO();o[v]=o[v]?0:1;save();render()}
   else if(a==='vapreset'){const st=S.pt[+v];if(st){delete st.va;save();render();toast('กลับเป็นปริมาตรตามแผน',2000)}}
   else if(a==='monitor')modal(`<h3>📺 Monitor หน้าแท่นทดสอบ</h3><div style="display:grid;gap:10px"><button class="btn p" data-a="openmon">เต็มจอในหน้านี้ (ต่อ HDMI / Cast)</button><button class="btn" data-a="winmon">เปิดหน้าต่างแยก — ลากไปจอที่สองได้ (อัปเดตสด)</button><button class="btn" data-a="mclose">ปิด</button></div><p class="hint" style="margin-top:10px">หน้าต่างแยกต้องเปิดในเบราว์เซอร์เดียวกัน ข้อมูลซิงก์อัตโนมัติทุกครั้งที่มีการอ่านค่า</p>`);
   else if(a==='openmon'){closeModal();MON=true;renderMon();try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}catch(x){}}
@@ -2488,7 +2553,7 @@ function mxUsedHtml(){const c=mxCompose();if(!c)return'<div class="mxu-e">ใส
 function mxHero(){const c=mxCompose(),st=mxStat();
   if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดก่อน':'ใส่ตัวเลขให้ครบทุกหลัก'}</div></div><button class="btn p mx-ok" id="mxOk" data-a="mxok" disabled>✔ ยืนยัน</button></div>`;
   const L=c.val*1000;
-  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้ · V38.32</small>
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้ · V38.33</small>
     <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
     <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน':'⚠ '+(st.bad+st.wn+(st.pok?0:1))+' จุดควรเทียบภาพ'}</div></div>
     <button class="btn p mx-ok" id="mxOk" data-a="mxok">✔ ยืนยัน</button></div>`}
