@@ -2481,14 +2481,18 @@ const MRV=(()=>{
     (r,g,b)=>r>110&&r-g>30&&b-g>4&&r-b>8,
     (r,g,b)=>r>105&&r-g>22&&b-g>6&&r-b>3&&r-g>(b-g)*.9,
     (r,g,b)=>r>62&&r-Math.max(g,b)>.4*r&&Math.max(g,b)<r*.6];
-  function findPointer(W,row,idx){idx=idx||0;const{w,h,d}=W,N=w*h;let R=null,cands=[],lvUsed=-1;const Hd=row.Hd;
-    for(let lv=0;lv<PTR_LV.length&&!cands.length;lv++){const rm=new Uint8Array(N),F=PTR_LV[lv];
+  function findPointer(W,row,idx){idx=idx||0;const{w,h,d}=W,N=w*h;let R=null,all=[],lvUsed=-1;const Hd=row.Hd;
+    /* V38.35: รวมผู้สมัครเข็มจาก “ทุกระดับสี” (เดิมหยุดที่ระดับแรกที่เจออะไรก็ตาม → เข็มที่สะท้อนแสงซีดถูกบังด้วยวัตถุแดงอื่น) */
+    for(let lv=0;lv<PTR_LV.length;lv++){const rm=new Uint8Array(N),F=PTR_LV[lv];
       for(let i=0,j=0;i<d.length;i+=4,j++){if(F(d[i],d[i+1],d[i+2]))rm[j]=1}
-      R=comps(close(rm,w,h,lv?2:0),w,h);cands=[];lvUsed=lv;
+      R=comps(close(rm,w,h,lv?2:0),w,h);const cands=[];
       for(const c of R.cs){if(c.cy<row.yr1+Hd*1.4||c.a<Hd*Hd*.5||c.a>Hd*Hd*40)continue;
+        if(all.some(q=>Math.hypot(q.c.cx-c.cx,q.c.cy-c.cy)<Hd*.9))continue;
         const bw=c.w+2,bh=c.h+2,m=new Uint8Array(bw*bh),px=[];for(let y=0;y<c.h;y++)for(let x=0;x<c.w;x++)if(R.lab[(c.y0+y)*w+c.x0+x]===c.L){m[(y+1)*bw+x+1]=1;px.push((y+1)*bw+x+1)}
-        const P=pca(px,bw);if(P.el<1.3)continue;cands.push({c,m,bw,bh,px,P})}}
-    if(cands.length<=idx)return null;cands.sort((p,q)=>q.px.length-p.px.length);const K=cands[idx],mf=fillHoles(K.m,K.bw,K.bh),D=dt(mf,K.bw,K.bh);
+        const P=pca(px,bw);if(P.el<1.3)continue;cands.push({c,m,bw,bh,px,P,lv})}
+      cands.sort((p,q)=>q.px.length-p.px.length);all=all.concat(cands)}
+    const cands=all;
+    if(cands.length<=idx)return null;lvUsed=cands[idx].lv;const K=cands[idx],mf=fillHoles(K.m,K.bw,K.bh),D=dt(mf,K.bw,K.bh);
     let mx=0;for(let i=0;i<D.length;i++)if(D[i]>mx)mx=D[i];let sx=0,sy=0,sn=0;for(let i=0;i<D.length;i++)if(D[i]>=mx*.9){sx+=i%K.bw;sy+=Math.floor(i/K.bw);sn++}
     const hx=sx/sn,hy=sy/sn;let far=0;const pts=[];for(let i=0;i<mf.length;i++)if(mf[i]){const x=i%K.bw,y=Math.floor(i/K.bw),dd=Math.hypot(x-hx,y-hy);pts.push([x,y,dd]);if(dd>far)far=dd}
     let tx=0,ty=0,tn=0;pts.forEach(q=>{if(q[2]>far*.78){tx+=q[0];ty+=q[1];tn++}});tx/=tn;ty/=tn;
@@ -2527,7 +2531,7 @@ const MRV=(()=>{
     let pos=P2.map(refine).sort((a,b)=>a-b);
     for(let it=0;it<60&&pos.length!==50;it++){
       const gaps=pos.map((p,k)=>({k,g:((pos[(k+1)%pos.length]-p)%NA+NA)%NA})),gm=med(gaps.map(g=>g.g));
-      if(pos.length<50){const w=gaps.reduce((a,b)=>b.g>a.g?b:a);if(w.g<gm*1.45)break;pos.splice(w.k+1,0,(pos[w.k]+w.g/2)%NA);pos.sort((a,b)=>a-b)}
+      if(pos.length<50){const w=gaps.reduce((a,b)=>b.g>a.g?b:a);if(w.g<gm*(pos.length>=46?1.2:1.45))break;pos.splice(w.k+1,0,(pos[w.k]+w.g/2)%NA);pos.sort((a,b)=>a-b)}
       else{const w=gaps.reduce((a,b)=>b.g<a.g?b:a);pos.splice((w.k+1)%pos.length,1)}}
     const detN=P2.length;
     const ticks=pos.map(p=>({a:(p%NA)*360/NA}));
@@ -2702,7 +2706,7 @@ const MRV=(()=>{
     out.lastOff=(last&&last.off!=null&&refs.length)?last.off-med(refs):null;
     out.lastShift=last&&last.shift!=null?last.shift:null;
     if(opt.ptr!==false){let bestPt=null;
-      for(let ci=0;ci<3;ci++){const P=findPointer(W,row,ci);if(!P)break;let pt0=null;{const S=scaleRead(W,P,row.roll),pt={hub:{x:P.hx/sc,y:P.hy/sc},L:P.L/sc,ang:P.ang,el:P.el};
+      for(let ci=0;ci<5;ci++){const P=findPointer(W,row,ci);if(!P)break;let pt0=null;{const S=scaleRead(W,P,row.roll),pt={hub:{x:P.hx/sc,y:P.hy/sc},L:P.L/sc,ang:P.ang,el:P.el};
         if(S&&!S.fail){pt.ticks=true;pt.pRaw=S.p;pt.j0=S.j0;pt.zeroOff=S.zeroOff;pt.sp=[S.spMin,S.spMax];pt.detN=S.detN;pt.pGeo=((((P.ang-row.roll)%360)+360)%360)/36;{const dd=Math.abs(S.p-pt.pGeo),cd=Math.min(dd,10-dd);pt.agree=cd<=.6;pt.dGeo=cd}
           /* ผ่านเมื่อเจอขีดครบ 46–54 หรือ เจอ ≥22 ขีดแต่มุมเข็มจากรูปทรงเข็ม “ตรงกัน” กับค่าจากขีดสเกล (สองวิธีอิสระ) */
           pt.ok=Math.abs(S.zeroOff)<14&&S.spMax<S.spMin*2.1&&((S.detN>=46&&S.detN<=54)||(S.detN>=22&&pt.agree));pt.lv=P.lv;
@@ -2763,7 +2767,7 @@ function mxCompose(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);if(!n)re
     /* ไล่ตรวจหลักที่สูงกว่า: ถ้าหลักล่างอยู่ช่วง 9.7→0 หลักบนจะกำลังเลื่อน อาจเห็นเลขถัดไปโผล่ก่อน */
     if(MX.carry==='auto'){const wrapB=bor&&dv===0,rollL=(()=>{const x=mxMid()?C[n-1].shift:MX.lastOff;return x!=null&&Math.abs(x)>.15})();let R=((+dig[n-1]===9)&&(p>=7||rollL))||wrapB;
       for(let j=n-2;j>=0&&R;j--){if(C[j].user){R=false;break}const r=mxRel(j);
-        const rl=j===n-2?null:mxRel(j+1),thr=wrapB?-.1:(p>=7?.14:.1);
+        const rl=j===n-2?null:mxRel(j+1),thr=wrapB?(p>=8?-9:-.1):(p>=7?.14:.1);
         if(r!=null&&r>thr){const o=dig[j];dig[j]=String((+o+9)%10);casc.push({i:j,from:o,to:dig[j]});R=+dig[j]===9}else R=(+dig[j]===9&&(wrapB||rollL))}}}
   const ip=dig.slice(0,n-red).join(''),fp=dig.slice(n-red).join(''),str=red?ip+'.'+fp:ip,val=parseFloat(str)+(useP?MX.p*MX.pmult:0);
   /* ลำดับการคิด: ไล่จากค่าน้อยสุด (เข็ม Pivot) → หน่วย → สิบ → ร้อย → … → ลูกบาศก์เมตร แล้วค่อยรวมค่า */
