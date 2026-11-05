@@ -2022,18 +2022,22 @@ const MRV=(()=>{
     return{lab,cs}}
   const med=a=>{const s=a.slice().sort((p,q)=>p-q);return s.length?s[s.length>>1]:0};
   /* หาแถวตัวเลข: เลขแดง 2 หลักติดกันที่ขนาดเท่ากัน + เลขดำที่ระยะห่างเท่ากันทางซ้าย */
-  function findRow(W,n,red){const{w,h,d}=W,N=w*h,rm=new Uint8Array(N),dm=new Uint8Array(N);
+  let _fr=null;
+  function findRow0(W,n,red){const{w,h,d}=W,N=w*h,rm=new Uint8Array(N),dm=new Uint8Array(N);
     for(let i=0,j=0;i<d.length;i+=4,j++){const r=d[i],g=d[i+1],b=d[i+2];if(isRed(r,g,b))rm[j]=1;else if((r+g+b)/3<105&&Math.max(r,g,b)<150)dm[j]=1}
     const R=comps(rm,w,h),D=comps(dm,w,h);
     const okd=c=>c.h>=h*.022&&c.h<=h*.17&&c.w>=c.h*.16&&c.w<=c.h*1.25&&c.a>=c.h*c.w*.1;
     const rc=R.cs.filter(okd).sort((p,q)=>p.cx-q.cx),dc=D.cs.filter(okd);let best=null;
+    /* เลขดำที่ติดกับกรอบดำของช่อง (รวมเป็นก้อนเดียว) → ตัดส่วนหนา (กรอบ) ออก เหลือเส้นบางของตัวเลข แล้วหาก้อนใหม่ */
+    {const rr=Math.max(3,Math.round(Math.max(w,h)*.0046)),op=box1(box1(dm,w,h,rr,0),w,h,rr,1),op2=box1(op,w,h,2,1),th=new Uint8Array(N);for(let i=0;i<N;i++)th[i]=dm[i]&&!op2[i]?1:0;
+      const T=comps(th,w,h);T.cs.filter(okd).forEach(c=>{if(!dc.some(C=>Math.abs(C.cx-c.cx)<c.w*.6&&Math.abs(C.cy-c.cy)<c.h*.4))dc.push(c)})}
     for(let i=0;i<rc.length;i++)for(let j=i+1;j<rc.length;j++){const A=rc[i],B=rc[j],hm=Math.max(A.h,B.h),dx=B.cx-A.cx;
       if(B.h/A.h<.7||B.h/A.h>1.42||Math.abs(A.cy-B.cy)>hm*.3||dx<hm*.7||dx>hm*1.8)continue;
       let reds=2,blk=0;const cy=(A.cy+B.cy)/2;
       for(const C of rc){if(C===A||C===B)continue;const m=Math.round((C.cx-A.cx)/dx);if(m!==-1&&m!==2&&m!==-2&&m!==3)continue;if(Math.abs(C.cx-(A.cx+m*dx))<dx*.3&&Math.abs(C.cy-cy)<hm*.35)reds++}
       for(let k=1;k<=7;k++){const ex=A.cx-k*dx,c=dc.find(C=>Math.abs(C.cx-ex)<dx*.3&&Math.abs(C.cy-cy)<hm*.35&&C.h>hm*.7&&C.h<hm*1.35);if(c)blk++;else if(k>1)break;else break}
       const sc=reds*3+blk*4+(A.a+B.a)/(hm*hm)*.5;if(!best||sc>best.sc)best={sc,A,B,dx,cy,hm,reds,blk}}
-    if(!best)return null;
+    _fr={dc,rc,rm,R,w,h};if(!best)return null;
     /* ประกอบจุดศูนย์กลางของเลขทุกหลักที่เจอ เพื่อฟิตเส้นตรง (เลื่อนตามความเอียง) */
     const dx0=best.dx,A=best.A,pts=[];
     const add=(C,kind)=>{const k=Math.round((C.cx-A.cx)/dx0);if(k<-8||k>4)return;if(Math.abs(C.cx-(A.cx+k*dx0))>dx0*.3||Math.abs(C.cy-best.cy)>best.hm*.4)return;if(C.h<best.hm*.65||C.h>best.hm*1.4)return;pts.push({k,x:C.cx,y:C.cy,h:C.h,kind})};
@@ -2041,12 +2045,41 @@ const MRV=(()=>{
     const seen={};const P=pts.filter(p=>{const key=p.k+p.kind;if(seen[key])return false;seen[key]=1;return true});
     function fit(arr,key){let n_=arr.length,sk=0,sx=0,skk=0,skx=0;arr.forEach(p=>{sk+=p.k;sx+=p[key];skk+=p.k*p.k;skx+=p.k*p[key]});const den=n_*skk-sk*sk;if(!den)return{a:sx/n_,b:0};const b=(n_*skx-sk*sx)/den;return{a:(sx-b*sk)/n_,b}}
     let use=P.slice();for(let it=0;it<3;it++){const f=fit(use,'x');const nu=P.filter(p=>Math.abs(p.x-(f.a+f.b*p.k))<dx0*.18);if(nu.length>=3)use=nu;else break}
-    const fx=fit(use,'x'),fy=fit(use,'y'),ks=use.map(p=>p.k),kmin=Math.min(...ks);
+    const bk3=use.filter(p=>p.kind==='k'),fu=bk3.length>=3?bk3:use,fx=fit(fu,'x'),fy=fit(fu,'y'),ks=use.map(p=>p.k),kmin=Math.min(...ks);
     const redKs=use.filter(p=>p.kind==='r').map(p=>p.k),k1=Math.min(...redKs); /* ลูกกลิ้งแดงตัวแรก */
     const blackKs=use.filter(p=>p.kind==='k'&&p.k<k1).map(p=>p.k);let nb=0;for(let k=k1-1;;k--){if(blackKs.includes(k))nb++;else break}
-    const hd=med(use.map(p=>p.h));
+    const hdAll=med(use.map(p=>p.h)),hdBk=use.filter(p=>p.kind==='k').map(p=>p.h),hd=hdBk.length>=2?Math.max(hdAll,med(hdBk)):hdAll;
     return{p:Math.abs(fx.b),slope:fx.b?fy.b/fx.b:0,roll:Math.atan2(fy.b,fx.b)*180/Math.PI,xr1:fx.a+fx.b*k1,yr1:fy.a+fy.b*k1,Hd:hd,nBlack:nb,nRed:Math.max(...redKs)-k1+1,cnt:use.length,sc:best.sc,reds:R.cs,rmask:rm,rl:R.lab,W}}
 
+
+  /* ลูกกลิ้งดำเรียงแถว: หาแถวเลขดำ ≥3 ตัวที่ขนาดเท่ากัน เว้นระยะเท่ากัน อยู่แนวเดียวกัน → ใช้ยืนยัน/แก้ ขนาดเลข เส้นเอียง และระยะห่างหลัก
+     (กรณีลูกกลิ้งแดงกำลังหมุน เห็นเลข 2 แถวเป็นเศษครึ่งตัว ทำให้ขนาดและความเอียงที่ได้จากเลขแดงคลาดเคลื่อน) */
+  function blackRun(st,W,red,mh){mh=mh||.03;const{dc,rm,w,h}=st;if(!dc||dc.length<3)return null;
+    const redFrac=c=>{let n=0;for(let y=c.y0;y<=c.y1;y++)for(let x=c.x0;x<=c.x1;x++)if(rm[y*w+x])n++;return n/(c.w*c.h)};
+    const cs=dc.filter(c=>c.h>=h*mh&&c.h<=h*.12&&c.w>=c.h*.3&&c.w<=c.h*1.0).sort((p,q)=>p.cx-q.cx);let best=null;
+    for(let i=0;i<cs.length;i++)for(let j=i+1;j<cs.length;j++){const A=cs[i],B=cs[j],hm=Math.max(A.h,B.h),dx=B.cx-A.cx;
+      if(B.h/A.h<.82||B.h/A.h>1.22||Math.abs(A.cy-B.cy)>hm*.3||dx<hm*.9||dx>hm*1.7)continue;
+      const ch=[A,B];let last=B;for(let g=0;g<8;g++){const nx=cs.find(C=>C!==last&&Math.abs(C.cx-(last.cx+dx))<dx*.22&&Math.abs(C.cy-last.cy)<hm*.3&&C.h/hm>.8&&C.h/hm<1.22);if(!nx)break;ch.push(nx);last=nx}
+      let first=A;for(let g=0;g<8;g++){const pv=cs.find(C=>!ch.includes(C)&&Math.abs(C.cx-(first.cx-dx))<dx*.22&&Math.abs(C.cy-first.cy)<hm*.3&&C.h/hm>.8&&C.h/hm<1.22);if(!pv)break;ch.unshift(pv);first=pv}
+      while(ch.length>2&&redFrac(ch[ch.length-1])>.05)ch.pop();
+      if(ch.length>=3){const sc=ch.length*10+ch.reduce((a,c)=>a+c.a,0)/(hm*hm);if(!best||sc>best.sc)best={sc,ch,dx}}}
+    if(!best)return null;const ch=best.ch,m=ch.length;
+    const ft=key=>{let sk=0,sx=0,skk=0,skx=0;ch.forEach((c,k)=>{sk+=k;sx+=c[key];skk+=k*k;skx+=k*c[key]});const den=m*skk-sk*sk,b=(m*skx-sk*sx)/den;return{a:(sx-b*sk)/m,b}};
+    /* ขอบล่างของเลขเชื่อถือได้กว่าจุดกลาง (ขอบบนมักติดเศษเลขลูกกลิ้งข้างบนทำให้ก้อนสูงเกิน) */
+    ch.forEach(c=>{c.yb=c.y1+1});const hs=ch.map(c=>c.h).sort((a,b)=>a-b),Hd=hs[Math.floor((m-1)/3)];
+    const fx=ft('cx'),fy=ft('yb');
+    return{p:Math.abs(fx.b),roll:Math.atan2(fy.b,fx.b)*180/Math.PI,slope:fx.b?fy.b/fx.b:0,xr1:fx.a+fx.b*m,yr1:fy.a+fy.b*m-Hd/2,Hd,nBlack:m,cnt:m}}
+  /* เลขดำเรียงแถวแล้ว ต้องมีสีแดงอยู่ในช่องถัดไปทางขวา (ถ้าไม่มี = ภาพกลับหัว/ผิดทิศ) */
+  function redAhead(st,bl,red){const{rm,w,h}=st,cr=Math.cos(bl.roll*Math.PI/180),sr=Math.sin(bl.roll*Math.PI/180);let ok=0;
+    for(let k=0;k<red;k++){const cx=bl.xr1+k*bl.p*cr,cy=bl.yr1+k*bl.p*sr,hw=Math.round(bl.p*.4),hh=Math.round(bl.Hd*.9);let nr=0,t=0;
+      for(let y=Math.round(cy-hh);y<=cy+hh;y++)for(let x=Math.round(cx-hw);x<=cx+hw;x++){if(x<0||y<0||x>=w||y>=h)continue;t++;if(rm[y*w+x])nr++}
+      if(t&&nr/t>.02)ok++}
+    return ok>=2}
+  function findRow(W,n,red){const r0=findRow0(W,n,red),st=_fr,bl=st?(blackRun(st,W,red)||blackRun(st,W,red,.022)):null;
+    if(bl&&!redAhead(st,bl,red)){if(r0)return r0;return null}
+    if(!r0){if(!bl)return null;return Object.assign({sc:0,reds:st.R.cs,rmask:st.rm,rl:st.R.lab,W,nRed:red,fromBlack:1},bl)}
+    if(bl&&bl.nBlack>=3&&(r0.Hd<bl.Hd*.8||r0.nBlack<Math.min(3,bl.nBlack))){r0.fromBlack=1;r0.hd0=r0.Hd;r0.roll0=r0.roll;Object.assign(r0,bl)}
+    return r0}
 
   function box1(m,w,h,r,mx){const t=new Uint8Array(w*h),o=new Uint8Array(w*h);
     for(let y=0;y<h;y++){const row=y*w;for(let x=0;x<w;x++){let v=mx?0:1;for(let k=-r;k<=r;k++){const xx=x+k;if(xx<0||xx>=w){if(!mx)v=0;continue}const q=m[row+xx];if(mx){if(q){v=1;break}}else if(!q){v=0;break}}t[row+x]=v}}
@@ -2073,7 +2106,7 @@ const MRV=(()=>{
     const S=seed.c,ex=S.w*.12,ey=S.h*.08,keep=C.cs.filter(c=>c===S||(c.a>=S.a*.04&&c.w<=S.w*1.1&&c.h<=S.h*1.05&&c.cx>=S.x0-ex&&c.cx<=S.x1+ex&&c.cy>=S.y0-ey&&c.cy<=S.y1+ey));
     const set=new Set(keep.map(c=>c.L));let x0=w,x1=0,y0=h,y1=0;keep.forEach(c=>{x0=Math.min(x0,c.x0);x1=Math.max(x1,c.x1);y0=Math.min(y0,c.y0);y1=Math.max(y1,c.y1)});
     const bw=x1-x0+1,bh=y1-y0+1,bm=new Uint8Array(bw*bh);for(let y=0;y<bh;y++)for(let x=0;x<bw;x++)bm[y*bw+x]=set.has(C.lab[(y0+y)*w+x0+x])?1:0;
-    return{ok:1,red,bm,bw,bh,x0,y0,cxg:(x0+x1)/2,cyg:(y0+y1)/2,offY:((y0+y1)/2-h/2)/sH,w,h,lab:C.lab,set}}
+    return{ok:1,red,bm,bw,bh,x0,y0,y1,cxg:(x0+x1)/2,cyg:(y0+y1)/2,offY:((y0+y1)/2-h/2)/sH,w,h,lab:C.lab,set}}
   function glyphImg(G,pad){pad=pad||36;const sc=150/G.bh,w=Math.round(G.bw*sc)+pad*2,h=Math.round(G.bh*sc)+pad*2,t=document.createElement('canvas');t.width=G.bw;t.height=G.bh;const tx=t.getContext('2d'),im=tx.createImageData(G.bw,G.bh);
     for(let i=0;i<G.bm.length;i++){const v=G.bm[i]?0:255;im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255}tx.putImageData(im,0,0);
     const f=document.createElement('canvas');f.width=w;f.height=h;const fx=f.getContext('2d');fx.fillStyle='#fff';fx.fillRect(0,0,w,h);fx.imageSmoothingQuality='high';fx.drawImage(t,pad,pad,Math.round(G.bw*sc),Math.round(G.bh*sc));return f}
@@ -2219,7 +2252,7 @@ const MRV=(()=>{
   const V8=[{rt:.30},{tk:-1,rt:.40},{tk:1,rt:.22},{rt:.15,cl:1},{rt:.30,cl:1},{tk:1,rt:.36},{rt:.45},{rt:.12},{rt:.30,cl:3},{tk:1,rt:.30,cl:5}];
   function readCell(cv,Hd,sH){const votes={},sMin={},offs=[],nOk=[];let tot=0,any=0,vec=null,ar0=1,holeBest=null;
     for(const o of V8){const G=glyph(cv,Hd,sH,o);if(!G.ok)continue;any++;const q=classify(G);if(!vec){vec=Array.from(q.v,x=>Math.round(x*100)/100);ar0=Math.round(q.ar*100)/100}q.ord.forEach(e=>{if(sMin[e.d]==null||e.s<sMin[e.d])sMin[e.d]=e.s});
-      const w=Math.pow(Math.max(0,1-q.s/.22),2);votes[q.d]=(votes[q.d]||0)+w;tot+=w;if(q.H.length>=1&&(!holeBest||q.s<holeBest.s))holeBest={d:holeDigit(q),s:q.s};offs.push({d:q.d,off:G.offY})}
+      const w=Math.pow(Math.max(0,1-q.s/.22),2);votes[q.d]=(votes[q.d]||0)+w;tot+=w;if(q.H.length>=1&&(!holeBest||q.s<holeBest.s))holeBest={d:holeDigit(q),s:q.s};offs.push({d:q.d,off:G.offY,t:(G.y0-G.h/2)/sH,b:(G.y1+1-G.h/2)/sH,ct:G.y0<=2,cb:G.y1>=G.h-3})}
     const alts=Object.keys(sMin).map(d=>({d:+d,s:sMin[d]})).sort((a,b)=>a.s-b.s);
     if(!any)return{d:'',conf:0,alts:[],off:null};
     let win=alts[0].d,agree=1;if(tot>0){const best=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0];win=+best[0];agree=best[1]/tot}
@@ -2227,8 +2260,8 @@ const MRV=(()=>{
     /* เสียงโหวตแตก (เห็นพ้องน้อย) แต่มีเลขที่คะแนนรูปร่างดีกว่าชัดเจน → เชื่อคะแนนรูปร่าง */
     if(agree<.62&&alts[0].d!==win&&alts[0].s<sMin[win]*.95){win=alts[0].d;agree=Math.min(agree,.45)}
     if(sMin[win]>=.15&&HEXP[win][0]===0&&holeBest&&holeBest.d!==win&&holeBest.s<.45){win=holeBest.d;agree=.3}
-    const conf=Math.max(0,Math.min(1,1-sMin[win]/.2))*(.35+.65*agree),offW=offs.filter(q=>q.d===win).map(q=>q.off);
-    return{d:String(win),conf,alts:alts.slice(0,3),off:offW.length?med(offW):null,s:sMin[win],agree,vec,ar:ar0}}
+    const conf=Math.max(0,Math.min(1,1-sMin[win]/.2))*(.35+.65*agree),wn_=offs.filter(q=>q.d===win),offW=wn_.map(q=>q.off);
+    return{d:String(win),conf,alts:alts.slice(0,3),allS:sMin,off:offW.length?med(offW):null,gt:wn_.length?med(wn_.map(q=>q.t)):null,gb:wn_.length?med(wn_.map(q=>q.b)):null,gct:wn_.length&&wn_.filter(q=>q.ct).length>wn_.length/2,gcb:wn_.length&&wn_.filter(q=>q.cb).length>wn_.length/2,s:sMin[win],agree,vec,ar:ar0}}
   /* ===== วิเคราะห์ทั้งภาพ ===== */
   /* ปรับภาพให้อ่านง่ายขึ้นเมื่อถ่ายมืด/สีซีด/คอนทราสต์ต่ำ: ยืดระดับแสง (เปอร์เซ็นไทล์ 2–98) + เร่งสี ทำที่พิกเซลโดยตรง (ไม่พึ่ง ctx.filter) */
   function enhance(src,lv,sat){const sc=Math.min(1,1600/Math.max(src.width,src.height)),w=Math.max(8,Math.round(src.width*sc)),h=Math.max(8,Math.round(src.height*sc)),c=document.createElement('canvas');c.width=w;c.height=h;
@@ -2262,12 +2295,32 @@ const MRV=(()=>{
       /* ถ้าตัวเลขเยื้องจากกึ่งกลางมาก (เช่น เลขชิดขอบบน/ล่าง หรือมุมกล้องเอียง) ให้เลื่อนกรอบตามแล้วอ่านซ้ำ เก็บรอบที่มั่นใจกว่า */
       if(c.off!=null&&Math.abs(c.off)>.22&&i<n-1){const dx=-sr*c.off*Hd,dy=cr*c.off*Hd,cv2=cellCrop(src,cx+dx,cy+dy,row.roll,p,Hd,sH),c2=readCell(cv2,Hd,sH);
         if(c2.conf>c.conf+.08){c2.off=c2.off==null?null:c2.off+c.off;c=c2;cv=cv2}}
+      /* อ่านไม่ได้เลย/ไม่มั่นใจ (เลขชิดกรอบมืดจนติดเป็นก้อนเดียว) → ขยับกรอบขึ้น/ลงเล็กน้อยแล้วอ่านซ้ำ เก็บรอบที่ดีสุด */
+      if(c.conf<.4)for(const dv of[-.2,-.12,.12,.2]){const dx=-sr*dv*Hd,dy=cr*dv*Hd,cv2=cellCrop(src,cx+dx,cy+dy,row.roll,p,Hd,sH),c2=readCell(cv2,Hd,sH);
+        if(c2.conf>c.conf+.15){c2.off=c2.off==null?null:c2.off+dv;if(c2.gt!=null){c2.gt+=dv;c2.gb+=dv}c=c2;cv=cv2;if(c.conf>=.6)break}}
       c.red=i>=n-red;c.img=cv.toDataURL('image/jpeg',.88);cells.push(c)}
     /* ลูกกลิ้งดำซ้ายสุดแทบทุกตัวเป็น 0 (ปริมาณน้ำยังน้อย): ถ้าอ่านไม่มั่นใจ แต่ 0 ติดอันดับต้น ๆ และหลักขวามือเป็น 0 ชัดเจน → ใช้ 0 (ยังคงเตือนให้ตรวจ) */
     for(let i=0;i<n-red-1;i++){const c=cells[i],nx=cells[i+1];if(c.d!=='0'&&c.conf<.5&&nx&&nx.d==='0'&&nx.conf>=.6&&(c.alts||[]).slice(0,3).some(a=>a.d===0)){c.d='0';c.conf=Math.min(.45,Math.max(c.conf,.32));c.prior=1}}
     out.cells=cells;
+    /* ตำแหน่งจริงของเลขในแต่ละลูกกลิ้งแดง เทียบกับ “ลูกกลิ้งดำ” (ดำนิ่งอยู่ตรงกลางเสมอ ยกเว้นตอนกำลังทดจริง ๆ):
+       ใช้ขอบของเลขที่ไม่ถูกตัด (ขอบบนหรือล่าง) เทียบกับขอบเลขดำ → shift>0 = เลขอยู่ต่ำกว่ากึ่งกลาง (ลูกกลิ้งยังไม่ถึงเลขนั้น)
+       ใช้ได้แม้หลายลูกกลิ้งแดงกำลังหมุนพร้อมกัน (เคส 099→100) ที่การเทียบกับลูกกลิ้งแดงด้วยกันเองใช้ไม่ได้ */
+    {const bk=cells.slice(0,n-red).filter(c=>c.conf>=.5&&c.gt!=null&&!c.gct&&!c.gcb);
+     if(bk.length>=2){const rT=med(bk.map(c=>c.gt)),rB=med(bk.map(c=>c.gb)),rH=rB-rT;out.refH=rH;
+       cells.slice(n-red).forEach(c=>{c.shift=null;if(c.gt==null||c.d==='')return;const h=c.gb-c.gt;let sh=null;
+         if(c.gct&&!c.gcb)sh=c.gb-rB;else if(c.gcb&&!c.gct)sh=c.gt-rT;else if(!c.gct&&!c.gcb){const cen=(c.gb+c.gt)/2,rc=(rB+rT)/2;sh=h<.85*rH?(cen>rc?c.gt-rT:c.gb-rB):cen-rc}
+         if(sh!=null&&h>.3*rH)c.shift=sh})}}
+    /* ตรวจเลขข้างเคียงบนลูกกลิ้งเดียวกัน: ลูกกลิ้งเรียงเลขต่อกัน (…8,9,0,1…) เมื่อเห็นเลขสองแถว (กำลังหมุน)
+       เลขที่อ่านได้ครึ่งตัวต้องสอดคล้องกับเลขอีกแถว (d ↔ d+1) — ใช้เลือกระหว่างตัวเลือกที่คะแนนใกล้กัน (เช่น 9 กับ 7 ที่ถูกตัดครึ่ง) */
+    cells.slice(n-red).forEach((c,ri)=>{const i=n-red+ri;if(c.shift==null||c.conf>=.7||!c.allS)return;
+      const sgn=c.shift<0?1:-1,nbS=c.shift+sgn*1.28;if(Math.abs(nbS)>1.05)return;
+      const k=i-(n-red),cx=xr1+k*p*cr,cy=yr1+k*p*sr,cv3=cellCrop(src,cx-sr*nbS*Hd,cy+cr*nbS*Hd,row.roll,p,Hd,sH),c3=readCell(cv3,Hd,sH);if(!c3.allS)return;
+      let bd=null;for(const a of c.alts){if(a.s>c.alts[0].s+.09)continue;const e=((a.d+sgn)%10+10)%10,tot=a.s+.5*(c3.allS[e]==null?.3:c3.allS[e]);if(!bd||tot<bd.tot)bd={d:a.d,tot}}
+      c.nbRead={d:c3.d,conf:c3.conf};
+      if(bd&&bd.d!==+c.d){c.nbFrom=c.d;c.d=String(bd.d);c.conf=Math.min(c.conf,.5)}});
     const last=cells[n-1],refs=cells.slice(n-red,n-1).filter(c=>c.off!=null).map(c=>c.off);
     out.lastOff=(last&&last.off!=null&&refs.length)?last.off-med(refs):null;
+    out.lastShift=last&&last.shift!=null?last.shift:null;
     if(opt.ptr!==false){let bestPt=null;
       for(let ci=0;ci<3;ci++){const P=findPointer(W,row,ci);if(!P)break;let pt0=null;{const S=scaleRead(W,P,row.roll),pt={hub:{x:P.hx/sc,y:P.hy/sc},L:P.L/sc,ang:P.ang,el:P.el};
         if(S&&!S.fail){pt.ticks=true;pt.pRaw=S.p;pt.j0=S.j0;pt.zeroOff=S.zeroOff;pt.sp=[S.spMin,S.spMax];pt.detN=S.detN;pt.pGeo=((((P.ang-row.roll)%360)+360)%360)/36;{const dd=Math.abs(S.p-pt.pGeo),cd=Math.min(dd,10-dd);pt.agree=cd<=.6;pt.dGeo=cd}
@@ -2307,14 +2360,20 @@ async function mxAnalyze(){MX.step='busy';MX.busy='กำลังหาช่�
   MX.step='res';mxRender();mxOcrAssist()}
 const mxP=()=>{if(MX.pRaw==null)return null;let v=Math.round((((MX.pRaw+MX.zs)%10)+10)%10*10)/10;return v>=10?0:v};
 /* รวมเลขลูกกลิ้ง + เข็ม: ถ้าเข็มเกินครึ่งรอบแต่ลูกกลิ้งหลักสุดท้ายโชว์เลขถัดไป (กำลังเลื่อน) ให้ถอยหลักสุดท้ายลง 1 */
-function mxRel(i){const C=MX.cells,o=C[i]&&C[i].off;if(o==null)return null;const r=C.filter((c,j)=>j!==i&&c.off!=null).map(c=>c.off).sort((x,y)=>x-y);if(r.length<2)return null;return o-r[r.length>>1]}
+/* หลายลูกกลิ้งแดงกำลังหมุนพร้อมกัน (กำลังทด เช่น 099→100 ซึ่งเกิดได้เฉพาะตอนหลักหน่วยอยู่ช่วง 9↔0): เทียบกับลูกกลิ้งแดงด้วยกันไม่ได้ ต้องเทียบกับลูกกลิ้งดำ (cells[].shift) */
+function mxMid(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);const v=C.slice(n-red,n-1).filter(c=>c.shift!=null).map(c=>Math.abs(c.shift)).sort((a,b)=>a-b);return v.length>=1&&v[v.length>>1]>.14&&C[n-1]&&C[n-1].shift!=null&&/^[09]$/.test(C[n-1].d)}
+function mxLo(){const C=MX.cells,n=C.length;return mxMid()?C[n-1].shift:MX.lastOff}
+function mxRel(i){if(mxMid()&&MX.cells[i]&&MX.cells[i].shift!=null){let r=MX.cells[i].shift;const ls=MX.cells[MX.cells.length-1].shift;
+    /* เลขที่ถูกตัดครึ่งจนบอกไม่ได้ว่าเป็นแถวบน/ล่าง → ใช้ฝั่งเดียวกับหลักหน่วย (ทั้งโซ่หมุนพร้อมกัน เห็นเลขแถวเดียวกันของทุกหลัก) */
+    if(Math.abs(r)<.3&&Math.abs(ls)>.3)r=Math.sign(ls)*.3;return r}const C=MX.cells,o=C[i]&&C[i].off;if(o==null)return null;const r=C.filter((c,j)=>j!==i&&c.off!=null).map(c=>c.off).sort((x,y)=>x-y);if(r.length<2)return null;return o-r[r.length>>1]}
 function mxCompose(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);if(!n)return null;const ds=C.map(c=>c.d);if(ds.some(x=>!/^\d$/.test(x)))return null;if(MX.ptrOn&&MX.p==null)return null;
   const dig=ds.slice(),useP=MX.ptrOn&&MX.p!=null;let note=null,conflict=null,casc=[];
-  if(useP){const dv=+dig[n-1],p=MX.p,lo=MX.lastOff;let bor=false,why='';
+  if(useP){const dv=+dig[n-1],p=MX.p,lo=mxLo();let bor=false,why='';
     if(MX.carry==='dec')bor=true;else if(MX.carry==='keep')bor=false;
     else{
       /* ตำแหน่งจริงของลูกกลิ้งหน่วยลิตร: ตัวเลขที่เห็นตกต่ำกว่ากึ่งกลางหน้าต่าง (lo>0.14) = ลูกกลิ้งยังไม่ถึงตัวนั้น → ต้องลดหลัก */
-      if(p>=6){bor=true;why='ptr';if(lo!=null&&lo<-.2)conflict='ภาพโชว์ว่าลูกกลิ้งล้ำตัวเลขไปแล้ว แต่เข็มบอกว่ายังไม่ถึง'}
+      if(p>=6&&p<8&&lo!=null&&lo<-.35){bor=false}
+      else if(p>=6){bor=true;why='ptr';if(lo!=null&&lo<-.2)conflict='ภาพโชว์ว่าลูกกลิ้งล้ำตัวเลขไปแล้ว แต่เข็มบอกว่ายังไม่ถึง'}
       else if(lo!=null&&lo>.14&&p>=2){bor=true;why='pos'}
       else if(lo!=null&&lo>.2&&p<2){bor=false;conflict='ตัวเลขหลักสุดท้ายตกต่ำกว่ากึ่งกลาง แต่เข็มอยู่ใกล้ 0 — ตรวจดูภาพเทียบ'}
       else if(p<=4)bor=false;
@@ -2322,9 +2381,9 @@ function mxCompose(){const C=MX.cells,n=C.length,red=Math.min(MX.red,n);if(!n)re
     if(bor){dig[n-1]=String((dv+9)%10);note={dv,to:dig[n-1],p,auto:MX.carry==='auto',zero:dv===0,why}}
     else if(MX.carry==='auto'&&p>=6)note=null;
     /* ไล่ตรวจหลักที่สูงกว่า: ถ้าหลักล่างอยู่ช่วง 9.7→0 หลักบนจะกำลังเลื่อน อาจเห็นเลขถัดไปโผล่ก่อน */
-    if(MX.carry==='auto'){let R=(+dig[n-1]===9)&&p>=7;
+    if(MX.carry==='auto'){const wrapB=bor&&dv===0;let R=((+dig[n-1]===9)&&p>=7)||wrapB;
       for(let j=n-2;j>=0&&R;j--){if(C[j].user){R=false;break}const r=mxRel(j);
-        if(r!=null&&r>.14){const o=dig[j];dig[j]=String((+o+9)%10);casc.push({i:j,from:o,to:dig[j]});R=+dig[j]===9}else R=false}}}
+        if(r!=null&&r>(wrapB?-.1:.14)){const o=dig[j];dig[j]=String((+o+9)%10);casc.push({i:j,from:o,to:dig[j]});R=+dig[j]===9}else R=false}}}
   const ip=dig.slice(0,n-red).join(''),fp=dig.slice(n-red).join(''),str=red?ip+'.'+fp:ip,val=parseFloat(str)+(useP?MX.p*MX.pmult:0);
   return{dig,str,val,reading:(Math.round(val*1e5)/1e5).toFixed(5).replace(/0+$/,'').replace(/\.$/,'.0'),note,useP,conflict,casc}}
 function mxStat(){const C=MX.cells;let bad=0,wn=0;C.forEach(c=>{if(c.user)return;if(c.conf<.3)bad++;else if(c.conf<.6)wn++});
@@ -2334,7 +2393,7 @@ function mxRegHtml(c){const n=c.dig.length,red=Math.min(MX.red,n);return`<div cl
 function mxHero(){const c=mxCompose(),st=mxStat();
   if(!c)return`<div class="mxh idle"><div class="mxh-l"><small>ค่าที่อ่านได้</small><div class="mxh-v"><b>— — —</b></div><div class="mxh-s">${MX.ptrOn&&MX.p==null&&MX.cells.every(c=>/^\d$/.test(c.d))?'ตั้งค่าเข็มละเอียดด้านล่างก่อน':'ใส่ตัวเลขให้ครบทุกหลักด้านล่าง'}</div></div></div>`;
   const L=c.val*1000;
-  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ · ตัวอ่านใหม่ V38.24</small>${mxRegHtml(c)}
+  return`<div class="mxh ${st.ok?'ok':'wn'}"><div class="mxh-l"><small>ค่าที่อ่านได้จากภาพ · ตัวอ่านใหม่ V38.25</small>${mxRegHtml(c)}
     <div class="mxh-v"><b>${fx(L,2)}</b><span> ลิตร</span><em>${c.reading} m³</em></div>
     <div class="mxh-c ${st.ok?'ok':'wn'}">${st.ok?'✔ อ่านได้ชัดเจน — ตรวจดูภาพเทียบอีกครั้งแล้วกดยืนยัน':'⚠ มี '+(st.bad+st.wn+(st.pok?0:1))+' จุดที่ควรตรวจด้วยตา (กรอบสีส้ม)'}</div></div>
     ${c.useP?`<div class="mxh-r">${mdialSvg(MX.p,118)}<small>เข็มละเอียด <b>${MX.p.toFixed(1)}</b></small></div>`:''}</div>`}
@@ -2344,8 +2403,9 @@ function mxNote(){const c=mxCompose();if(!c||!c.useP)return'';const n=MX.cells.l
   if(c.note)msg=`<b>ลูกกลิ้งหลักสุดท้ายกำลังเลื่อน</b> — ภาพโชว์ “${esc(dv)}” แต่เข็มละเอียดอยู่ที่ <b>${p.toFixed(1)}</b> ${c.note.why==='pos'?'และตัวเลขตกต่ำกว่ากึ่งกลางช่อง (ลูกกลิ้งยังเลื่อนไม่ถึง)':'(เกินครึ่งรอบ)'} แปลว่าค่าจริงของหลักนี้ยังเป็น <b>${(+c.note.to+p/10).toFixed(2)}</b> (ยังไม่ถึง ${esc(dv)}) จึงใช้ <b>${esc(c.note.to)}</b>${c.note.zero?'<br><span class="mx-wn">⚠ หลักสุดท้ายถอยจาก 0 เป็น 9 — ตรวจลูกกลิ้งหลักก่อนหน้าด้วยว่าเลื่อนไปแล้วหรือยัง</span>':''}`;
   else msg=`ลูกกลิ้งหลักสุดท้ายอ่านเป็น <b>${esc(dv)}</b> และเข็มอยู่ที่ <b>${p.toFixed(1)}</b> — สอดคล้องกัน`;
   {const fin=c.dig[MX.cells.length-1],zone=p>=7?'ใกล้ครบรอบ (7–9.9)':p<=1.2?'เพิ่งเริ่มรอบ (0–1.2)':'';
-   if(zone){const lo=MX.lastOff;const pos=lo==null?'':lo>.14?'ตัวเลขในช่องตกต่ำกว่ากึ่งกลาง (ลูกกลิ้งยังเลื่อนไม่ถึง)':lo<-.14?'ตัวเลขในช่องอยู่เหนือกึ่งกลาง (ลูกกลิ้งเลื่อนล้ำไปแล้ว)':'ตัวเลขอยู่ใกล้กึ่งกลางช่อง';
+   if(zone){const lo=mxLo();const pos=lo==null?'':lo>.14?'ตัวเลขในช่องตกต่ำกว่ากึ่งกลาง (ลูกกลิ้งยังเลื่อนไม่ถึง)':lo<-.14?'ตัวเลขในช่องอยู่เหนือกึ่งกลาง (ลูกกลิ้งเลื่อนล้ำไปแล้ว)':'ตัวเลขอยู่ใกล้กึ่งกลางช่อง';
      msg='<div class="mx-risk"><b>⚠ เข็มอยู่ช่วง'+zone+' — คิดละเอียดอีกขั้น</b><br>① เข็มบอกเศษลิตร = <b>0.'+String(Math.round(p*10)).padStart(2,'0')+'</b> ลิตร<br>② ลูกกลิ้งหลักสุดท้ายโชว์ “'+esc(dv)+'”'+(pos?' · '+pos:'')+'<br>③ สรุป: หลักลิตรสุดท้ายคือ <b>'+esc(fin)+'</b> (ค่า '+esc(fin)+'.'+String(Math.round(p*10)).padStart(2,'0')+' ลิตร)</div>'+msg}}
+  if(mxMid())msg+='<br>⚙ ลูกกลิ้งแดงหลายหลักกำลังหมุนพร้อมกัน (กำลังทด เช่น 099→100) — ระบบดูตำแหน่งเลขของทุกลูกกลิ้งเทียบกับลูกกลิ้งดำ แล้วทดจากหลักล่างขึ้นบน';
   if(c.casc&&c.casc.length)msg+='<br>หลักที่สูงกว่าก็กำลังเลื่อนตาม: '+c.casc.map(x=>'หลักที่ '+(x.i+1)+' “'+esc(x.from)+'”→'+esc(x.to)).join(', ');
   if(c.conflict)msg+='<br><span class="mx-wn">⚠ '+esc(c.conflict)+'</span>';
   return`<div class="mxn"><div class="mxn-t">⚙ ตรวจความสอดคล้องลูกกลิ้ง ↔ เข็ม</div><p>${msg}</p><div class="mxn-s"><span>ตัดสินหลักสุดท้าย:</span>${opt('auto','อัตโนมัติ')}${opt('keep','ใช้ตามที่เห็น ('+esc(dv)+')')}${opt('dec','ลดลง 1 ('+((+dv+9)%10)+')')}</div></div>`}
