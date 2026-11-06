@@ -79,6 +79,7 @@ jobs:
 
               <uses-permission android:name="android.permission.NFC" />
               <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.VIBRATE" />
               <uses-feature android:name="android.hardware.nfc" android:required="true" />
               <uses-feature android:name="android.hardware.camera" android:required="false" />
               <queries>
@@ -134,6 +135,8 @@ jobs:
           import android.os.Handler
           import android.os.Looper
           import android.os.SystemClock
+          import android.os.VibrationEffect
+          import android.os.Vibrator
           import android.provider.MediaStore
           import android.text.InputType
           import android.util.Base64
@@ -304,6 +307,11 @@ jobs:
               /** ตำแหน่งบนแท่น (1,2,3,...) ที่จะส่งรูปเข้าไป — 0 = อัตโนมัติ (ตัวถัดไปที่ยังว่าง) */
               private var mechSlot = 0
               private lateinit var tvSlot: TextView
+              private lateinit var tvSendBanner: TextView
+              private lateinit var btnWmSolo: Button
+              private lateinit var btnWmPc: Button
+              private var sendKind: String = ""
+              private val bannerHide = Runnable { if (::tvSendBanner.isInitialized) tvSendBanner.visibility = View.GONE }
               @Volatile private var writeJob: JSONObject? = null
               @Volatile private var writing = false
               private lateinit var writeBox: View
@@ -335,6 +343,18 @@ jobs:
 
               /** หน้าเว็บเรียกกลับมารายงานผล / ขอบันทึกไฟล์ที่ดาวน์โหลด */
               inner class Bridge {
+                  /** เว็บบอกสถานะการส่งค่าขึ้นคอม (busy / ok / err) → แถบสัญญาณใหญ่ + สั่นเครื่อง (โรงงานเสียงดังไม่ได้ยิน) */
+                  @JavascriptInterface
+                  fun sendState(kind: String, text: String) {
+                      runOnUiThread { this@MainActivity.showSendState(kind, text) }
+                  }
+
+                  /** เว็บบอกโหมดทำงานปัจจุบัน: "solo" = มือถืออย่างเดียว, "pc" = ส่งขึ้นคอมด้วย */
+                  @JavascriptInterface
+                  fun modeState(m: String) {
+                      runOnUiThread { this@MainActivity.paintWorkMode(m) }
+                  }
+
                   /** Test Bench (แท็บพิสูจน์มาตร) สั่งเปิดกล้องของแอป — ผลภาพกลับมาที่หน้าเว็บผ่าน benchMech */
                   @JavascriptInterface
                   fun takePhoto() {
@@ -435,6 +455,16 @@ jobs:
                       addView(readerScreen, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))   // หน้าอ่าน NFC ซ้อนด้านบน
                       addView(provBuildScreen(), FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) // ฟอร์มลงทะเบียนมิเตอร์ใหม่
                       addView(editBuildScreen(), FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) // ฟอร์มแก้ไขค่ามิเตอร์ (Service)
+                      tvSendBanner = label("", 20f, Color.WHITE, true).apply {
+                          gravity = Gravity.CENTER
+                          visibility = View.GONE
+                          setPadding(dp(16), dp(26), dp(16), dp(26))
+                          setOnClickListener {
+                              if (sendKind == "err") callBench("SENDRETRY", "null")
+                              else visibility = View.GONE
+                          }
+                      }
+                      addView(tvSendBanner, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.TOP))   // สัญญาณส่งขึ้นคอม อยู่บนสุดเสมอ
                   })
 
                   nfc = NfcAdapter.getDefaultAdapter(this)
@@ -553,10 +583,19 @@ jobs:
                       addView(btnSlotP, LinearLayout.LayoutParams(dp(54), WRAP_CONTENT).apply { marginEnd = dp(6) })
                       addView(btnSlotA, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
                   }
+                  btnWmSolo = pill("📱 มือถืออย่างเดียว", false) { setWorkMode("solo") }
+                  btnWmPc = pill("🖥 ส่งขึ้นคอมด้วย", false) { setWorkMode("pc") }
+                  val modeRow = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      addView(btnWmSolo, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f).apply { marginEnd = dp(8) })
+                      addView(btnWmPc, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+                  }
+                  paintWorkMode("")
                   camRow = LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
                       addView(camBtns, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
-                      addView(slotRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+                      addView(modeRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { bottomMargin = dp(8) })
+                  addView(slotRow, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = dp(8) })
                   }
                   refreshSlotLabel()
                   btnMode = pill("", false) { toggleMode() }
@@ -2653,6 +2692,44 @@ jobs:
                           callBench(if (res.optBoolean("verify")) "benchVerifyResult" else "benchWriteResult", res.toString())
                       }
                   }
+              }
+
+              /** แถบสัญญาณใหญ่ที่ด้านบนจอ + สั่นเครื่อง: busy=ส้ม, ok=เขียว (หายเอง), err=แดงค้างจนแตะส่งใหม่ */
+              private fun showSendState(kind: String, text: String) {
+                  sendKind = kind
+                  handler.removeCallbacks(bannerHide)
+                  val bg: Int
+                  val head: String
+                  when (kind) {
+                      "ok" -> { bg = cGreen2; head = "✔ ส่งขึ้นคอมแล้ว" }
+                      "err" -> { bg = cRed2; head = "✖ ส่งขึ้นคอมไม่สำเร็จ — แตะเพื่อส่งใหม่" }
+                      else -> { bg = Color.parseColor("#D97706"); head = "⏳ กำลังส่งขึ้นคอม…" }
+                  }
+                  tvSendBanner.text = head + (if (text.isNotEmpty()) "\n" + text else "")
+                  tvSendBanner.background = rounded(bg, 0)
+                  tvSendBanner.visibility = View.VISIBLE
+                  if (kind == "ok") handler.postDelayed(bannerHide, 4500)
+                  try {
+                      val v = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                      if (kind == "ok") v.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 180, 70, 180), -1))
+                      else if (kind == "err") v.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 400, 120, 400, 120, 400), -1))
+                  } catch (e: Exception) { }
+              }
+
+              /** ไฮไลต์ปุ่มโหมดที่ใช้อยู่ (m = "solo" / "pc" / "" ยังไม่ทราบ) */
+              private fun paintWorkMode(m: String) {
+                  val on = Color.parseColor("#059669")
+                  val off = rounded(Color.argb(30, 255, 255, 255), 16, Color.argb(190, 255, 255, 255), 1)
+                  btnWmSolo.background = if (m == "solo") rounded(on, 16, Color.WHITE, 2) else off
+                  btnWmPc.background = if (m == "pc") rounded(on, 16, Color.WHITE, 2) else rounded(Color.argb(30, 255, 255, 255), 16, Color.argb(190, 255, 255, 255), 1)
+              }
+
+              /** กดเลือกโหมดจากแอป → สั่ง mirMode ใน Test Bench (ซิงก์กลับผ่าน modeState) */
+              private fun setWorkMode(m: String) {
+                  if (!pageLoaded) { toast("หน้าเว็บยังโหลดไม่เสร็จ"); return }
+                  paintWorkMode(m)
+                  callBench("mirMode", "'$m'")
+                  if (m == "pc") openWebScreen()    // โหมดคอมอาจต้องกรอกรหัสห้อง → ไปหน้าเว็บ
               }
 
               /** เรียกฟังก์ชันใน Test Bench (ค้นหาในหน้า/iframe, เปิดแท็บ Test Bench ให้ถ้ายังไม่เปิด) */
