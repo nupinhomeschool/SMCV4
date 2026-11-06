@@ -268,6 +268,7 @@ jobs:
                   private const val REQ_FILE = 4711
                   private const val REQ_CAM = 4712
                   private const val REQ_PICK = 4713
+                  private const val REQ_PICKM = 4714
                   private const val FLAGS =
                       NfcAdapter.FLAG_READER_NFC_V or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
               }
@@ -360,6 +361,12 @@ jobs:
                   @JavascriptInterface
                   fun modeState(m: String) {
                       runOnUiThread { this@MainActivity.paintWorkMode(m) }
+                  }
+
+                  /** เว็บขอเลือกรูปหลายรูปจากแกลเลอรี (V38.61) — แอปย่อ/หมุนรูปแล้วส่งเข้าหน้า “นำเข้าจากภาพ” ทีละรูป */
+                  @JavascriptInterface
+                  fun pickPhotos() {
+                      runOnUiThread { this@MainActivity.openGalleryMulti() }
                   }
 
                   /** Test Bench (แท็บพิสูจน์มาตร) สั่งเปิดกล้องของแอป — ผลภาพกลับมาที่หน้าเว็บผ่าน benchMech */
@@ -750,6 +757,8 @@ jobs:
                       camUri = null
                       if (resultCode == RESULT_OK && u != null) analyzeImage(u, true)
                       else { forceSlot = -1; if (u != null) discardImage(u, true) }
+                  } else if (requestCode == REQ_PICKM) {
+                      if (resultCode == RESULT_OK) handleMultiPick(data)
                   } else if (requestCode == REQ_PICK) {
                       val u = data?.data
                       if (resultCode == RESULT_OK && u != null) analyzeImage(u, false)
@@ -2858,6 +2867,46 @@ jobs:
               /** ส่งแล้วขยับไปตำแหน่งถัดไป (เฉพาะโหมดระบุตำแหน่งเอง) — ถ้าต้องกลับไปแก้ตัวที่อ่านไม่ชัด กด − เลือกเลขนั้นแล้วส่งใหม่ */
               private fun advanceMechSlot() {
                   if (mechSlot > 0) { mechSlot = (mechSlot + 1).coerceAtMost(60); prefs.edit().putInt("mslot", mechSlot).apply(); refreshSlotLabel() }
+              }
+
+              /** V38.61: เลือกหลายรูปพร้อมกัน → ย่อ/หมุนในแอป (ไม่พึ่งตัวเลือกไฟล์ของ WebView) → ส่งเข้า Test Bench ทีละรูป */
+              private fun openGalleryMulti() {
+                  val pick = Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE)
+                      .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                  startActivityForResult(Intent.createChooser(pick, "เลือกรูปมิเตอร์ (หลายรูปได้)"), REQ_PICKM)
+              }
+
+              private fun handleMultiPick(data: Intent?) {
+                  val uris = ArrayList<Uri>()
+                  val cd = data?.clipData
+                  if (cd != null) { for (i in 0 until cd.itemCount) uris.add(cd.getItemAt(i).uri) }
+                  else data?.data?.let { uris.add(it) }
+                  if (uris.isEmpty()) return
+                  toast("กำลังเตรียม ${uris.size} รูป…")
+                  Thread {
+                      uris.forEachIndexed { idx, u ->
+                          val img = encodeForWeb(u)
+                          var name = "รูป${idx + 1}"
+                          var lm = 0L
+                          try {
+                              contentResolver.query(u, null, null, null, null)?.use { c ->
+                                  if (c.moveToFirst()) {
+                                      val ni = c.getColumnIndex("_display_name")
+                                      if (ni >= 0) name = c.getString(ni) ?: name
+                                      val di = c.getColumnIndex("date_modified")
+                                      if (di >= 0) lm = c.getLong(di) * 1000L
+                                      val li = c.getColumnIndex("last_modified")
+                                      if (lm == 0L && li >= 0) lm = c.getLong(li)
+                                  }
+                              }
+                          } catch (e: Throwable) { }
+                          runOnUiThread {
+                              if (img == null) toast("เปิดรูปไม่ได้: $name")
+                              else pushMech(JSONObject().put("img", img).put("ph", 1).put("name", name).put("lm", lm).toString())
+                          }
+                      }
+                      runOnUiThread { pushMech(JSONObject().put("ph", 2).toString()) }
+                  }.start()
               }
 
               private fun openGallery() {
