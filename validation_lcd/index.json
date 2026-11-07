@@ -3,6 +3,11 @@
  "kind": "smcv4-lcd-validation",
  "items": [
   {
+   "file": "m04.jpg",
+   "name": "m04",
+   "truth": "20328.86247"
+  },
+  {
    "file": "m01.jpg",
    "name": "m01",
    "truth": "20328.86247"
