@@ -440,6 +440,29 @@ jobs:
                   }
 
                   @JavascriptInterface
+                  fun shareFile(mime: String, b64: String, name: String) {
+                      try {
+                          val bytes = Base64.decode(b64, Base64.DEFAULT)
+                          val safe = name.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().ifEmpty { "SMCV4_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) }
+                          val uri = saveToDownloads(safe, bytes, mime)
+                          runOnUiThread {
+                              try {
+                                  val send = Intent(Intent.ACTION_SEND)
+                                  send.type = mime
+                                  send.putExtra(Intent.EXTRA_STREAM, uri)
+                                  send.putExtra(Intent.EXTRA_SUBJECT, safe)
+                                  send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                  startActivity(Intent.createChooser(send, "แชร์ไฟล์ " + safe))
+                              } catch (e: Exception) {
+                                  toast("แชร์ไม่สำเร็จ: ${e.message} — ไฟล์อยู่ในโฟลเดอร์ Download")
+                              }
+                          }
+                      } catch (e: Exception) {
+                          runOnUiThread { toast("บันทึกไฟล์ไม่สำเร็จ: ${e.message}") }
+                      }
+                  }
+
+                  @JavascriptInterface
                   fun saveFile(mime: String, b64: String) {
                       try {
                           val bytes = Base64.decode(b64, Base64.DEFAULT)
@@ -2473,7 +2496,7 @@ jobs:
                   }
               }
 
-              private fun saveToDownloads(name: String, data: ByteArray, mime: String) {
+              private fun saveToDownloads(name: String, data: ByteArray, mime: String): Uri {
                   val values = ContentValues()
                   values.put(MediaStore.Downloads.DISPLAY_NAME, name)
                   values.put(MediaStore.Downloads.MIME_TYPE, mime)
@@ -2484,6 +2507,7 @@ jobs:
                   values.clear()
                   values.put(MediaStore.Downloads.IS_PENDING, 0)
                   contentResolver.update(uri, values, null, null)
+                  return uri
               }
 
               /** ปุ่ม Export (เช่น Excel) ในเว็บสร้างลิงก์ blob: ต้องดึงข้อมูลออกมาบันทึกเอง */
