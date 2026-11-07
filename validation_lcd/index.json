@@ -1,0 +1,111 @@
+{
+ "v": 1,
+ "kind": "smcv4-lcd-validation",
+ "items": [
+  {
+   "file": "m01.jpg",
+   "name": "m01",
+   "truth": "20328.86247"
+  },
+  {
+   "file": "m02.jpg",
+   "name": "m02",
+   "truth": "0.24638"
+  },
+  {
+   "file": "m03.jpg",
+   "name": "m03",
+   "truth": "1.00424"
+  },
+  {
+   "file": "n01.jpg",
+   "name": "n01",
+   "truth": "0.00010"
+  },
+  {
+   "file": "n02.jpg",
+   "name": "n02",
+   "truth": "20328.86247"
+  },
+  {
+   "file": "n03.jpg",
+   "name": "n03",
+   "truth": "926.86685"
+  },
+  {
+   "file": "n04.jpg",
+   "name": "n04",
+   "truth": "0.75990"
+  },
+  {
+   "file": "n05.jpg",
+   "name": "n05",
+   "truth": "1.00424"
+  },
+  {
+   "file": "n06.jpg",
+   "name": "n06",
+   "truth": "0.75785"
+  },
+  {
+   "file": "n07.jpg",
+   "name": "n07",
+   "truth": "0.24638"
+  },
+  {
+   "file": "n08.jpg",
+   "name": "n08",
+   "truth": "0.75861"
+  },
+  {
+   "file": "n09.jpg",
+   "name": "n09",
+   "truth": "0.76817"
+  },
+  {
+   "file": "n10.jpg",
+   "name": "n10",
+   "truth": "1.55096"
+  },
+  {
+   "file": "n11.jpg",
+   "name": "n11",
+   "truth": "0.75905"
+  },
+  {
+   "file": "n12.jpg",
+   "name": "n12",
+   "truth": "0.74609"
+  },
+  {
+   "file": "n13.jpg",
+   "name": "n13",
+   "truth": "20328.86247"
+  },
+  {
+   "file": "n14.jpg",
+   "name": "n14",
+   "truth": "0.75905"
+  },
+  {
+   "file": "n15.jpg",
+   "name": "n15",
+   "truth": "1.55096"
+  },
+  {
+   "file": "n16.jpg",
+   "name": "n16",
+   "truth": "0.76817"
+  },
+  {
+   "file": "n17.jpg",
+   "name": "n17",
+   "truth": "926.86685"
+  },
+  {
+   "file": "n18.jpg",
+   "name": "n18",
+   "truth": "72746.79623"
+  }
+ ]
+}
