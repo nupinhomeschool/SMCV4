@@ -860,6 +860,10 @@ body.fl main{min-width:0;overflow-x:clip}
 .flpg .card{max-width:100%}
 .flout{max-width:100%}
 
+.mxfl-x{display:grid;grid-template-columns:1fr;gap:8px;margin:0 0 10px}.mxfl-x button{appearance:none;border:1px solid #fecdd3;background:#fff1f2;color:var(--bad);border-radius:14px;min-height:50px;font-weight:800;cursor:pointer}
+.mxfl-fail{text-align:center;padding:10px 0}.ff-t{font-size:1.2rem;font-weight:800;color:var(--navy);margin-bottom:8px}.mxfl-fail img{max-width:100%;max-height:46vh;border-radius:16px;border:2px solid var(--line)}.mxfl-fail p{color:var(--mut);font-size:.9rem;margin:8px 0}
+.ff-b{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.ffb{appearance:none;border:1px solid var(--line);background:#fff;border-radius:14px;min-height:62px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.9rem;box-shadow:var(--sh)}.ffb i{font-style:normal;font-size:1.4rem}.ffb.cam{background:linear-gradient(135deg,#6d28d9,#2563eb);color:#fff;border:0}
+
 body.fl .mr-st{display:none}
 </style>
 </head>
@@ -1450,7 +1454,7 @@ function vRunFl(A){
   if(rdk){
     if(MECH()){cap=`<div class="flcap">${tgt!=null?`<button class="flcam" data-a="capnext"><i>📷</i><span>ถ่ายตัวที่ #${tgt+1}<small>${esc(mqSlotName(tgt))} · ${rdk==='s'?'ค่าเริ่มต้น':'ค่าสิ้นสุด'}${SELSLOT!=null?' (อ่านซ้ำ)':''}</small></span></button>`:'<div class="flok">✅ อ่านครบทุกตำแหน่งแล้ว<small>แตะการ์ดมิเตอร์เพื่ออ่านตัวไหนซ้ำ</small></div>'}
         <div class="flcap2"><button data-a="phpick"><i>🖼</i>โหลดจากภาพ</button>${GMC()?`<button data-a="glopen" data-v="key"><i>⌨</i>พิมพ์ค่า</button>`:''}${nrev?`<button data-a="mqall"><i>⚠</i>ตรวจรูปที่ค้าง (${nrev})</button>`:''}</div>
-        ${GMC()?'':`<details class="fldet"><summary>⌨ พิมพ์ค่าเอง</summary>${keyBar(pi,st,N)}</details>`}</div>`}
+        ${GMC()?'':`<details class="fldet flkeyd"><summary>⌨ พิมพ์ค่าเอง</summary>${keyBar(pi,st,N)}</details>`}</div>`}
     else cap=`<div class="flcap"><div class="flnfc"><i>📲</i><span><b>แตะมือถือที่มิเตอร์ SMCV4</b><small>แอป SMCV4 Reader · ค่าเข้ามาเอง</small></span></div><div class="flcap2"><button data-a="pickfile"><i>📂</i>เปิดไฟล์ .bin</button><button data-a="manual"><i>✍</i>คีย์มือ</button></div></div>`}
   /* ค่าเริ่มต้น: ใช้ต่อจากจุดก่อน หรืออ่านใหม่ */
   let carry='';if(stp==='start'&&pi>0){const on=!!S.batch.carry;carry=`<div class="flcarry"><b>ค่าเริ่มต้นของจุดนี้</b><div class="flseg"><button class="${on?'on':''}" data-fl="carry" data-v="1"><i>↪</i>ใช้ค่าสิ้นสุดจุดก่อน</button><button class="${on?'':'on'}" data-fl="carry" data-v="0"><i>📷</i>อ่านใหม่ทั้งหมด</button></div></div>`}
@@ -1472,13 +1476,18 @@ function vRunFl(A){
 function flPtsHtml(){const A=agg();return`<h3>🗓 เลือกจุดทดสอบ</h3><div class="mls">${S.plan.map((q,i)=>q.off?'':`<button class="mli ${i===S.cur?'cur':''}" data-fl="gopt" data-v="${i}"><i>${A.P[i].state==='done'?'✅':A.P[i].state==='fail'?'⚠️':ordOn(i)}</i><span><b>${esc(q.l)}</b><small>${flowT(q.f)} L/h · ${q.v} L · ${A.P[i].n?A.P[i].pass+'/'+A.P[i].n+' ผ่าน':'รอทดสอบ'}</small></span><em>›</em></button>`).join('')}<button class="mli cls" data-a="mclose"><b>ปิด</b></button></div>`}
 /* ---------- หน้าตรวจค่าที่อ่านได้ (MX) ---------- */
 function mxHd(){if(!FL())return`<div class="mx-hd"><div class="mx-tt"><span class="mx-ic">🔬</span><div><h2>อ่านมาตรแมคคานิคจากภาพ</h2><small>ตรวจทีละหลัก · ซูมดูได้ · เข็มละเอียดเทียบขีดสเกลจริง</small></div></div><button class="mr-x" data-a="mxclose" aria-label="ปิด">✕</button></div>`;
-  const t=MX.step==='res'?['ตรวจค่าที่อ่านได้','เทียบกับภาพจริง แล้วกดยืนยัน']:MX.step==='busy'?['กำลังอ่านค่า…','รอสักครู่']:['ถ่ายภาพมิเตอร์','ถ่ายให้เห็นช่องตัวเลขและเข็มเล็ก'];
+  const t=MX.step==='res'?['ตรวจค่าที่อ่านได้','เทียบกับภาพจริง แล้วกดยืนยัน']:MX.step==='busy'?['กำลังอ่านค่า…','รอสักครู่']:MX.step==='fail'?['อ่านไม่ได้','เลือกทางที่จะทำต่อ']:['ถ่ายภาพมิเตอร์','ถ่ายให้เห็นช่องตัวเลขและเข็มเล็ก'];
   return`<div class="mx-hd fl"><button class="mx-back" data-a="mxclose"><i>←</i> กลับ</button><div class="mx-tt"><div><h2>${t[0]}</h2><small>${t[1]}</small></div></div><button class="mx-home" data-fl="mxhome" aria-label="กลับเมนูหลัก">🏠 เมนู</button></div>`}
 function mxFlBody(sec1,sec2,form,adv,selK){const mm=S.meters[selK]||{},lab='#'+(selK+1)+(mm.id?' · '+mm.id:'');window.__mxAdv=adv;
   return`<div id="mxHero" class="mxh-sticky">${mxHero()}</div>${sec1}${sec2}
   <div class="mxfl-act"><label class="mxb cam"><i>📷</i><b>ถ่ายใหม่</b><input type="file" accept="image/*" capture="environment" hidden data-mxf></label><label class="mxb"><i>🖼</i><b>โหลดจากภาพ</b><input type="file" accept="image/*" hidden data-mxf></label><button class="mxb" data-fl="mxedit"><i>✎</i><b>แก้ค่าเอง</b></button><button class="mxb" data-a="mxfull"><i>🔍</i><b>ดูรูปเต็ม</b></button></div>
+  ${(()=>{const st=S.plan.length?pointState(S.cur):{step:'start'},key=st.step==='end'?'e':'s',rd=mm.id&&S.rd[S.cur]&&S.rd[S.cur][mm.id],has=rd&&rd[key];return`<div class="mxfl-x"><button data-a="mxclose">🗑 ไม่เอารูปนี้ · กลับ</button>${has?`<button data-fl="mxdelrd">ลบค่าที่เคยบันทึกของ #${selK+1}</button>`:''}</div>`})()}
   <details class="mxfl-sv"><summary>📍 บันทึกเข้า <b>${esc(lab)}</b> <small>แตะเพื่อเปลี่ยนตำแหน่ง / ID</small></summary>${form}</details>
   <button class="mxfl-det" data-fl="mxdet"><span>ℹ</span><b>ดูรายละเอียดการตรวจจับ</b><i>›</i></button>`}
+function mxFlFail(){let im='';try{const sc=MX.src;if(sc){const k=Math.min(1,720/Math.max(sc.width,sc.height)),c=document.createElement('canvas');c.width=Math.round(sc.width*k);c.height=Math.round(sc.height*k);c.getContext('2d').drawImage(sc,0,0,c.width,c.height);im=c.toDataURL('image/jpeg',.8)}}catch(e){}
+  return`<div class="mxfl-fail"><div class="ff-t">🔍 อ่านค่าจากรูปนี้ไม่ได้</div>${im?'<img src="'+im+'" alt="รูปที่ถ่าย">':''}<p>${esc(MX.fail||'')}</p>
+  <div class="ff-b"><label class="ffb cam"><i>📷</i>ถ่ายใหม่<input type="file" accept="image/*" capture="environment" hidden data-mxf></label><label class="ffb"><i>🖼</i>โหลดจากภาพ<input type="file" accept="image/*" hidden data-mxf></label><button class="ffb" data-fl="mxkey"><i>⌨</i>พิมพ์ค่าเอง</button><button class="ffb" data-a="mxmanual"><i>✎</i>ลากกรอบเอง</button></div>
+  <div class="mxfl-x"><button data-a="mxclose">🗑 ไม่เอารูปนี้ · กลับ</button><button data-fl="mxhome">🏠 กลับเมนูหลัก</button></div></div>`}
 function flMxDetHtml(){return`<div class="mxd-in"><div class="mxd-hd"><button class="mx-back" data-fl="mxdetx"><i>←</i> กลับ</button><h2>รายละเอียดการตรวจจับ</h2></div><p class="mxd-sub">ส่วนนี้ไว้ตรวจสอบเท่านั้น — ไม่ต้องเปิดดูก็ใช้งานได้</p>
   <div id="mxNote">${MX.step==='res'?mxNote():''}</div>${window.__mxAdv||''}
   <div class="mxd-b"><button class="btn" data-a="mxfull">🔍 รูปเต็ม + ตำแหน่งที่ตัด</button></div></div>`}
@@ -1496,6 +1505,8 @@ document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest
   else if(a==='carry'){const on=v==='1';S.batch.carry=on;if(on){enterPoint(S.cur)}else{Object.keys(S.rd[S.cur]||{}).forEach(id=>{const r=S.rd[S.cur][id];if(r&&r.s&&r.s.carried)delete r.s})}save();render()}
   else if(a==='read'){const i=+v;if(!S.plan.length)return;const st=pointState(S.cur);if(st.step!=='start'&&st.step!=='end'){toast(st.step==='run'?'น้ำกำลังไหล — ปิดน้ำก่อนจึงอ่านค่าสิ้นสุดได้':'จุดนี้ยืนยันแล้ว — กด ↩ แก้ไข ถ้าต้องการอ่านใหม่',3200);return}
     SELSLOT=i;if(MECH()){render();try{capNext()}catch(x){}}else{render();toast('เลือกช่อง #'+(i+1)+' แล้ว — แตะมิเตอร์ด้วยแอป SMCV4 Reader',2600)}}
+  else if(a==='mxkey'){const sl=MX.slot;mxClose();TAB='run';if(sl!=null)SELSLOT=sl;render();scrollTo(0,0);const d=document.querySelector('.flkeyd');if(d){d.open=true;setTimeout(()=>{d.scrollIntoView({block:'center'});const k=document.getElementById('kbVal');if(k)k.focus()},150)}else toast('พิมพ์ค่าที่ปุ่ม ⌨ พิมพ์ค่า ในหน้าทดสอบ',3200)}
+  else if(a==='mxdelrd'){const selK=MX.slot!=null?MX.slot:0,mm=S.meters[selK],st=pointState(S.cur),key=st.step==='end'?'e':'s';if(mm&&mm.id&&S.rd[S.cur]&&S.rd[S.cur][mm.id]){delete S.rd[S.cur][mm.id][key];save();toast('ลบค่าที่บันทึกของ #'+(selK+1)+' แล้ว',2600)}mxClose();render()}
   else if(a==='mxdet')flMxDet(true);
   else if(a==='mxdetx')flMxDet(false);
   else if(a==='mxhome'){flMxDet(false);mxClose();TAB='home';render();scrollTo(0,0)}
@@ -4535,6 +4546,7 @@ function mxBody(){
     <label class="btn p mr-b">📷 ถ่ายภาพ<input type="file" accept="image/*" capture="environment" hidden data-mxf></label> <label class="btn mr-b">🖼 เลือกรูปจากเครื่อง<input type="file" accept="image/*" hidden data-mxf></label>
     <p class="mr-tip">ถ้าอ่านรูปไม่ได้ ปิดหน้านี้แล้วพิมพ์ค่าในช่อง “คีย์ / รับค่าหน้าปัด” ได้ตามปกติ</p></div>`;
   if(MX.step==='busy')return`<div class="mr-busy"><div class="mr-sp"></div><b>${esc(MX.busy)}</b><small>ใช้เวลาไม่กี่วินาที</small></div>`;
+  if(MX.step==='fail'&&FL())return mxFlFail();
   if(MX.step==='fail')return`<div class="mx-fail"><div class="mx-pk-ic">🔍</div><h3>อ่านอัตโนมัติไม่สำเร็จ</h3><p>${esc(MX.fail)}</p><div class="mr-ctl" style="justify-content:center"><button class="btn p" data-a="mxnew">📷 ถ่าย/เลือกรูปใหม่</button><button class="btn" data-a="mxmanual">✎ ลากกรอบเอง</button></div></div>`;
   const n=MX.cells.length,nb=n-MX.red,pt=MX.res&&MX.res.ptr,N=Math.max(S.batch.nm,S.meters.length);
   if(!MX.rowImg)MX.rowImg=mxRowImg();
